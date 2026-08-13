@@ -28,4 +28,8 @@ public class Espectador {
     public void verificarMail(){
         this.emailVerificado = true;
     }
+
+    public void agregarMetodoDePago(MetodoDePago metodoDePago) {
+        this.metodoDePago = metodoDePago;
+    }
 }
