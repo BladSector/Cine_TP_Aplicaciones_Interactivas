@@ -4,12 +4,14 @@ public class MetodoDePago {
     private String numero;
     private YearMonth fechaVencimiento;
     private String nombre;
+    private String apellido;
     private String cvv;
 
-    public MetodoDePago(String numero, YearMonth fechaVencimiento, String nombre, String cvv) {
+    public MetodoDePago(String numero, YearMonth fechaVencimiento, String nombre, String apellido, String cvv) {
         this.numero = numero;
         this.fechaVencimiento = fechaVencimiento;
         this.nombre = nombre;
+        this.apellido= apellido;
         this.cvv = cvv;
         //valida los datos y si no pasa validarDatos() no se crea.
         if (!validarDatos()) {
@@ -28,6 +30,7 @@ public class MetodoDePago {
         return numero != null && numero.matches("\\d{16}")
                 && fechaVencimiento != null && !estaVencido()
                 && nombre != null && !nombre.isBlank()
+                && apellido != null && !apellido.isBlank()
                 && cvv != null && cvv.matches("\\d{3}");
     }
 
