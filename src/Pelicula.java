@@ -11,7 +11,7 @@ public class Pelicula {
         if (!validarDatos()) {
             throw new IllegalArgumentException("Los datos de la pelicula no son validos.");
         }
-        //Acá agrega la película a la lista de películas de una categoría
+        //Acá agrega la película a la lista de películas de una categoría con metodo agregarPelicula() en categoría
         this.categoria.agregarPelicula(this);
     }
 
