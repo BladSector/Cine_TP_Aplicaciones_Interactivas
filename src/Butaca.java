@@ -1,9 +1,11 @@
 public class Butaca {
+    private int id;
     private String fila;
     private int numero;
     private boolean ocupada;
 
     public Butaca(String fila, int numero) {
+        this.id = 0;
         this.fila = fila;
         this.numero = numero;
         this.ocupada = false;
@@ -32,5 +34,13 @@ public class Butaca {
 
     public void liberarButaca() {
         this.ocupada = false;
+    }
+
+    public void asignarId(int id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("El id debe ser mayor a 0.");
+        }
+
+        this.id = id;
     }
 }

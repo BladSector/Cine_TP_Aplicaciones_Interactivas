@@ -1,6 +1,7 @@
 import java.time.LocalDateTime;
 
 public class Entrada {
+    private int id;
     private double precio;
     private Funcion funcion;
     private Butaca butaca;
@@ -8,6 +9,7 @@ public class Entrada {
     private boolean reembolsada;
 
     public Entrada(double precio, Funcion funcion, Butaca butaca, LocalDateTime horario) {
+        this.id = 0;
         this.precio = precio;
         this.funcion = funcion;
         this.butaca = butaca;
@@ -38,5 +40,13 @@ public class Entrada {
     public void reembolsarEntrada() {
         butaca.liberarButaca();
         this.reembolsada = true;
+    }
+
+    public void asignarId(int id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("El id debe ser mayor a 0.");
+        }
+
+        this.id = id;
     }
 }

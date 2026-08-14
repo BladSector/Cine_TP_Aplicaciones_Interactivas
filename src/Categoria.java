@@ -2,10 +2,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Categoria {
+    private int id;
     private String nombre;
     private List<Pelicula> peliculas;
 
     public Categoria(String nombre) {
+        this.id = 0;
         this.nombre = nombre;
         this.peliculas = new ArrayList<>();
 
@@ -24,5 +26,13 @@ public class Categoria {
         }
 
         peliculas.add(pelicula);
+    }
+
+    public void asignarId(int id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("El id debe ser mayor a 0.");
+        }
+
+        this.id = id;
     }
 }

@@ -1,6 +1,7 @@
 import java.time.YearMonth;
 
 public class MetodoDePago {
+    private int id;
     private String numero;
     private YearMonth fechaVencimiento;
     private String nombre;
@@ -8,6 +9,7 @@ public class MetodoDePago {
     private String cvv;
 
     public MetodoDePago(String numero, YearMonth fechaVencimiento, String nombre, String apellido, String cvv) {
+        this.id = 0;
         this.numero = numero;
         this.fechaVencimiento = fechaVencimiento;
         this.nombre = nombre;
@@ -34,4 +36,11 @@ public class MetodoDePago {
                 && cvv != null && cvv.matches("\\d{3}");
     }
 
+    public void asignarId(int id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("El id debe ser mayor a 0.");
+        }
+
+        this.id = id;
+    }
 }

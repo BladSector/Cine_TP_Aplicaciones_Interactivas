@@ -1,9 +1,11 @@
 public class Pelicula {
+    private int id;
     private String titulo;
     private int duracion;
     private Categoria categoria;
 
     public Pelicula(String titulo, int duracion, Categoria categoria) {
+        this.id = 0;
         this.titulo = titulo;
         this.duracion = duracion;
         this.categoria = categoria;
@@ -19,5 +21,13 @@ public class Pelicula {
         return titulo != null
                 && duracion > 0
                 && categoria != null;
+    }
+
+    public void asignarId(int id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("El id debe ser mayor a 0.");
+        }
+
+        this.id = id;
     }
 }

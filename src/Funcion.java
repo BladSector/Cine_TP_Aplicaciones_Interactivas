@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Funcion {
+    private int id;
     private LocalDate fecha;
     private LocalTime horario;
     private Pelicula pelicula;
@@ -12,6 +13,7 @@ public class Funcion {
     private List<Entrada> entradas;
 
     public Funcion(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala) {
+        this.id = 0;
         this.fecha = fecha;
         this.horario = horario;
         this.pelicula = pelicula;
@@ -47,5 +49,13 @@ public class Funcion {
         entradas.add(entrada);
 
         return entrada;
+    }
+
+    public void asignarId(int id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("El id debe ser mayor a 0.");
+        }
+
+        this.id = id;
     }
 }

@@ -2,11 +2,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Sala {
+    private int id;
     private String nombre;
     private int capacidad;
     private List<Butaca> butacas;
 
     public Sala(String nombre, int capacidad) {
+        this.id = 0;
         this.nombre = nombre;
         this.capacidad = capacidad;
         this.butacas = new ArrayList<>();
@@ -43,5 +45,13 @@ public class Sala {
         }
 
         return disponibles;
+    }
+
+    public void asignarId(int id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("El id debe ser mayor a 0.");
+        }
+
+        this.id = id;
     }
 }

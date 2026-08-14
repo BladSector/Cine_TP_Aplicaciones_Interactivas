@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Espectador {
+    private int id;
     private String nombre;
     private String apellido;
     private String email;
@@ -13,6 +14,7 @@ public class Espectador {
     public Espectador(String nombre, String apellido,
                       String email, String contrasenia) {
 
+        this.id = 0;
         this.nombre = nombre;
         this.apellido = apellido;
         this.email = email;
@@ -31,5 +33,13 @@ public class Espectador {
 
     public void agregarMetodoDePago(MetodoDePago metodoDePago) {
         this.metodoDePago = metodoDePago;
+    }
+
+    public void asignarId(int id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("El id debe ser mayor a 0.");
+        }
+
+        this.id = id;
     }
 }
