@@ -1,3 +1,5 @@
+package modelo;
+
 import java.time.LocalDateTime;
 
 public class Entrada {
@@ -48,5 +50,33 @@ public class Entrada {
         }
 
         this.id = id;
+    }
+
+    public void asignarReembolsada(boolean reembolsada) {
+        this.reembolsada = reembolsada;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public double getPrecio() {
+        return precio;
+    }
+
+    public Funcion getFuncion() {
+        return funcion;
+    }
+
+    public Butaca getButaca() {
+        return butaca;
+    }
+
+    public LocalDateTime getHorario() {
+        return horario;
+    }
+
+    public boolean isReembolsada() {
+        return reembolsada;
     }
 }

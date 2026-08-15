@@ -1,3 +1,5 @@
+package modelo;
+
 public class Pelicula {
     private int id;
     private String titulo;
@@ -29,5 +31,21 @@ public class Pelicula {
         }
 
         this.id = id;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public int getDuracion() {
+        return duracion;
+    }
+
+    public Categoria getCategoria() {
+        return categoria;
     }
 }

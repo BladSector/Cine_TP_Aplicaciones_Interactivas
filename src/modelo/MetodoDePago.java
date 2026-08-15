@@ -1,3 +1,5 @@
+package modelo;
+
 import java.time.YearMonth;
 
 public class MetodoDePago {
@@ -42,5 +44,29 @@ public class MetodoDePago {
         }
 
         this.id = id;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getNumero() {
+        return numero;
+    }
+
+    public YearMonth getFechaVencimiento() {
+        return fechaVencimiento;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public String getApellido() {
+        return apellido;
+    }
+
+    public String getCvv() {
+        return cvv;
     }
 }

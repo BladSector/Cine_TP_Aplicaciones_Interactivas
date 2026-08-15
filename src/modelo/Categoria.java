@@ -1,3 +1,5 @@
+package modelo;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,10 +31,14 @@ public class Categoria {
     }
 
     public void asignarId(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("El id debe ser mayor a 0.");
-        }
-
         this.id = id;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getNombre() {
+        return nombre;
     }
 }

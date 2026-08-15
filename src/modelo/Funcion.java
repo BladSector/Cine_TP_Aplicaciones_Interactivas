@@ -1,3 +1,5 @@
+package modelo;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -57,5 +59,25 @@ public class Funcion {
         }
 
         this.id = id;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public LocalDate getFecha() {
+        return fecha;
+    }
+
+    public LocalTime getHorario() {
+        return horario;
+    }
+
+    public Pelicula getPelicula() {
+        return pelicula;
+    }
+
+    public Sala getSala() {
+        return sala;
     }
 }
