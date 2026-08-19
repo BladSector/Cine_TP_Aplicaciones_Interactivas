@@ -1,87 +1,128 @@
-import dao.ButacaDAO;
 import dao.CategoriaDAO;
-import dao.EntradaDAO;
-import dao.EspectadorDAO;
-import dao.FuncionDAO;
-import dao.MetodoDePagoDAO;
-import dao.PeliculaDAO;
-import modelo.Butaca;
+import dao.ConexionMySQL;
 import modelo.Categoria;
-import modelo.Entrada;
-import modelo.Espectador;
-import modelo.Funcion;
-import modelo.MetodoDePago;
-import modelo.Pelicula;
-import modelo.Sala;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.YearMonth;
+import java.sql.Connection;
+import java.util.List;
+import java.util.Scanner;
 
 public class Main {
+    private static final Scanner scanner = new Scanner(System.in);
+    private static final CategoriaDAO categoriaDAO = new CategoriaDAO();
+
     public static void main(String[] args) {
-        try {
-            Categoria categoria = new Categoria("Accion");
-            Pelicula pelicula = new Pelicula("Matrix", 136, categoria);
-            Sala sala = new Sala("Sala 1", 100);
-            Butaca butaca = new Butaca("A", 1, sala);
-            Funcion funcion = new Funcion(
-                    LocalDate.of(2026, 8, 20),
-                    LocalTime.of(20, 30),
-                    pelicula,
-                    sala
-            );
+        int opcion;
 
-            MetodoDePago metodoDePago = new MetodoDePago(
-                    "1234567812345678",
-                    YearMonth.of(2028, 12),
-                    "Santiago",
-                    "Lopez",
-                    "123"
-            );
+        do {
+            mostrarMenu();
+            opcion = leerEntero("Elegí una opción: ");
 
-            Espectador espectador = new Espectador(
-                    "Santiago",
-                    "Lopez",
-                    "santiago@test.com",
-                    "1234"
-            );
+            try {
+                switch (opcion) {
+                    case 1:
+                        probarConexion();
+                        break;
+                    case 2:
+                        guardarCategoria();
+                        break;
+                    case 3:
+                        buscarCategoria();
+                        break;
+                    case 4:
+                        listarCategorias();
+                        break;
+                    case 5:
+                        eliminarCategoria();
+                        break;
+                    case 0:
+                        System.out.println("Saliendo del sistema...");
+                        break;
+                    default:
+                        System.out.println("Opción inválida.");
+                        break;
+                }
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+                e.printStackTrace();
+            }
 
-            espectador.verificarMail();
-            espectador.agregarMetodoDePago(metodoDePago);
+            System.out.println();
+        } while (opcion != 0);
 
-            CategoriaDAO categoriaDAO = new CategoriaDAO();
-            PeliculaDAO peliculaDAO = new PeliculaDAO();
-            ButacaDAO butacaDAO = new ButacaDAO();
-            FuncionDAO funcionDAO = new FuncionDAO();
-            MetodoDePagoDAO metodoDePagoDAO = new MetodoDePagoDAO();
-            EspectadorDAO espectadorDAO = new EspectadorDAO();
-            EntradaDAO entradaDAO = new EntradaDAO();
+        scanner.close();
+    }
 
-            categoriaDAO.guardar(categoria);
-            peliculaDAO.guardar(pelicula);
-            butacaDAO.guardar(butaca);
-            funcionDAO.guardar(funcion);
-            metodoDePagoDAO.guardar(metodoDePago);
-            espectadorDAO.guardar(espectador);
+    private static void mostrarMenu() {
+        System.out.println("===== MENÚ TP CINE API =====");
+        System.out.println("1. Probar conexión con MySQL");
+        System.out.println("2. Guardar categoría");
+        System.out.println("3. Buscar categoría por ID");
+        System.out.println("4. Listar categorías");
+        System.out.println("5. Eliminar categoría");
+        System.out.println("0. Salir");
+    }
 
-            Entrada entrada = funcion.venderEntrada(3500, butaca);
-            espectador.agregarEntrada(entrada);
-            entradaDAO.guardar(entrada, espectador.getId());
-
-            System.out.println("Datos guardados correctamente.");
-            System.out.println("Categoria ID: " + categoria.getId());
-            System.out.println("Pelicula ID: " + pelicula.getId());
-            System.out.println("Sala ID: " + sala.getId());
-            System.out.println("Butaca ID: " + butaca.getId());
-            System.out.println("Funcion ID: " + funcion.getId());
-            System.out.println("Metodo de pago ID: " + metodoDePago.getId());
-            System.out.println("Espectador ID: " + espectador.getId());
-            System.out.println("Entrada ID: " + entrada.getId());
-
-        } catch (Exception e) {
-            System.out.println("Error: " + e.getMessage());
-            e.printStackTrace();
+    private static void probarConexion() throws Exception {
+        try (Connection conexion = ConexionMySQL.obtenerConexion()) {
+            System.out.println("Conexión exitosa con MySQL.");
         }
+    }
+
+    private static void guardarCategoria() throws Exception {
+        System.out.print("Nombre de la categoría: ");
+        String nombre = scanner.nextLine();
+
+        Categoria categoria = new Categoria(nombre);
+        categoriaDAO.guardar(categoria);
+
+        System.out.println("Categoría guardada con ID: " + categoria.getId());
+    }
+
+    private static void buscarCategoria() throws Exception {
+        int id = leerEntero("ID de la categoría: ");
+        Categoria categoria = categoriaDAO.buscarPorId(id);
+
+        if (categoria == null) {
+            System.out.println("No se encontró una categoría con ese ID.");
+        } else {
+            System.out.println("Categoría encontrada:");
+            System.out.println(categoria.getId() + " - " + categoria.getNombre());
+        }
+    }
+
+    private static void listarCategorias() throws Exception {
+        List<Categoria> categorias = categoriaDAO.listar();
+
+        if (categorias.isEmpty()) {
+            System.out.println("No hay categorías guardadas.");
+            return;
+        }
+
+        System.out.println("Categorías guardadas:");
+
+        for (Categoria categoria : categorias) {
+            System.out.println(categoria.getId() + " - " + categoria.getNombre());
+        }
+    }
+
+    private static void eliminarCategoria() throws Exception {
+        int id = leerEntero("ID de la categoría a eliminar: ");
+        categoriaDAO.eliminar(id);
+
+        System.out.println("Categoría eliminada correctamente.");
+    }
+
+    private static int leerEntero(String mensaje) {
+        System.out.print(mensaje);
+
+        while (!scanner.hasNextInt()) {
+            System.out.println("Tenés que ingresar un número.");
+            scanner.nextLine();
+            System.out.print(mensaje);
+        }
+
+        int numero = scanner.nextInt();
+        scanner.nextLine();
+        return numero;
     }
 }
