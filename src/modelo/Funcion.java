@@ -12,14 +12,20 @@ public class Funcion {
     private LocalTime horario;
     private Pelicula pelicula;
     private Sala sala;
+    private FormatoFuncion formato;
     private List<Entrada> entradas;
 
     public Funcion(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala) {
+        this(fecha, horario, pelicula, sala, FormatoFuncion.DOS_D);
+    }
+
+    public Funcion(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato) {
         this.id = 0;
         this.fecha = fecha;
         this.horario = horario;
         this.pelicula = pelicula;
         this.sala = sala;
+        this.formato = formato;
         this.entradas = new ArrayList<>();
 
         if (!validarDatos()) {
@@ -31,7 +37,8 @@ public class Funcion {
         return fecha != null
                 && horario != null
                 && pelicula != null
-                && sala != null;
+                && sala != null
+                && formato != null;
     }
 
     public Entrada venderEntrada(double precio, Butaca butaca) {
@@ -79,5 +86,9 @@ public class Funcion {
 
     public Sala getSala() {
         return sala;
+    }
+
+    public FormatoFuncion getFormato() {
+        return formato;
     }
 }
