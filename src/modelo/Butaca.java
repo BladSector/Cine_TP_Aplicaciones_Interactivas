@@ -1,17 +1,21 @@
 package modelo;
 
+import java.time.LocalDateTime;
+
 public class Butaca {
     private int id;
     private String fila;
     private int numero;
-    private boolean ocupada;
+    private EstadoButaca estado;
+    private LocalDateTime bloqueoHasta;
     private Sala sala;
 
     public Butaca(String fila, int numero, Sala sala) {
         this.id = 0;
         this.fila = fila;
         this.numero = numero;
-        this.ocupada = false;
+        this.estado = EstadoButaca.DISPONIBLE;
+        this.bloqueoHasta = null;
         this.sala = sala;
 
         if (!validarDatos()) {
@@ -24,21 +28,56 @@ public class Butaca {
                 && numero > 0
                 && sala != null;
     }
-    //!ocupada devuelve lo contrario (si es false, o sea no está ocupada, devuelve true y viceversa)
+
     public boolean estaDisponible() {
-        return !ocupada;
+        liberarBloqueoSiVencio();
+        return estado == EstadoButaca.DISPONIBLE;
+    }
+
+    public void bloquear(int minutos) {
+        if (minutos <= 0) {
+            throw new IllegalArgumentException("Los minutos de bloqueo deben ser mayores a 0.");
+        }
+
+        if (!estaDisponible()) {
+            throw new IllegalArgumentException("La butaca no esta disponible para bloquear.");
+        }
+
+        this.estado = EstadoButaca.BLOQUEADA;
+        this.bloqueoHasta = LocalDateTime.now().plusMinutes(minutos);
+    }
+
+    public void liberarBloqueoSiVencio() {
+        if (estado == EstadoButaca.BLOQUEADA
+                && bloqueoHasta != null
+                && LocalDateTime.now().isAfter(bloqueoHasta)) {
+            liberarButaca();
+        }
     }
 
     public void ocupar() {
-        if (!estaDisponible()) {
+        liberarBloqueoSiVencio();
+
+        if (estado == EstadoButaca.OCUPADA) {
             throw new IllegalArgumentException("La butaca ya esta ocupada.");
         }
 
-        this.ocupada = true;
+        if (estado == EstadoButaca.FUERA_DE_SERVICIO) {
+            throw new IllegalArgumentException("La butaca esta fuera de servicio.");
+        }
+
+        this.estado = EstadoButaca.OCUPADA;
+        this.bloqueoHasta = null;
     }
 
     public void liberarButaca() {
-        this.ocupada = false;
+        this.estado = EstadoButaca.DISPONIBLE;
+        this.bloqueoHasta = null;
+    }
+
+    public void marcarFueraDeServicio() {
+        this.estado = EstadoButaca.FUERA_DE_SERVICIO;
+        this.bloqueoHasta = null;
     }
 
     public void asignarId(int id) {
@@ -62,7 +101,16 @@ public class Butaca {
     }
 
     public boolean isOcupada() {
-        return ocupada;
+        return estado == EstadoButaca.OCUPADA;
+    }
+
+    public EstadoButaca getEstado() {
+        liberarBloqueoSiVencio();
+        return estado;
+    }
+
+    public LocalDateTime getBloqueoHasta() {
+        return bloqueoHasta;
     }
 
     public Sala getSala() {
