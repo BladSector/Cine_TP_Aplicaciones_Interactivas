@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Espectador {
+    private static final int CANTIDAD_ENTRADAS_CLIENTE_FRECUENTE = 5;
+
     private int id;
     private String nombre;
     private String apellido;
@@ -35,6 +37,14 @@ public class Espectador {
 
     public void agregarMetodoDePago(MetodoDePago metodoDePago) {
         this.metodoDePago = metodoDePago;
+    }
+
+    public boolean esClienteFrecuente() {
+        return entradas.size() >= CANTIDAD_ENTRADAS_CLIENTE_FRECUENTE;
+    }
+
+    public int getCantidadEntradas() {
+        return entradas.size();
     }
 
     public void asignarId(int id) {
