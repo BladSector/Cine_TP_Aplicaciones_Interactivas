@@ -4,20 +4,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class OrdenCompra {
+public class Ticket {
     private int id;
     private Entrada entrada;
     private List<ItemConsumo> itemsConsumo;
     private String codigoQR;
 
-    public OrdenCompra(Entrada entrada) {
+    public Ticket(Entrada entrada) {
         this.id = 0;
         this.entrada = entrada;
         this.itemsConsumo = new ArrayList<>();
         this.codigoQR = generarCodigoQR();
 
         if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos de la orden de compra no son validos.");
+            throw new IllegalArgumentException("Los datos del ticket no son validos.");
         }
     }
 
@@ -46,7 +46,7 @@ public class OrdenCompra {
     }
 
     private String generarCodigoQR() {
-        return "ORD-" + UUID.randomUUID();
+        return "TCK-" + UUID.randomUUID();
     }
 
     public void asignarId(int id) {
