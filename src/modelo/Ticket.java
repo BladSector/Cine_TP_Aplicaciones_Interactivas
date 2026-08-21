@@ -6,13 +6,15 @@ import java.util.UUID;
 
 public class Ticket {
     private int id;
-    private Entrada entrada;
+    private Espectador espectador;
+    private List<Entrada> entradas;
     private List<ItemConsumo> itemsConsumo;
     private String codigoQR;
 
-    public Ticket(Entrada entrada) {
+    public Ticket(Espectador espectador) {
         this.id = 0;
-        this.entrada = entrada;
+        this.espectador = espectador;
+        this.entradas = new ArrayList<>();
         this.itemsConsumo = new ArrayList<>();
         this.codigoQR = generarCodigoQR();
 
@@ -22,9 +24,17 @@ public class Ticket {
     }
 
     private boolean validarDatos() {
-        return entrada != null
+        return espectador != null
                 && codigoQR != null
                 && !codigoQR.isBlank();
+    }
+
+    public void agregarEntrada(Entrada entrada) {
+        if (entrada == null) {
+            throw new IllegalArgumentException("La entrada no puede ser null.");
+        }
+
+        entradas.add(entrada);
     }
 
     public void agregarItem(ItemConsumo itemConsumo) {
@@ -36,7 +46,11 @@ public class Ticket {
     }
 
     public double calcularTotal() {
-        double total = entrada.getPrecio();
+        double total = 0;
+
+        for (Entrada entrada : entradas) {
+            total += entrada.getPrecio();
+        }
 
         for (ItemConsumo itemConsumo : itemsConsumo) {
             total += itemConsumo.calcularSubtotal();
@@ -61,8 +75,12 @@ public class Ticket {
         return id;
     }
 
-    public Entrada getEntrada() {
-        return entrada;
+    public Espectador getEspectador() {
+        return espectador;
+    }
+
+    public List<Entrada> getEntradas() {
+        return entradas;
     }
 
     public List<ItemConsumo> getItemsConsumo() {
