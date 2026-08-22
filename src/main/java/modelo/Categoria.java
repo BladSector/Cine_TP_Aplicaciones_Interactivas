@@ -1,12 +1,30 @@
 package modelo;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@Entity
+@Table(name = "categoria")
 public class Categoria {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
     private String nombre;
+
+    @Transient
     private List<Pelicula> peliculas;
+
+    protected Categoria() {
+        this.peliculas = new ArrayList<>();
+    }
 
     public Categoria(String nombre) {
         this.id = 0;
