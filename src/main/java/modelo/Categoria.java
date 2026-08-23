@@ -5,6 +5,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Transient;
 
 import java.util.ArrayList;
@@ -19,8 +20,7 @@ public class Categoria {
 
     private String nombre;
 
-    @Transient//Indica que no guarde el atributo en la tabla, ya que es relacional con foreign key
-    //Se va a reemplazar con @OneToMany (mapear esta lista como una relación) cuando se haga la clase Pelicula
+    @OneToMany(mappedBy = "categoria")//Una Categoria puede tener muchas Pelicula, pero la relación se guarda del lado de Pelicula, en el atributo llamado categoria
     private List<Pelicula> peliculas;
 
     protected Categoria() {//El hibernate necesita constructores vacíos para crear tablas, es protected para no usarlo como contructor normal
