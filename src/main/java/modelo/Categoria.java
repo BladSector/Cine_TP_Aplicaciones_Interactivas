@@ -10,19 +10,20 @@ import jakarta.persistence.Transient;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "categoria")
+@Entity//Sirve para indicar que la siguiente clase forma parte de una de las tablas de la base de datos
+@Table(name = "categoria")//Indica el nombre de la tabla. Si no se pone usa el nombre de la clase.
 public class Categoria {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id//Significa que este atributo "id" es la primary key.
+    @GeneratedValue(strategy = GenerationType.IDENTITY)//la base de datos genera el id automáticamente
     private int id;
 
     private String nombre;
 
-    @Transient
+    @Transient//Indica que no guarde el atributo en la tabla, ya que es relacional con foreign key
+    //Se va a reemplazar con @OneToMany (mapear esta lista como una relación) cuando se haga la clase Pelicula
     private List<Pelicula> peliculas;
 
-    protected Categoria() {
+    protected Categoria() {//El hibernate necesita constructores vacíos para crear tablas, es protected para no usarlo como contructor normal
         this.peliculas = new ArrayList<>();
     }
 
