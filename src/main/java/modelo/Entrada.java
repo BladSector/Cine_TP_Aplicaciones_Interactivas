@@ -2,13 +2,35 @@ package modelo;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+@Entity
+@Table (name = "entrada")
 public class Entrada {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private double precio;
+    @ManyToOne
+    @JoinColumn(name = "funcion_id")
     private Funcion funcion;
+    @ManyToOne
+    @JoinColumn(name = "butaca_id")
     private Butaca butaca;
     private LocalDateTime horario;
+    @Enumerated(EnumType.STRING)
     private EstadoEntrada estado;
+
+    protected Entrada(){
+    }
 
     public Entrada(double precio, Funcion funcion, Butaca butaca, LocalDateTime horario) {
         this.id = 0;
