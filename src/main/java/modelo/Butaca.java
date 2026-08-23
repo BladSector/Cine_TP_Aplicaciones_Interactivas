@@ -2,13 +2,25 @@ package modelo;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "butaca")
 public class Butaca {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private String fila;
     private int numero;
+    @Enumerated(EnumType.STRING)//El atributo estado que se define con un enum el MySQL lo guarda como String
     private EstadoButaca estado;
     private LocalDateTime bloqueoHasta;
+    @ManyToOne
+    @JoinColumn(name = "sala_id")
     private Sala sala;
+
+    protected Butaca(){
+    }
 
     public Butaca(String fila, int numero, Sala sala) {
         this.id = 0;
