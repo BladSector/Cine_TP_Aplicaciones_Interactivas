@@ -6,15 +6,30 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table (name = "funcion")
 public class Funcion {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private LocalDate fecha;
     private LocalTime horario;
+    @ManyToOne
+    @JoinColumn(name = "pelicula_id")
     private Pelicula pelicula;
+    @ManyToOne
+    @JoinColumn(name = "sala_id")
     private Sala sala;
+    @Enumerated(EnumType.STRING)
     private FormatoFuncion formato;
+    @OneToMany(mappedBy = "funcion")
     private List<Entrada> entradas;
 
+    protected Funcion(){
+        this.entradas= new ArrayList<>();
+    }
     public Funcion(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala) {
         this(fecha, horario, pelicula, sala, FormatoFuncion.DOS_D);
     }
