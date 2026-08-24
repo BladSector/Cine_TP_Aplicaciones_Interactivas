@@ -9,13 +9,16 @@
 <body>
 <main id="loginView" class="login-view">
     <section class="login-card">
-        <div>
-            <p class="eyebrow">TP Cine API</p>
-            <h1>Prueba de compra y administracion</h1>
+        <div class="login-hero">
+            <span class="brand-chip">TP Cine API</span>
+            <p class="eyebrow">Simulador local</p>
+            <h1>Gestioná funciones y probá compras en un solo lugar</h1>
+            <p class="hero-copy">Usá el modo espectador para recorrer la compra completa o entrá como administrador para cargar el catálogo del cine.</p>
         </div>
 
         <div class="login-grid">
             <section class="login-panel">
+                <div class="panel-kicker">Compra</div>
                 <h2>Entrar como espectador</h2>
                 <label>
                     Espectador existente
@@ -25,7 +28,7 @@
                     <button id="enterSpectatorButton" class="primary-button" type="button">Ingresar</button>
                 </div>
                 <div class="divider"></div>
-                <h3>Crear espectador</h3>
+                <h3>Crear espectador de prueba</h3>
                 <label>Nombre <input id="newSpectatorName" type="text"></label>
                 <label>Apellido <input id="newSpectatorLastName" type="text"></label>
                 <label>Email <input id="newSpectatorEmail" type="email"></label>
@@ -34,8 +37,14 @@
             </section>
 
             <section class="login-panel admin-entry">
+                <div class="panel-kicker">Gestion</div>
                 <h2>Entrar como administrador</h2>
                 <p>Modo de prueba para cargar peliculas, categorias, salas, butacas, funciones y productos.</p>
+                <ul class="feature-list">
+                    <li>Crear peliculas con categoria nueva o existente.</li>
+                    <li>Generar salas completas con butacas automaticas.</li>
+                    <li>Publicar funciones con formato y precio.</li>
+                </ul>
                 <button id="enterAdminButton" class="primary-button" type="button">Ingresar</button>
             </section>
         </div>
@@ -175,6 +184,6 @@
     </section>
 </div>
 
-<script src="app.js"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

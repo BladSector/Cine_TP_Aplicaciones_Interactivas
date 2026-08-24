@@ -23,33 +23,55 @@ const state = {
 
 const $ = selector => document.querySelector(selector);
 
-const loginView = $("#loginView");
-const appView = $("#appView");
-const spectatorView = $("#spectatorView");
-const adminView = $("#adminView");
-const responseOutput = $("#responseOutput");
+let loginView;
+let appView;
+let spectatorView;
+let adminView;
+let responseOutput;
 
-$("#enterSpectatorButton").addEventListener("click", enterSelectedSpectator);
-$("#createSpectatorButton").addEventListener("click", createAndEnterSpectator);
-$("#enterAdminButton").addEventListener("click", enterAdmin);
-$("#logoutButton").addEventListener("click", logout);
-$("#refreshButton").addEventListener("click", refreshCurrentView);
-$("#copyResponseButton").addEventListener("click", () => navigator.clipboard.writeText(responseOutput.textContent));
-$("#movieSearch").addEventListener("input", renderMovies);
-$("#categoryFilter").addEventListener("change", renderMovies);
-$("#buyButton").addEventListener("click", buyTicket);
+document.addEventListener("DOMContentLoaded", initApp);
 
-$("#categoryForm").addEventListener("submit", createCategory);
-$("#movieForm").addEventListener("submit", createMovie);
-$("#roomForm").addEventListener("submit", createRoomWithSeats);
-$("#functionForm").addEventListener("submit", createFunction);
-$("#productForm").addEventListener("submit", createProduct);
+async function initApp() {
+    loginView = $("#loginView");
+    appView = $("#appView");
+    spectatorView = $("#spectatorView");
+    adminView = $("#adminView");
+    responseOutput = $("#responseOutput");
 
-init();
+    bind("#enterSpectatorButton", "click", enterSelectedSpectator);
+    bind("#createSpectatorButton", "click", createAndEnterSpectator);
+    bind("#enterAdminButton", "click", enterAdmin);
+    bind("#logoutButton", "click", logout);
+    bind("#refreshButton", "click", refreshCurrentView);
+    bind("#copyResponseButton", "click", copyResponse);
+    bind("#movieSearch", "input", renderMovies);
+    bind("#categoryFilter", "change", renderMovies);
+    bind("#buyButton", "click", buyTicket);
 
-async function init() {
-    await loadAll();
-    renderLogin();
+    bind("#categoryForm", "submit", createCategory);
+    bind("#movieForm", "submit", createMovie);
+    bind("#roomForm", "submit", createRoomWithSeats);
+    bind("#functionForm", "submit", createFunction);
+    bind("#productForm", "submit", createProduct);
+
+    try {
+        await loadAll();
+        renderLogin();
+        setOutput({ estado: "Frontend listo", ayuda: "Elegí un modo para comenzar." });
+    } catch (error) {
+        setOutput(error, true);
+    }
+}
+
+function bind(selector, event, handler) {
+    const element = $(selector);
+
+    if (!element) {
+        console.warn(`No se encontro el elemento ${selector}`);
+        return;
+    }
+
+    element.addEventListener(event, handler);
 }
 
 function emptyData() {
@@ -621,6 +643,15 @@ function formatValue(value) {
     }
 
     return String(value);
+}
+
+async function copyResponse() {
+    try {
+        await navigator.clipboard.writeText(responseOutput.textContent);
+        setOutput({ estado: "Respuesta copiada" });
+    } catch {
+        setOutput({ aviso: "No se pudo copiar automaticamente. Podes seleccionar el texto y copiarlo manualmente." }, true);
+    }
 }
 
 function setOutput(data, isError = false) {
