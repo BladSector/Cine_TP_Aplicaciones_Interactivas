@@ -42,6 +42,16 @@ public class SalaController {
         return SalaResponse.desde(salaService.guardar(request.nombre(), request.capacidad()));
     }
 
+    @PostMapping("/con-butacas")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SalaResponse guardarConButacas(@RequestBody SalaConButacasRequest request) {
+        return SalaResponse.desde(salaService.guardarConButacas(
+                request.nombre(),
+                request.filas(),
+                request.butacasPorFila()
+        ));
+    }
+
     @PutMapping("/{id}")
     public SalaResponse actualizar(@PathVariable int id, @RequestBody SalaRequest request) {
         return SalaResponse.desde(salaService.actualizar(id, request.nombre(), request.capacidad()));
@@ -54,6 +64,9 @@ public class SalaController {
     }
 
     public record SalaRequest(String nombre, int capacidad) {
+    }
+
+    public record SalaConButacasRequest(String nombre, int filas, int butacasPorFila) {
     }
 
     public record SalaResponse(int id, String nombre, int capacidad) {

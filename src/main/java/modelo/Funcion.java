@@ -24,6 +24,7 @@ public class Funcion {
     private Sala sala;
     @Enumerated(EnumType.STRING)
     private FormatoFuncion formato;
+    private double precioEntrada;
     @OneToMany(mappedBy = "funcion")
     private List<Entrada> entradas;
 
@@ -31,16 +32,21 @@ public class Funcion {
         this.entradas= new ArrayList<>();
     }
     public Funcion(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala) {
-        this(fecha, horario, pelicula, sala, FormatoFuncion.DOS_D);
+        this(fecha, horario, pelicula, sala, FormatoFuncion.DOS_D, 0);
     }
 
     public Funcion(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato) {
+        this(fecha, horario, pelicula, sala, formato, 0);
+    }
+
+    public Funcion(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato, double precioEntrada) {
         this.id = 0;
         this.fecha = fecha;
         this.horario = horario;
         this.pelicula = pelicula;
         this.sala = sala;
         this.formato = formato;
+        this.precioEntrada = precioEntrada;
         this.entradas = new ArrayList<>();
 
         if (!validarDatos()) {
@@ -53,15 +59,21 @@ public class Funcion {
                 && horario != null
                 && pelicula != null
                 && sala != null
-                && formato != null;
+                && formato != null
+                && precioEntrada >= 0;
     }
 
     public void actualizarDatos(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato) {
+        actualizarDatos(fecha, horario, pelicula, sala, formato, precioEntrada);
+    }
+
+    public void actualizarDatos(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato, double precioEntrada) {
         this.fecha = fecha;
         this.horario = horario;
         this.pelicula = pelicula;
         this.sala = sala;
         this.formato = formato;
+        this.precioEntrada = precioEntrada;
 
         if (!validarDatos()) {
             throw new IllegalArgumentException("Los datos de la función no son válidos.");
@@ -122,5 +134,9 @@ public class Funcion {
 
     public FormatoFuncion getFormato() {
         return formato;
+    }
+
+    public double getPrecioEntrada() {
+        return precioEntrada;
     }
 }

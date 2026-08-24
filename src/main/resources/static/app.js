@@ -1,561 +1,576 @@
-const modules = {
-    categorias: {
-        label: "Categorias",
-        endpoint: "/categorias",
-        idPrefix: "CAT",
-        fields: [
-            { name: "nombre", label: "Nombre", type: "text" }
-        ],
-        columns: ["id", "nombre"]
-    },
-    peliculas: {
-        label: "Peliculas",
-        endpoint: "/peliculas",
-        idPrefix: "PEL",
-        fields: [
-            { name: "titulo", label: "Titulo", type: "text" },
-            { name: "duracion", label: "Duracion", type: "number" },
-            { name: "categoriaId", label: "Categoria", type: "select", source: "categorias", optionLabel: "nombre" }
-        ],
-        columns: ["id", "titulo", "duracion", "categoriaId", "categoriaNombre"]
-    },
-    salas: {
-        label: "Salas",
-        endpoint: "/salas",
-        idPrefix: "SAL",
-        fields: [
-            { name: "nombre", label: "Nombre", type: "text" },
-            { name: "capacidad", label: "Capacidad", type: "number" }
-        ],
-        columns: ["id", "nombre", "capacidad"]
-    },
-    butacas: {
-        label: "Butacas",
-        endpoint: "/butacas",
-        idPrefix: "BUT",
-        fields: [
-            { name: "fila", label: "Fila", type: "text" },
-            { name: "numero", label: "Numero", type: "number" },
-            { name: "salaId", label: "Sala", type: "select", source: "salas", optionLabel: "nombre" }
-        ],
-        columns: ["id", "fila", "numero", "estado", "bloqueoHasta", "salaId"],
-        actions: [
-            { label: "Bloquear", method: "PUT", path: id => `/butacas/${id}/bloquear`, body: () => ({ minutos: readActionNumber("Minutos", 5) }) },
-            { label: "Ocupar", method: "PUT", path: id => `/butacas/${id}/ocupar` },
-            { label: "Liberar", method: "PUT", path: id => `/butacas/${id}/liberar` },
-            { label: "Fuera de servicio", method: "PUT", path: id => `/butacas/${id}/fuera-de-servicio` }
-        ]
-    },
-    funciones: {
-        label: "Funciones",
-        endpoint: "/funciones",
-        idPrefix: "FUN",
-        fields: [
-            { name: "fecha", label: "Fecha", type: "date" },
-            { name: "horario", label: "Horario", type: "time" },
-            { name: "peliculaId", label: "Pelicula", type: "select", source: "peliculas", optionLabel: "titulo" },
-            { name: "salaId", label: "Sala", type: "select", source: "salas", optionLabel: "nombre" },
-            { name: "formato", label: "Formato", type: "select", options: ["DOS_D", "TRES_D"] }
-        ],
-        columns: ["id", "fecha", "horario", "formato", "peliculaId", "peliculaTitulo", "salaId", "salaNombre"]
-    },
-    metodosPago: {
-        label: "Metodos de pago",
-        endpoint: "/metodos-pago",
-        idPrefix: "MP",
-        fields: [
-            { name: "numero", label: "Numero", type: "text", placeholder: "16 digitos" },
-            { name: "fechaVencimiento", label: "Vencimiento", type: "month" },
-            { name: "nombre", label: "Nombre", type: "text" },
-            { name: "apellido", label: "Apellido", type: "text" },
-            { name: "cvv", label: "CVV", type: "password", placeholder: "3 digitos" }
-        ],
-        columns: ["id", "numero", "fechaVencimiento", "nombre", "apellido"]
-    },
-    espectadores: {
-        label: "Espectadores",
-        endpoint: "/espectadores",
-        idPrefix: "ESP",
-        fields: [
-            { name: "nombre", label: "Nombre", type: "text" },
-            { name: "apellido", label: "Apellido", type: "text" },
-            { name: "email", label: "Email", type: "email" },
-            { name: "contrasenia", label: "Contrasenia", type: "password" }
-        ],
-        columns: ["id", "nombre", "apellido", "email", "emailVerificado", "metodoDePagoId", "cantidadEntradas"],
-        actions: [
-            { label: "Asociar metodo", method: "PUT", path: id => `/espectadores/${id}/metodo-pago/${readActionNumber("ID metodo de pago")}` },
-            { label: "Verificar mail", method: "PUT", path: id => `/espectadores/${id}/verificar-mail` }
-        ]
-    },
-    entradas: {
-        label: "Entradas",
-        endpoint: "/entradas",
-        idPrefix: "ENT",
-        fields: [
-            { name: "precio", label: "Precio", type: "number", step: "0.01" },
-            { name: "espectadorId", label: "Espectador", type: "select", source: "espectadores", optionLabel: item => `${item.nombre} ${item.apellido}` },
-            { name: "funcionId", label: "Funcion", type: "select", source: "funciones", optionLabel: item => `${item.fecha} ${item.horario}` },
-            { name: "butacaId", label: "Butaca", type: "select", source: "butacas", optionLabel: item => `${item.fila}${item.numero} - ${item.estado}` }
-        ],
-        columns: ["id", "precio", "estado", "horario", "espectadorId", "funcionId", "butacaId", "ticketId"],
-        createOnly: true,
-        actions: [
-            { label: "Pendiente", method: "PUT", path: id => `/entradas/${id}/pendiente-pago` },
-            { label: "Pagar", method: "PUT", path: id => `/entradas/${id}/pagar` },
-            { label: "Escanear", method: "PUT", path: id => `/entradas/${id}/escanear` },
-            { label: "Reembolsar", method: "PUT", path: id => `/entradas/${id}/reembolsar` },
-            { label: "Cancelar", method: "PUT", path: id => `/entradas/${id}/cancelar` }
-        ]
-    },
-    tickets: {
-        label: "Tickets",
-        endpoint: "/tickets",
-        idPrefix: "TCK",
-        fields: [
-            { name: "espectadorId", label: "Espectador", type: "select", source: "espectadores", optionLabel: item => `${item.nombre} ${item.apellido}` }
-        ],
-        columns: ["id", "espectadorId", "codigoQR", "entradasIds", "itemsConsumoIds", "total"],
-        createOnly: true,
-        actions: [
-            { label: "Agregar entrada", method: "POST", path: id => `/tickets/${id}/entradas/${readActionNumber("ID entrada")}` },
-            { label: "Agregar item", method: "POST", path: id => `/tickets/${id}/items/${readActionNumber("ID item")}` }
-        ]
-    },
-    productosConfiteria: {
-        label: "Productos confiteria",
-        endpoint: "/productos-confiteria",
-        idPrefix: "PROD",
-        fields: [
-            { name: "nombre", label: "Nombre", type: "text" },
-            { name: "precio", label: "Precio", type: "number", step: "0.01" },
-            { name: "tipo", label: "Tipo", type: "select", options: ["POCHOCLOS", "BEBIDA", "DULCE", "COMBO"] },
-            { name: "tamano", label: "Tamano", type: "select", options: ["CHICO", "MEDIANO", "GRANDE", "UNICO"] }
-        ],
-        columns: ["id", "nombre", "precio", "tipo", "tamano"]
-    },
-    itemsConsumo: {
-        label: "Items consumo",
-        endpoint: "/items-consumo",
-        idPrefix: "ITEM",
-        fields: [
-            { name: "productoId", label: "Producto", type: "select", source: "productosConfiteria", optionLabel: "nombre" },
-            { name: "cantidad", label: "Cantidad", type: "number" },
-            { name: "ticketId", label: "Ticket", type: "select", source: "tickets", optionLabel: item => item.codigoQR, optional: true }
-        ],
-        columns: ["id", "productoId", "productoNombre", "cantidad", "ticketId", "subtotal"]
-    },
-    precios: {
-        label: "Precios",
-        endpoint: "/precios",
-        idPrefix: "$",
-        special: true,
-        fields: [
-            { name: "funcionId", label: "Funcion", type: "select", source: "funciones", optionLabel: item => `${item.fecha} ${item.horario}` },
-            { name: "espectadorId", label: "Espectador", type: "select", source: "espectadores", optionLabel: item => `${item.nombre} ${item.apellido}`, optional: true },
-            { name: "precioBase", label: "Precio base", type: "number", step: "0.01" },
-            { name: "cantidadEntradas", label: "Cantidad entradas", type: "number" }
-        ],
-        columns: ["total"]
-    }
+const api = {
+    categorias: "/categorias",
+    peliculas: "/peliculas",
+    salas: "/salas",
+    butacas: "/butacas",
+    funciones: "/funciones",
+    metodosPago: "/metodos-pago",
+    espectadores: "/espectadores",
+    entradas: "/entradas",
+    tickets: "/tickets",
+    productos: "/productos-confiteria",
+    items: "/items-consumo"
 };
 
 const state = {
-    activeKey: "categorias",
-    selectedId: null,
-    rows: [],
-    cache: {}
+    role: null,
+    spectator: null,
+    selectedMovie: null,
+    selectedFunction: null,
+    selectedSeat: null,
+    data: emptyData()
 };
 
-const nav = document.getElementById("moduleNav");
-const title = document.getElementById("moduleTitle");
-const formTitle = document.getElementById("formTitle");
-const selectedBadge = document.getElementById("selectedBadge");
-const form = document.getElementById("entityForm");
-const formActions = document.getElementById("formActions");
-const extraActions = document.getElementById("extraActions");
-const tableHead = document.getElementById("tableHead");
-const tableBody = document.getElementById("tableBody");
-const output = document.getElementById("responseOutput");
-const searchInput = document.getElementById("searchInput");
-const connectionStatus = document.getElementById("connectionStatus");
+const $ = selector => document.querySelector(selector);
 
-document.getElementById("refreshButton").addEventListener("click", refreshActive);
-document.getElementById("clearButton").addEventListener("click", clearSelection);
-document.getElementById("copyResponseButton").addEventListener("click", () => navigator.clipboard.writeText(output.textContent));
-searchInput.addEventListener("input", renderTable);
+const loginView = $("#loginView");
+const appView = $("#appView");
+const spectatorView = $("#spectatorView");
+const adminView = $("#adminView");
+const responseOutput = $("#responseOutput");
+
+$("#enterSpectatorButton").addEventListener("click", enterSelectedSpectator);
+$("#createSpectatorButton").addEventListener("click", createAndEnterSpectator);
+$("#enterAdminButton").addEventListener("click", enterAdmin);
+$("#logoutButton").addEventListener("click", logout);
+$("#refreshButton").addEventListener("click", refreshCurrentView);
+$("#copyResponseButton").addEventListener("click", () => navigator.clipboard.writeText(responseOutput.textContent));
+$("#movieSearch").addEventListener("input", renderMovies);
+$("#categoryFilter").addEventListener("change", renderMovies);
+$("#buyButton").addEventListener("click", buyTicket);
+
+$("#categoryForm").addEventListener("submit", createCategory);
+$("#movieForm").addEventListener("submit", createMovie);
+$("#roomForm").addEventListener("submit", createRoomWithSeats);
+$("#functionForm").addEventListener("submit", createFunction);
+$("#productForm").addEventListener("submit", createProduct);
 
 init();
 
 async function init() {
-    renderNav();
-    await refreshAll();
-    selectModule("categorias");
+    await loadAll();
+    renderLogin();
 }
 
-function renderNav() {
-    nav.innerHTML = "";
-
-    Object.entries(modules).forEach(([key, config]) => {
-        const button = document.createElement("button");
-        button.className = "nav-button";
-        button.type = "button";
-        button.innerHTML = `<strong>${config.label}</strong><span>${config.idPrefix}</span>`;
-        button.addEventListener("click", () => selectModule(key));
-        nav.appendChild(button);
-    });
+function emptyData() {
+    return {
+        categorias: [],
+        peliculas: [],
+        salas: [],
+        butacas: [],
+        funciones: [],
+        metodosPago: [],
+        espectadores: [],
+        entradas: [],
+        tickets: [],
+        productos: [],
+        items: []
+    };
 }
 
-async function selectModule(key) {
-    state.activeKey = key;
-    state.selectedId = null;
+async function loadAll() {
+    const entries = Object.entries(api);
 
-    [...nav.children].forEach((button, index) => {
-        button.classList.toggle("active", Object.keys(modules)[index] === key);
-    });
-
-    title.textContent = modules[key].label;
-    searchInput.value = "";
-    renderForm();
-    await refreshActive();
-}
-
-async function refreshAll() {
-    const keys = Object.keys(modules).filter(key => !modules[key].special);
-
-    for (const key of keys) {
+    for (const [key, url] of entries) {
         try {
-            state.cache[key] = await request(modules[key].endpoint);
+            state.data[key] = await request(url);
         } catch {
-            state.cache[key] = [];
+            state.data[key] = [];
         }
     }
 }
 
-async function refreshActive() {
-    const config = modules[state.activeKey];
+function renderLogin() {
+    const select = $("#spectatorSelect");
+    select.innerHTML = "";
 
-    if (config.special) {
-        state.rows = [];
-        connectionStatus.textContent = "API lista";
-        renderTable();
-        renderForm();
+    if (state.data.espectadores.length === 0) {
+        select.innerHTML = `<option value="">No hay espectadores cargados</option>`;
+        return;
+    }
+
+    state.data.espectadores.forEach(espectador => {
+        const option = document.createElement("option");
+        option.value = espectador.id;
+        option.textContent = `${espectador.nombre} ${espectador.apellido} - ${espectador.email}`;
+        select.appendChild(option);
+    });
+}
+
+async function enterSelectedSpectator() {
+    const id = Number($("#spectatorSelect").value);
+
+    if (!id) {
+        setOutput({ error: "Primero crea o selecciona un espectador." }, true);
+        return;
+    }
+
+    state.spectator = await request(`${api.espectadores}/${id}`);
+    enterRole("spectator");
+}
+
+async function createAndEnterSpectator() {
+    const payload = {
+        nombre: $("#newSpectatorName").value,
+        apellido: $("#newSpectatorLastName").value,
+        email: $("#newSpectatorEmail").value,
+        contrasenia: $("#newSpectatorPassword").value
+    };
+
+    try {
+        state.spectator = await request(api.espectadores, { method: "POST", body: payload });
+        await loadAll();
+        enterRole("spectator");
+    } catch (error) {
+        setOutput(error, true);
+    }
+}
+
+function enterAdmin() {
+    enterRole("admin");
+}
+
+async function enterRole(role) {
+    state.role = role;
+    loginView.classList.add("hidden");
+    appView.classList.remove("hidden");
+    spectatorView.classList.toggle("hidden", role !== "spectator");
+    adminView.classList.toggle("hidden", role !== "admin");
+
+    await loadAll();
+
+    if (role === "spectator") {
+        $("#roleLabel").textContent = "Espectador";
+        $("#viewTitle").textContent = `${state.spectator.nombre} ${state.spectator.apellido}`;
+        resetPurchase();
+        renderSpectatorView();
+    } else {
+        $("#roleLabel").textContent = "Administrador";
+        $("#viewTitle").textContent = "Gestion del cine";
+        renderAdminView();
+    }
+}
+
+function logout() {
+    state.role = null;
+    state.spectator = null;
+    resetPurchase();
+    appView.classList.add("hidden");
+    loginView.classList.remove("hidden");
+    renderLogin();
+}
+
+async function refreshCurrentView() {
+    await loadAll();
+
+    if (state.spectator) {
+        state.spectator = await request(`${api.espectadores}/${state.spectator.id}`);
+    }
+
+    if (state.role === "spectator") {
+        renderSpectatorView();
+    } else if (state.role === "admin") {
+        renderAdminView();
+    } else {
+        renderLogin();
+    }
+}
+
+function resetPurchase() {
+    state.selectedMovie = null;
+    state.selectedFunction = null;
+    state.selectedSeat = null;
+}
+
+function renderSpectatorView() {
+    renderCategoryFilter();
+    renderMovies();
+    renderCheckout();
+}
+
+function renderCategoryFilter() {
+    const select = $("#categoryFilter");
+    const selected = select.value;
+    select.innerHTML = `<option value="">Todas</option>`;
+
+    state.data.categorias.forEach(categoria => {
+        const option = document.createElement("option");
+        option.value = categoria.id;
+        option.textContent = categoria.nombre;
+        select.appendChild(option);
+    });
+
+    select.value = selected;
+}
+
+function renderMovies() {
+    const container = $("#movieList");
+    const query = $("#movieSearch").value.trim().toLowerCase();
+    const categoryId = Number($("#categoryFilter").value);
+
+    const movies = state.data.peliculas.filter(pelicula => {
+        const matchesName = !query || pelicula.titulo.toLowerCase().includes(query);
+        const matchesCategory = !categoryId || pelicula.categoriaId === categoryId;
+        return matchesName && matchesCategory;
+    });
+
+    container.innerHTML = "";
+
+    if (movies.length === 0) {
+        container.innerHTML = `<div class="summary-box">No hay peliculas para mostrar.</div>`;
+        return;
+    }
+
+    movies.forEach(pelicula => {
+        const functions = state.data.funciones.filter(funcion => funcion.peliculaId === pelicula.id);
+        const card = document.createElement("article");
+        card.className = "movie-card";
+
+        const functionButtons = functions.length === 0
+            ? `<p class="muted">Sin funciones cargadas.</p>`
+            : functions.map(funcion => `
+                <button class="function-button ${state.selectedFunction?.id === funcion.id ? "selected" : ""}"
+                        type="button"
+                        data-function-id="${funcion.id}">
+                    ${funcion.fecha} ${shortTime(funcion.horario)} · ${funcion.formato} · $${money(funcion.precioEntrada)}
+                </button>
+              `).join("");
+
+        card.innerHTML = `
+            <h3>${pelicula.titulo}</h3>
+            <p class="muted">${pelicula.categoriaNombre} · ${pelicula.duracion} min</p>
+            <div class="function-list">${functionButtons}</div>
+        `;
+
+        card.querySelectorAll("[data-function-id]").forEach(button => {
+            button.addEventListener("click", () => selectFunction(Number(button.dataset.functionId)));
+        });
+
+        container.appendChild(card);
+    });
+}
+
+function selectFunction(id) {
+    state.selectedFunction = state.data.funciones.find(funcion => funcion.id === id);
+    state.selectedMovie = state.data.peliculas.find(pelicula => pelicula.id === state.selectedFunction.peliculaId);
+    state.selectedSeat = null;
+    renderMovies();
+    renderCheckout();
+}
+
+function renderCheckout() {
+    renderSelectionSummary();
+    renderSeats();
+    renderConsumption();
+    renderPayment();
+}
+
+function renderSelectionSummary() {
+    const summary = $("#selectionSummary");
+
+    if (!state.selectedFunction || !state.selectedMovie) {
+        summary.textContent = "Elegi una funcion para comenzar.";
+        return;
+    }
+
+    summary.innerHTML = `
+        <strong>${state.selectedMovie.titulo}</strong><br>
+        ${state.selectedFunction.fecha} ${shortTime(state.selectedFunction.horario)} · ${state.selectedFunction.formato}<br>
+        Entrada: $${money(state.selectedFunction.precioEntrada)}
+        ${state.selectedSeat ? `<br>Butaca: ${state.selectedSeat.fila}${state.selectedSeat.numero}` : ""}
+    `;
+}
+
+function renderSeats() {
+    const seatList = $("#seatList");
+    seatList.innerHTML = "";
+
+    if (!state.selectedFunction) {
+        return;
+    }
+
+    const seats = state.data.butacas
+        .filter(butaca => butaca.salaId === state.selectedFunction.salaId && butaca.estado === "DISPONIBLE")
+        .sort((a, b) => `${a.fila}${a.numero}`.localeCompare(`${b.fila}${b.numero}`, "es", { numeric: true }));
+
+    if (seats.length === 0) {
+        seatList.innerHTML = `<div class="summary-box">No hay butacas disponibles.</div>`;
+        return;
+    }
+
+    seats.forEach(butaca => {
+        const button = document.createElement("button");
+        button.className = `seat-button ${state.selectedSeat?.id === butaca.id ? "selected" : ""}`;
+        button.type = "button";
+        button.textContent = `${butaca.fila}${butaca.numero}`;
+        button.addEventListener("click", () => {
+            state.selectedSeat = butaca;
+            renderCheckout();
+        });
+        seatList.appendChild(button);
+    });
+}
+
+function renderConsumption() {
+    const container = $("#consumptionList");
+    container.innerHTML = "";
+
+    if (state.data.productos.length === 0) {
+        container.innerHTML = `<div class="summary-box">No hay productos de confiteria cargados.</div>`;
+        return;
+    }
+
+    const title = document.createElement("h3");
+    title.textContent = "Consumo opcional";
+    container.appendChild(title);
+
+    state.data.productos.forEach(producto => {
+        const row = document.createElement("label");
+        row.className = "consumption-row";
+        row.innerHTML = `
+            <span>${producto.nombre} · ${producto.tipo} · $${money(producto.precio)}</span>
+            <input type="number" min="0" value="0" data-product-id="${producto.id}">
+        `;
+        container.appendChild(row);
+    });
+}
+
+function renderPayment() {
+    const box = $("#paymentBox");
+
+    if (!state.spectator) {
+        box.innerHTML = "";
+        return;
+    }
+
+    if (state.spectator.metodoDePagoId) {
+        box.innerHTML = `<div class="summary-box">Metodo de pago asociado: #${state.spectator.metodoDePagoId}</div>`;
+        return;
+    }
+
+    box.innerHTML = `
+        <h3>Metodo de pago</h3>
+        <div class="payment-grid">
+            <label>Numero <input id="payNumber" type="text" placeholder="16 digitos"></label>
+            <label>Vencimiento <input id="payExpiration" type="month"></label>
+            <label>Nombre <input id="payName" type="text"></label>
+            <label>Apellido <input id="payLastName" type="text"></label>
+            <label>CVV <input id="payCvv" type="password" placeholder="3 digitos"></label>
+        </div>
+    `;
+}
+
+async function buyTicket() {
+    if (!state.selectedFunction || !state.selectedSeat) {
+        setOutput({ error: "Elegí una funcion y una butaca." }, true);
         return;
     }
 
     try {
-        state.rows = await request(config.endpoint);
-        state.cache[state.activeKey] = state.rows;
-        connectionStatus.textContent = "API conectada";
-        setOutput(state.rows);
+        await ensurePaymentMethod();
+
+        const entrada = await request(api.entradas, {
+            method: "POST",
+            body: {
+                precio: state.selectedFunction.precioEntrada,
+                espectadorId: state.spectator.id,
+                funcionId: state.selectedFunction.id,
+                butacaId: state.selectedSeat.id
+            }
+        });
+
+        const ticket = await request(api.tickets, {
+            method: "POST",
+            body: { espectadorId: state.spectator.id }
+        });
+
+        await request(`${api.tickets}/${ticket.id}/entradas/${entrada.id}`, { method: "POST" });
+
+        const items = [];
+        for (const input of document.querySelectorAll("[data-product-id]")) {
+            const cantidad = Number(input.value);
+
+            if (cantidad > 0) {
+                const item = await request(api.items, {
+                    method: "POST",
+                    body: {
+                        productoId: Number(input.dataset.productId),
+                        cantidad,
+                        ticketId: ticket.id
+                    }
+                });
+                items.push(item);
+            }
+        }
+
+        const entradaPagada = await request(`${api.entradas}/${entrada.id}/pagar`, { method: "PUT" });
+        await loadAll();
+        state.spectator = await request(`${api.espectadores}/${state.spectator.id}`);
+        resetPurchase();
+        renderSpectatorView();
+        setOutput({ ticket, entrada: entradaPagada, items });
     } catch (error) {
-        connectionStatus.textContent = "Sin respuesta";
         setOutput(error, true);
     }
-
-    renderTable();
-    renderForm();
 }
 
-function renderForm() {
-    const config = modules[state.activeKey];
-    form.innerHTML = "";
-    formActions.innerHTML = "";
-    extraActions.innerHTML = "";
-
-    formTitle.textContent = state.selectedId ? "Editar registro" : "Nuevo registro";
-    selectedBadge.textContent = state.selectedId ? `ID ${state.selectedId}` : "Sin seleccion";
-
-    config.fields.forEach(field => {
-        const wrapper = document.createElement("div");
-        wrapper.className = "field";
-
-        const label = document.createElement("label");
-        label.htmlFor = field.name;
-        label.textContent = field.label;
-
-        const input = createInput(field);
-        input.id = field.name;
-        input.name = field.name;
-
-        wrapper.append(label, input);
-        form.appendChild(wrapper);
-    });
-
-    const createButton = document.createElement("button");
-    createButton.className = "primary-button";
-    createButton.type = "button";
-    createButton.textContent = config.special ? "Calcular entrada" : "Guardar";
-    createButton.addEventListener("click", config.special ? calculateEntryPrice : createEntity);
-    formActions.appendChild(createButton);
-
-    if (config.special) {
-        const totalButton = document.createElement("button");
-        totalButton.className = "secondary-button";
-        totalButton.type = "button";
-        totalButton.textContent = "Calcular total";
-        totalButton.addEventListener("click", calculateTotalPrice);
-        formActions.appendChild(totalButton);
+async function ensurePaymentMethod() {
+    if (state.spectator.metodoDePagoId) {
         return;
     }
 
-    const updateButton = document.createElement("button");
-    updateButton.className = "secondary-button";
-    updateButton.type = "button";
-    updateButton.textContent = "Actualizar";
-    updateButton.disabled = !state.selectedId || config.createOnly;
-    updateButton.addEventListener("click", updateEntity);
-    formActions.appendChild(updateButton);
-
-    const deleteButton = document.createElement("button");
-    deleteButton.className = "danger-button";
-    deleteButton.type = "button";
-    deleteButton.textContent = "Eliminar";
-    deleteButton.disabled = !state.selectedId;
-    deleteButton.addEventListener("click", deleteEntity);
-    formActions.appendChild(deleteButton);
-
-    if (config.actions && state.selectedId) {
-        config.actions.forEach(action => {
-            const button = document.createElement("button");
-            button.className = "secondary-button";
-            button.type = "button";
-            button.textContent = action.label;
-            button.addEventListener("click", () => runAction(action));
-            extraActions.appendChild(button);
-        });
-    }
-}
-
-function createInput(field) {
-    if (field.type === "select") {
-        const select = document.createElement("select");
-        select.dataset.valueType = "number";
-
-        if (field.optional) {
-            const option = document.createElement("option");
-            option.value = "";
-            option.textContent = "Sin asignar";
-            select.appendChild(option);
+    const metodoPago = await request(api.metodosPago, {
+        method: "POST",
+        body: {
+            numero: $("#payNumber").value,
+            fechaVencimiento: $("#payExpiration").value,
+            nombre: $("#payName").value,
+            apellido: $("#payLastName").value,
+            cvv: $("#payCvv").value
         }
-
-        if (field.options) {
-            field.options.forEach(value => {
-                const option = document.createElement("option");
-                option.value = value;
-                option.textContent = value;
-                select.appendChild(option);
-            });
-            select.dataset.valueType = "string";
-        }
-
-        if (field.source) {
-            (state.cache[field.source] || []).forEach(item => {
-                const option = document.createElement("option");
-                option.value = item.id;
-                option.textContent = getOptionLabel(field, item);
-                select.appendChild(option);
-            });
-        }
-
-        return select;
-    }
-
-    const input = document.createElement("input");
-    input.type = field.type;
-    input.step = field.step || "";
-    input.placeholder = field.placeholder || "";
-
-    if (field.type === "number") {
-        input.dataset.valueType = "number";
-    }
-
-    return input;
-}
-
-function renderTable() {
-    const config = modules[state.activeKey];
-    const rows = filterRows(state.rows);
-
-    tableHead.innerHTML = "";
-    tableBody.innerHTML = "";
-
-    const headerRow = document.createElement("tr");
-    config.columns.forEach(column => {
-        const th = document.createElement("th");
-        th.textContent = column;
-        headerRow.appendChild(th);
     });
-    tableHead.appendChild(headerRow);
 
-    if (rows.length === 0) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.className = "empty-state";
-        td.colSpan = Math.max(config.columns.length, 1);
-        td.textContent = config.special ? "Sin tabla para este modulo" : "Sin registros";
-        tr.appendChild(td);
-        tableBody.appendChild(tr);
-        return;
-    }
-
-    rows.forEach(row => {
-        const tr = document.createElement("tr");
-        tr.classList.toggle("selected", row.id === state.selectedId);
-        tr.addEventListener("click", () => selectRow(row));
-
-        config.columns.forEach(column => {
-            const td = document.createElement("td");
-            td.textContent = formatValue(row[column]);
-            tr.appendChild(td);
-        });
-
-        tableBody.appendChild(tr);
+    state.spectator = await request(`${api.espectadores}/${state.spectator.id}/metodo-pago/${metodoPago.id}`, {
+        method: "PUT"
     });
 }
 
-function filterRows(rows) {
-    const query = searchInput.value.trim().toLowerCase();
-
-    if (!query) {
-        return rows;
-    }
-
-    return rows.filter(row => JSON.stringify(row).toLowerCase().includes(query));
+function renderAdminView() {
+    fillAdminSelects();
+    renderAdminData();
 }
 
-function selectRow(row) {
-    const config = modules[state.activeKey];
-    state.selectedId = row.id;
-
-    config.fields.forEach(field => {
-        const input = form.elements[field.name];
-        if (!input) {
-            return;
-        }
-
-        const value = row[field.name];
-        input.value = value == null ? "" : value;
-    });
-
-    renderForm();
-    config.fields.forEach(field => {
-        const input = form.elements[field.name];
-        if (input && row[field.name] != null) {
-            input.value = row[field.name];
-        }
-    });
-    renderTable();
-    setOutput(row);
+function fillAdminSelects() {
+    fillSelect("#movieForm select[name='categoriaId']", state.data.categorias, item => item.nombre, true);
+    fillSelect("#functionForm select[name='peliculaId']", state.data.peliculas, item => item.titulo);
+    fillSelect("#functionForm select[name='salaId']", state.data.salas, item => `${item.nombre} (${item.capacidad})`);
 }
 
-function clearSelection() {
-    state.selectedId = null;
+function fillSelect(selector, items, labelFactory, allowEmpty = false) {
+    const select = $(selector);
+    select.innerHTML = allowEmpty ? `<option value="">Crear nueva si se completa abajo</option>` : "";
+
+    items.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = labelFactory(item);
+        select.appendChild(option);
+    });
+}
+
+async function createCategory(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    await adminPost(api.categorias, { nombre: form.nombre.value });
     form.reset();
-    renderForm();
-    renderTable();
 }
 
-async function createEntity() {
-    const config = modules[state.activeKey];
-    await sendAndRefresh(config.endpoint, "POST", getPayload());
-}
+async function createMovie(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    let categoriaId = Number(form.categoriaId.value);
 
-async function updateEntity() {
-    const config = modules[state.activeKey];
-
-    if (!state.selectedId) {
-        return;
+    if (form.nuevaCategoria.value.trim()) {
+        const categoria = await request(api.categorias, {
+            method: "POST",
+            body: { nombre: form.nuevaCategoria.value.trim() }
+        });
+        categoriaId = categoria.id;
     }
 
-    await sendAndRefresh(`${config.endpoint}/${state.selectedId}`, "PUT", getPayload());
+    await adminPost(api.peliculas, {
+        titulo: form.titulo.value,
+        duracion: Number(form.duracion.value),
+        categoriaId
+    });
+    form.reset();
 }
 
-async function deleteEntity() {
-    const config = modules[state.activeKey];
+async function createRoomWithSeats(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
 
-    if (!state.selectedId) {
-        return;
-    }
-
-    await sendAndRefresh(`${config.endpoint}/${state.selectedId}`, "DELETE");
-    clearSelection();
+    await adminPost(`${api.salas}/con-butacas`, {
+        nombre: form.nombre.value,
+        filas: Number(form.filas.value),
+        butacasPorFila: Number(form.butacasPorFila.value)
+    });
+    form.reset();
 }
 
-async function runAction(action) {
-    if (!state.selectedId) {
-        return;
-    }
+async function createFunction(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
 
-    const body = action.body ? action.body() : undefined;
-
-    if (body === null) {
-        return;
-    }
-
-    await sendAndRefresh(action.path(state.selectedId), action.method, body);
+    await adminPost(api.funciones, {
+        fecha: form.fecha.value,
+        horario: normalizeTime(form.horario.value),
+        peliculaId: Number(form.peliculaId.value),
+        salaId: Number(form.salaId.value),
+        formato: form.formato.value,
+        precioEntrada: Number(form.precioEntrada.value)
+    });
+    form.reset();
 }
 
-async function calculateEntryPrice() {
-    const payload = getPayload();
-    const params = new URLSearchParams();
-    params.set("funcionId", payload.funcionId);
-    params.set("precioBase", payload.precioBase);
+async function createProduct(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
 
-    if (payload.espectadorId) {
-        params.set("espectadorId", payload.espectadorId);
-    }
-
-    const data = await request(`/precios/entrada?${params}`);
-    setOutput(data);
+    await adminPost(api.productos, {
+        nombre: form.nombre.value,
+        precio: Number(form.precio.value),
+        tipo: form.tipo.value,
+        tamano: form.tamano.value
+    });
+    form.reset();
 }
 
-async function calculateTotalPrice() {
-    const payload = getPayload();
-    const params = new URLSearchParams();
-    params.set("funcionId", payload.funcionId);
-    params.set("precioBase", payload.precioBase);
-    params.set("cantidadEntradas", payload.cantidadEntradas);
-
-    if (payload.espectadorId) {
-        params.set("espectadorId", payload.espectadorId);
-    }
-
-    const data = await request(`/precios/total?${params}`);
-    setOutput(data);
-}
-
-async function sendAndRefresh(url, method, body) {
+async function adminPost(url, body) {
     try {
-        const data = await request(url, { method, body });
-        setOutput(data);
-        await refreshAll();
-        await refreshActive();
+        const response = await request(url, { method: "POST", body });
+        setOutput(response);
+        await loadAll();
+        renderAdminView();
     } catch (error) {
         setOutput(error, true);
     }
 }
 
-function getPayload() {
-    const config = modules[state.activeKey];
-    const payload = {};
+function renderAdminData() {
+    const container = $("#adminData");
+    const lists = [
+        ["Categorias", state.data.categorias, ["id", "nombre"]],
+        ["Peliculas", state.data.peliculas, ["id", "titulo", "categoriaNombre"]],
+        ["Salas", state.data.salas, ["id", "nombre", "capacidad"]],
+        ["Butacas", state.data.butacas, ["id", "fila", "numero", "estado", "salaId"]],
+        ["Funciones", state.data.funciones, ["id", "peliculaTitulo", "fecha", "horario", "formato", "precioEntrada"]],
+        ["Productos", state.data.productos, ["id", "nombre", "precio", "tipo"]]
+    ];
 
-    config.fields.forEach(field => {
-        const input = form.elements[field.name];
-        let value = input.value;
+    container.innerHTML = lists.map(([title, rows, columns]) => `
+        <article class="data-card">
+            <h3>${title}</h3>
+            <div class="data-list">${renderTable(rows, columns)}</div>
+        </article>
+    `).join("");
+}
 
-        if (field.optional && value === "") {
-            value = null;
-        } else if (input.dataset.valueType === "number") {
-            value = value === "" ? null : Number(value);
-        } else if (field.name === "horario" && value && value.length === 5) {
-            value = `${value}:00`;
-        }
+function renderTable(rows, columns) {
+    if (!rows.length) {
+        return `<p class="muted">Sin datos</p>`;
+    }
 
-        payload[field.name] = value;
-    });
-
-    return payload;
+    return `
+        <table>
+            <thead><tr>${columns.map(column => `<th>${column}</th>`).join("")}</tr></thead>
+            <tbody>
+                ${rows.map(row => `
+                    <tr>${columns.map(column => `<td>${formatValue(row[column])}</td>`).join("")}</tr>
+                `).join("")}
+            </tbody>
+        </table>
+    `;
 }
 
 async function request(url, options = {}) {
@@ -574,36 +589,27 @@ async function request(url, options = {}) {
     const data = contentType.includes("application/json") ? await response.json() : await response.text();
 
     if (!response.ok) {
-        throw {
-            status: response.status,
-            error: data
-        };
+        throw { status: response.status, error: data };
     }
 
     return data === "" ? { status: response.status } : data;
 }
 
-function readActionNumber(label, defaultValue = "") {
-    const value = window.prompt(label, defaultValue);
-
-    if (value === null || value.trim() === "") {
-        return null;
-    }
-
-    return Number(value);
+function normalizeTime(value) {
+    return value && value.length === 5 ? `${value}:00` : value;
 }
 
-function getOptionLabel(field, item) {
-    if (typeof field.optionLabel === "function") {
-        return field.optionLabel(item);
-    }
+function shortTime(value) {
+    return value ? value.substring(0, 5) : "";
+}
 
-    return item[field.optionLabel] || `ID ${item.id}`;
+function money(value) {
+    return Number(value || 0).toFixed(2);
 }
 
 function formatValue(value) {
     if (Array.isArray(value)) {
-        return value.length === 0 ? "-" : value.join(", ");
+        return value.length ? value.join(", ") : "-";
     }
 
     if (value === null || value === undefined || value === "") {
@@ -618,6 +624,6 @@ function formatValue(value) {
 }
 
 function setOutput(data, isError = false) {
-    output.classList.toggle("error-text", isError);
-    output.textContent = JSON.stringify(data, null, 2);
+    responseOutput.classList.toggle("error-text", isError);
+    responseOutput.textContent = JSON.stringify(data, null, 2);
 }

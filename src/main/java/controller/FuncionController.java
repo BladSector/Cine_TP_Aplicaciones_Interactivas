@@ -47,7 +47,8 @@ public class FuncionController {
                 request.horario(),
                 request.peliculaId(),
                 request.salaId(),
-                request.formato()
+                request.formato(),
+                request.precioEntrada()
         ));
     }
 
@@ -59,7 +60,8 @@ public class FuncionController {
                 request.horario(),
                 request.peliculaId(),
                 request.salaId(),
-                request.formato()
+                request.formato(),
+                request.precioEntrada()
         ));
     }
 
@@ -69,17 +71,18 @@ public class FuncionController {
         funcionService.eliminar(id);
     }
 
-    public record FuncionRequest(LocalDate fecha, LocalTime horario, int peliculaId, int salaId, FormatoFuncion formato) {
+    public record FuncionRequest(LocalDate fecha, LocalTime horario, int peliculaId, int salaId, FormatoFuncion formato, double precioEntrada) {
     }
 
     public record FuncionResponse(int id, LocalDate fecha, LocalTime horario, FormatoFuncion formato,
-                                  int peliculaId, String peliculaTitulo, int salaId, String salaNombre) {
+                                  double precioEntrada, int peliculaId, String peliculaTitulo, int salaId, String salaNombre) {
         public static FuncionResponse desde(Funcion funcion) {
             return new FuncionResponse(
                     funcion.getId(),
                     funcion.getFecha(),
                     funcion.getHorario(),
                     funcion.getFormato(),
+                    funcion.getPrecioEntrada(),
                     funcion.getPelicula().getId(),
                     funcion.getPelicula().getTitulo(),
                     funcion.getSala().getId(),
