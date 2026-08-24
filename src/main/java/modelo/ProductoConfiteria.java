@@ -1,11 +1,28 @@
 package modelo;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "producto_confiteria")
 public class ProductoConfiteria {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private String nombre;
     private double precio;
+    @Enumerated(EnumType.STRING)
     private TipoProductoConfiteria tipo;
+    @Enumerated(EnumType.STRING)
     private TamanoProductoConfiteria tamano;
+
+    protected ProductoConfiteria() {
+    }
 
     public ProductoConfiteria(String nombre, double precio,
                               TipoProductoConfiteria tipo,
