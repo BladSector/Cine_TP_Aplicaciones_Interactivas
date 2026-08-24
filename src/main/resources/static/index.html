@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TP Cine API</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+    <aside class="sidebar">
+        <div class="brand">
+            <span class="brand-mark">TC</span>
+            <div>
+                <h1>TP Cine API</h1>
+                <p id="connectionStatus">Sin consultar</p>
+            </div>
+        </div>
+        <nav id="moduleNav" class="module-nav" aria-label="Modulos"></nav>
+    </aside>
+
+    <main class="workspace">
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">Panel de prueba</p>
+                <h2 id="moduleTitle">Categorias</h2>
+            </div>
+            <div class="topbar-actions">
+                <button id="refreshButton" class="icon-button" type="button" title="Actualizar datos">R</button>
+                <button id="clearButton" class="icon-button" type="button" title="Limpiar formulario">L</button>
+            </div>
+        </header>
+
+        <section class="content-grid">
+            <section class="panel form-panel">
+                <div class="panel-heading">
+                    <h3 id="formTitle">Nuevo registro</h3>
+                    <span id="selectedBadge" class="selected-badge">Sin seleccion</span>
+                </div>
+                <form id="entityForm" class="entity-form"></form>
+                <div id="formActions" class="form-actions"></div>
+                <div id="extraActions" class="extra-actions"></div>
+            </section>
+
+            <section class="panel table-panel">
+                <div class="panel-heading">
+                    <h3>Registros</h3>
+                    <input id="searchInput" class="search-input" type="search" placeholder="Filtrar">
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead id="tableHead"></thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+
+        <section class="panel response-panel">
+            <div class="panel-heading">
+                <h3>Respuesta</h3>
+                <button id="copyResponseButton" class="text-button" type="button">Copiar</button>
+            </div>
+            <pre id="responseOutput">{}</pre>
+        </section>
+    </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
