@@ -41,6 +41,14 @@ public class Categoria {
         return nombre != null && !nombre.isBlank();
     }
 
+    public void actualizarNombre(String nombre) {
+        this.nombre = nombre;
+
+        if (!validarDatos()) {
+            throw new IllegalArgumentException("Los datos de la categoria no son validos.");
+        }
+    }
+
     public void agregarPelicula(Pelicula pelicula) {
         if (pelicula == null) {
             throw new IllegalArgumentException("La película no puede ser vacía.");
