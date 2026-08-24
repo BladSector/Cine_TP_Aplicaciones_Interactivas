@@ -43,6 +43,16 @@ public class Pelicula {
                 && categoria != null;
     }
 
+    public void actualizarDatos(String titulo, int duracion, Categoria categoria) {
+        this.titulo = titulo;
+        this.duracion = duracion;
+        this.categoria = categoria;
+
+        if (!validarDatos()) {
+            throw new IllegalArgumentException("Los datos de la pelicula no son validos.");
+        }
+    }
+
     public void asignarId(int id) {
         if (id <= 0) {
             throw new IllegalArgumentException("El id debe ser mayor a 0.");

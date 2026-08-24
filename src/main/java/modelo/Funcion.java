@@ -56,6 +56,18 @@ public class Funcion {
                 && formato != null;
     }
 
+    public void actualizarDatos(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato) {
+        this.fecha = fecha;
+        this.horario = horario;
+        this.pelicula = pelicula;
+        this.sala = sala;
+        this.formato = formato;
+
+        if (!validarDatos()) {
+            throw new IllegalArgumentException("Los datos de la función no son válidos.");
+        }
+    }
+
     public Entrada venderEntrada(double precio, Espectador espectador, Butaca butaca) {
         if (espectador == null) {
             throw new IllegalArgumentException("El espectador no puede estar vacio.");

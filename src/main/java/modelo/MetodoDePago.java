@@ -55,6 +55,18 @@ public class MetodoDePago {
                 && cvv != null && cvv.matches("\\d{3}");
     }
 
+    public void actualizarDatos(String numero, YearMonth fechaVencimiento, String nombre, String apellido, String cvv) {
+        this.numero = numero;
+        this.fechaVencimiento = fechaVencimiento;
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.cvv = cvv;
+
+        if (!validarDatos()) {
+            throw new IllegalArgumentException("Los datos del metodo de pago no son validos.");
+        }
+    }
+
     public void asignarId(int id) {
         if (id <= 0) {
             throw new IllegalArgumentException("El id debe ser mayor a 0.");

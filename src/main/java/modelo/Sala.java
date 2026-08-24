@@ -41,6 +41,15 @@ public class Sala {
                 && capacidad > 0;
     }
 
+    public void actualizarDatos(String nombre, int capacidad) {
+        this.nombre = nombre;
+        this.capacidad = capacidad;
+
+        if (!validarDatos()) {
+            throw new IllegalArgumentException("Los datos de la sala no son validos.");
+        }
+    }
+
     public void agregarButaca(Butaca butaca) {
         if (butaca == null) {
             throw new IllegalArgumentException("La butaca no puede estar vacía.");

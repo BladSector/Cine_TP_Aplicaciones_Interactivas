@@ -41,6 +41,16 @@ public class Butaca {
                 && sala != null;
     }
 
+    public void actualizarDatos(String fila, int numero, Sala sala) {
+        this.fila = fila;
+        this.numero = numero;
+        this.sala = sala;
+
+        if (!validarDatos()) {
+            throw new IllegalArgumentException("Los datos de la butaca no son validos.");
+        }
+    }
+
     public boolean estaDisponible() {
         liberarBloqueoSiVencio();
         return estado == EstadoButaca.DISPONIBLE;

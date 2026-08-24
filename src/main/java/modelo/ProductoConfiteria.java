@@ -45,6 +45,17 @@ public class ProductoConfiteria {
                 && tamano != null;
     }
 
+    public void actualizarDatos(String nombre, double precio, TipoProductoConfiteria tipo, TamanoProductoConfiteria tamano) {
+        this.nombre = nombre;
+        this.precio = precio;
+        this.tipo = tipo;
+        this.tamano = tamano;
+
+        if (!validarDatos()) {
+            throw new IllegalArgumentException("Los datos del producto de confiteria no son validos.");
+        }
+    }
+
     public void asignarId(int id) {
         if (id <= 0) {
             throw new IllegalArgumentException("El id debe ser mayor a 0.");

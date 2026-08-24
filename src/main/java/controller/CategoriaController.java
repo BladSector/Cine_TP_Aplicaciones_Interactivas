@@ -25,24 +25,26 @@ public class CategoriaController {
     }
 
     @GetMapping
-    public List<Categoria> listar() {
-        return categoriaService.listar();
+    public List<CategoriaResponse> listar() {
+        return categoriaService.listar().stream()
+                .map(CategoriaResponse::desde)
+                .toList();
     }
 
     @GetMapping("/{id}")
-    public Categoria buscarPorId(@PathVariable int id) {
-        return categoriaService.buscarPorId(id);
+    public CategoriaResponse buscarPorId(@PathVariable int id) {
+        return CategoriaResponse.desde(categoriaService.buscarPorId(id));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Categoria guardar(@RequestBody CategoriaRequest request) {
-        return categoriaService.guardar(request.nombre());
+    public CategoriaResponse guardar(@RequestBody CategoriaRequest request) {
+        return CategoriaResponse.desde(categoriaService.guardar(request.nombre()));
     }
 
     @PutMapping("/{id}")
-    public Categoria actualizar(@PathVariable int id, @RequestBody CategoriaRequest request) {
-        return categoriaService.actualizar(id, request.nombre());
+    public CategoriaResponse actualizar(@PathVariable int id, @RequestBody CategoriaRequest request) {
+        return CategoriaResponse.desde(categoriaService.actualizar(id, request.nombre()));
     }
 
     @DeleteMapping("/{id}")
@@ -52,5 +54,11 @@ public class CategoriaController {
     }
 
     public record CategoriaRequest(String nombre) {
+    }
+
+    public record CategoriaResponse(int id, String nombre) {
+        public static CategoriaResponse desde(Categoria categoria) {
+            return new CategoriaResponse(categoria.getId(), categoria.getNombre());
+        }
     }
 }

@@ -47,6 +47,13 @@ public class Espectador {
         this.emailVerificado = false;
     }
 
+    public void actualizarDatos(String nombre, String apellido, String email, String contrasenia) {
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.email = email;
+        this.contrasenia = contrasenia;
+    }
+
     public void agregarEntrada(Entrada entrada){
         entradas.add(entrada);
     }

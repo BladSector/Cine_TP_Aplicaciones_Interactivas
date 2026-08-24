@@ -40,6 +40,15 @@ public class ItemConsumo {
                 && cantidad > 0;
     }
 
+    public void actualizarDatos(ProductoConfiteria producto, int cantidad) {
+        this.producto = producto;
+        this.cantidad = cantidad;
+
+        if (!validarDatos()) {
+            throw new IllegalArgumentException("Los datos del item de consumo no son validos.");
+        }
+    }
+
     public double calcularSubtotal() {
         return producto.getPrecio() * cantidad;
     }
