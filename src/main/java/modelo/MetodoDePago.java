@@ -1,14 +1,27 @@
 package modelo;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.time.YearMonth;
 
+@Entity
+@Table(name = "metodo_pago")
 public class MetodoDePago {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private String numero;
     private YearMonth fechaVencimiento;
     private String nombre;
     private String apellido;
     private String cvv;
+
+    protected MetodoDePago() {
+    }
 
     public MetodoDePago(String numero, YearMonth fechaVencimiento, String nombre, String apellido, String cvv) {
         this.id = 0;
