@@ -1,15 +1,37 @@
 package modelo;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Entity
+@Table(name = "ticket")
 public class Ticket {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+    @ManyToOne
+    @JoinColumn(name = "espectador_id")
     private Espectador espectador;
+    @OneToMany(mappedBy = "ticket")
     private List<Entrada> entradas;
+    @OneToMany(mappedBy = "ticket")
     private List<ItemConsumo> itemsConsumo;
     private String codigoQR;
+
+    protected Ticket() {
+        this.entradas = new ArrayList<>();
+        this.itemsConsumo = new ArrayList<>();
+    }
 
     public Ticket(Espectador espectador) {
         this.id = 0;
@@ -35,6 +57,7 @@ public class Ticket {
         }
 
         entradas.add(entrada);
+        entrada.asignarTicket(this);
     }
 
     public void agregarItem(ItemConsumo itemConsumo) {
@@ -43,6 +66,7 @@ public class Ticket {
         }
 
         itemsConsumo.add(itemConsumo);
+        itemConsumo.asignarTicket(this);
     }
 
     public double calcularTotal() {

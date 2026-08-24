@@ -23,6 +23,9 @@ public class Entrada {
     @JoinColumn(name = "espectador_id")
     private Espectador espectador;
     @ManyToOne
+    @JoinColumn(name = "ticket_id")
+    private Ticket ticket;
+    @ManyToOne
     @JoinColumn(name = "funcion_id")
     private Funcion funcion;
     @ManyToOne
@@ -132,6 +135,14 @@ public class Entrada {
         this.estado = estado;
     }
 
+    public void asignarTicket(Ticket ticket) {
+        if (ticket == null) {
+            throw new IllegalArgumentException("El ticket no puede ser null.");
+        }
+
+        this.ticket = ticket;
+    }
+
     public int getId() {
         return id;
     }
@@ -142,6 +153,10 @@ public class Entrada {
 
     public Espectador getEspectador() {
         return espectador;
+    }
+
+    public Ticket getTicket() {
+        return ticket;
     }
 
     public Funcion getFuncion() {

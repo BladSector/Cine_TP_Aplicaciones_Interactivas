@@ -17,6 +17,9 @@ public class ItemConsumo {
     @ManyToOne
     @JoinColumn(name = "producto_id")
     private ProductoConfiteria producto;
+    @ManyToOne
+    @JoinColumn(name = "ticket_id")
+    private Ticket ticket;
     private int cantidad;
 
     protected ItemConsumo() {
@@ -53,8 +56,20 @@ public class ItemConsumo {
         return id;
     }
 
+    public void asignarTicket(Ticket ticket) {
+        if (ticket == null) {
+            throw new IllegalArgumentException("El ticket no puede ser null.");
+        }
+
+        this.ticket = ticket;
+    }
+
     public ProductoConfiteria getProducto() {
         return producto;
+    }
+
+    public Ticket getTicket() {
+        return ticket;
     }
 
     public int getCantidad() {
