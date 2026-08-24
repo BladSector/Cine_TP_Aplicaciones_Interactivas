@@ -20,6 +20,9 @@ public class Entrada {
     private int id;
     private double precio;
     @ManyToOne
+    @JoinColumn(name = "espectador_id")
+    private Espectador espectador;
+    @ManyToOne
     @JoinColumn(name = "funcion_id")
     private Funcion funcion;
     @ManyToOne
@@ -32,9 +35,10 @@ public class Entrada {
     protected Entrada(){
     }
 
-    public Entrada(double precio, Funcion funcion, Butaca butaca, LocalDateTime horario) {
+    public Entrada(double precio, Espectador espectador, Funcion funcion, Butaca butaca, LocalDateTime horario) {
         this.id = 0;
         this.precio = precio;
+        this.espectador = espectador;
         this.funcion = funcion;
         this.butaca = butaca;
         this.horario = horario;
@@ -47,6 +51,7 @@ public class Entrada {
 
     private boolean validarDatos() {
         return precio > 0
+                && espectador != null
                 && funcion != null
                 && butaca != null
                 && horario != null;
@@ -133,6 +138,10 @@ public class Entrada {
 
     public double getPrecio() {
         return precio;
+    }
+
+    public Espectador getEspectador() {
+        return espectador;
     }
 
     public Funcion getFuncion() {

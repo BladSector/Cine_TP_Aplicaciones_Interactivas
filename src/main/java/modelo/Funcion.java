@@ -56,7 +56,11 @@ public class Funcion {
                 && formato != null;
     }
 
-    public Entrada venderEntrada(double precio, Butaca butaca) {
+    public Entrada venderEntrada(double precio, Espectador espectador, Butaca butaca) {
+        if (espectador == null) {
+            throw new IllegalArgumentException("El espectador no puede estar vacio.");
+        }
+
         if (butaca == null) {
             throw new IllegalArgumentException("La butaca no puede estar vacía.");
         }
@@ -67,10 +71,11 @@ public class Funcion {
 
         LocalDateTime horarioEntrada = LocalDateTime.of(fecha, horario);
         //this significa "esta misma función"
-        Entrada entrada = new Entrada(precio, this, butaca, horarioEntrada);
+        Entrada entrada = new Entrada(precio, espectador, this, butaca, horarioEntrada);
         entrada.asignarButaca();
 
         entradas.add(entrada);
+        espectador.agregarEntrada(entrada);
 
         return entrada;
     }
