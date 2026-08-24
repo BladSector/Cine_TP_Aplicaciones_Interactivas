@@ -1,5 +1,7 @@
 package modelo;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,6 +17,8 @@ public class MetodoDePago {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private String numero;
+    @Convert(converter = YearMonthAttributeConverter.class)
+    @Column(name = "fecha_vencimiento", length = 7)
     private YearMonth fechaVencimiento;
     private String nombre;
     private String apellido;
