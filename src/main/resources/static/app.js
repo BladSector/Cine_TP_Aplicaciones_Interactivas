@@ -14,6 +14,7 @@ const api = {
 
 const state = {
     role: null,
+    adminTab: "catalogo",
     spectator: null,
     selectedMovie: null,
     selectedFunction: null,
@@ -53,6 +54,9 @@ async function initApp() {
     bind("#roomForm", "submit", createRoomWithSeats);
     bind("#functionForm", "submit", createFunction);
     bind("#productForm", "submit", createProduct);
+    document.querySelectorAll("[data-admin-tab]").forEach(button => {
+        button.addEventListener("click", () => setAdminTab(button.dataset.adminTab));
+    });
 
     try {
         await loadAll();
@@ -149,6 +153,7 @@ async function createAndEnterSpectator() {
 }
 
 function enterAdmin() {
+    state.adminTab = "catalogo";
     enterRole("admin");
 }
 
@@ -458,8 +463,33 @@ async function ensurePaymentMethod() {
 }
 
 function renderAdminView() {
+    renderAdminTabs();
+    renderAdminSummary();
     fillAdminSelects();
     renderAdminData();
+}
+
+function setAdminTab(tab) {
+    state.adminTab = tab;
+    renderAdminTabs();
+}
+
+function renderAdminTabs() {
+    document.querySelectorAll("[data-admin-tab]").forEach(button => {
+        button.classList.toggle("active", button.dataset.adminTab === state.adminTab);
+    });
+
+    document.querySelectorAll("[data-admin-panel]").forEach(panel => {
+        panel.classList.toggle("active", panel.dataset.adminPanel === state.adminTab);
+    });
+}
+
+function renderAdminSummary() {
+    setText("#categoryCount", `Categorías: ${state.data.categorias.length}`);
+    setText("#movieCount", `Películas: ${state.data.peliculas.length}`);
+    setText("#roomCount", `Salas: ${state.data.salas.length}`);
+    setText("#functionCount", `Funciones: ${state.data.funciones.length}`);
+    setText("#ticketCount", `Tickets: ${state.data.tickets.length}`);
 }
 
 function fillAdminSelects() {
@@ -560,22 +590,45 @@ async function adminPost(url, body) {
 }
 
 function renderAdminData() {
-    const container = $("#adminData");
-    const lists = [
+    const allLists = [
         ["Categorias", state.data.categorias, ["id", "nombre"]],
         ["Peliculas", state.data.peliculas, ["id", "titulo", "categoriaNombre"]],
         ["Salas", state.data.salas, ["id", "nombre", "capacidad"]],
         ["Butacas", state.data.butacas, ["id", "fila", "numero", "estado", "salaId"]],
         ["Funciones", state.data.funciones, ["id", "peliculaTitulo", "fecha", "horario", "formato", "precioEntrada"]],
-        ["Productos", state.data.productos, ["id", "nombre", "precio", "tipo"]]
+        ["Espectadores", state.data.espectadores, ["id", "nombre", "apellido", "email", "metodoDePagoId"]],
+        ["Entradas", state.data.entradas, ["id", "precio", "estado", "espectadorId", "funcionId", "butacaId", "ticketId"]],
+        ["Tickets", state.data.tickets, ["id", "espectadorId", "total", "entradasIds", "itemsConsumoIds"]],
+        ["Productos", state.data.productos, ["id", "nombre", "precio", "tipo", "tamano"]],
+        ["Consumos", state.data.items, ["id", "productoNombre", "cantidad", "ticketId", "subtotal"]]
     ];
+
+    renderDataGroup("#catalogData", allLists.slice(0, 2));
+    renderDataGroup("#roomData", allLists.slice(2, 4));
+    renderDataGroup("#functionData", [allLists[4]]);
+    renderDataGroup("#spectatorData", allLists.slice(5, 8));
+    renderDataGroup("#productData", allLists.slice(8, 10));
+    renderDataGroup("#adminData", allLists);
+}
+
+function renderDataGroup(selector, lists) {
+    const container = $(selector);
+
+    if (!container) {
+        return;
+    }
 
     container.innerHTML = lists.map(([title, rows, columns]) => `
         <article class="data-card">
             <h3>${title}</h3>
+            <label class="table-search">Buscar <input type="search" data-table-filter placeholder="Filtrar ${title.toLowerCase()}"></label>
             <div class="data-list">${renderTable(rows, columns)}</div>
         </article>
     `).join("");
+
+    container.querySelectorAll("[data-table-filter]").forEach(input => {
+        input.addEventListener("input", () => filterTable(input));
+    });
 }
 
 function renderTable(rows, columns) {
@@ -643,6 +696,24 @@ function formatValue(value) {
     }
 
     return String(value);
+}
+
+function filterTable(input) {
+    const card = input.closest(".data-card");
+    const rows = card.querySelectorAll("tbody tr");
+    const query = input.value.trim().toLowerCase();
+
+    rows.forEach(row => {
+        row.hidden = query && !row.textContent.toLowerCase().includes(query);
+    });
+}
+
+function setText(selector, text) {
+    const element = $(selector);
+
+    if (element) {
+        element.textContent = text;
+    }
 }
 
 async function copyResponse() {

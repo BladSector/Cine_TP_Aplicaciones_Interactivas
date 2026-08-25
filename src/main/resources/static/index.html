@@ -7,85 +7,85 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<main id="loginView" class="login-view">
-    <section class="login-card">
-        <div class="login-hero">
-            <span class="brand-chip">TP Cine API</span>
-            <p class="eyebrow">Simulador local</p>
-            <h1>Gestioná funciones y probá compras en un solo lugar</h1>
-            <p class="hero-copy">Usá el modo espectador para recorrer la compra completa o entrá como administrador para cargar el catálogo del cine.</p>
+<main id="loginView" class="desktop-shell login-shell">
+    <header class="window-bar">
+        <div>
+            <p class="eyebrow">Sistema de cine</p>
+            <h1>TP Cine API</h1>
         </div>
+        <span class="status-pill">Localhost 8080</span>
+    </header>
 
-        <div class="login-grid">
-            <section class="login-panel">
-                <div class="panel-kicker">Compra</div>
-                <h2>Entrar como espectador</h2>
-                <label>
-                    Espectador existente
-                    <select id="spectatorSelect"></select>
-                </label>
-                <div class="inline-actions">
-                    <button id="enterSpectatorButton" class="primary-button" type="button">Ingresar</button>
-                </div>
-                <div class="divider"></div>
-                <h3>Crear espectador de prueba</h3>
+    <section class="login-layout">
+        <section class="module-panel">
+            <div class="panel-heading">
+                <h2>Espectador</h2>
+            </div>
+
+            <label>
+                Espectador existente
+                <select id="spectatorSelect"></select>
+            </label>
+
+            <div class="button-row">
+                <button id="enterSpectatorButton" class="primary-button" type="button">Ingresar</button>
+            </div>
+
+            <div class="section-line"></div>
+
+            <h3>Nuevo espectador</h3>
+            <div class="form-grid">
                 <label>Nombre <input id="newSpectatorName" type="text"></label>
                 <label>Apellido <input id="newSpectatorLastName" type="text"></label>
                 <label>Email <input id="newSpectatorEmail" type="email"></label>
-                <label>Contrasenia <input id="newSpectatorPassword" type="password"></label>
-                <button id="createSpectatorButton" class="secondary-button" type="button">Crear e ingresar</button>
-            </section>
+                <label>Contraseña <input id="newSpectatorPassword" type="password"></label>
+            </div>
+            <button id="createSpectatorButton" class="secondary-button" type="button">Crear e ingresar</button>
+        </section>
 
-            <section class="login-panel admin-entry">
-                <div class="panel-kicker">Gestion</div>
-                <h2>Entrar como administrador</h2>
-                <p>Modo de prueba para cargar peliculas, categorias, salas, butacas, funciones y productos.</p>
-                <ul class="feature-list">
-                    <li>Crear peliculas con categoria nueva o existente.</li>
-                    <li>Generar salas completas con butacas automaticas.</li>
-                    <li>Publicar funciones con formato y precio.</li>
-                </ul>
-                <button id="enterAdminButton" class="primary-button" type="button">Ingresar</button>
-            </section>
-        </div>
+        <section class="module-panel admin-entry">
+            <div class="panel-heading">
+                <h2>Administrador</h2>
+            </div>
+            <p class="muted">Panel para cargar catálogo, salas, funciones y confitería.</p>
+            <button id="enterAdminButton" class="primary-button" type="button">Ingresar al panel</button>
+        </section>
     </section>
 </main>
 
-<div id="appView" class="app-view hidden">
-    <header class="app-header">
+<div id="appView" class="desktop-shell app-shell hidden">
+    <header class="window-bar app-header">
         <div>
             <p class="eyebrow" id="roleLabel">Modo</p>
             <h1 id="viewTitle">TP Cine API</h1>
         </div>
-        <div class="header-actions">
+        <div class="toolbar">
             <button id="refreshButton" class="secondary-button" type="button">Actualizar</button>
             <button id="logoutButton" class="danger-button" type="button">Salir</button>
         </div>
     </header>
 
     <section id="spectatorView" class="screen hidden">
-        <section class="toolbar-panel">
-            <div class="field-row">
-                <label>Buscar pelicula <input id="movieSearch" type="search" placeholder="Nombre de pelicula"></label>
-                <label>Categoria <select id="categoryFilter"></select></label>
-            </div>
+        <section class="module-toolbar">
+            <label>Buscar película <input id="movieSearch" type="search" placeholder="Nombre de película"></label>
+            <label>Categoría <select id="categoryFilter"></select></label>
         </section>
 
-        <section class="shop-layout">
-            <section class="panel">
+        <section class="split-layout">
+            <section class="module-panel">
                 <div class="panel-heading">
-                    <h2>Peliculas y funciones</h2>
+                    <h2>Películas y funciones</h2>
                 </div>
-                <div id="movieList" class="movie-list"></div>
+                <div id="movieList" class="record-list"></div>
             </section>
 
-            <aside class="panel checkout-panel">
+            <aside class="module-panel side-panel">
                 <div class="panel-heading">
                     <h2>Compra</h2>
                 </div>
-                <div id="selectionSummary" class="summary-box">Elegi una funcion para comenzar.</div>
+                <div id="selectionSummary" class="info-box">Elegí una función para comenzar.</div>
                 <div id="seatList" class="seat-list"></div>
-                <div id="consumptionList" class="consumption-list"></div>
+                <div id="consumptionList" class="record-list"></div>
                 <div id="paymentBox" class="payment-box"></div>
                 <button id="buyButton" class="primary-button wide-button" type="button">Comprar entrada</button>
             </aside>
@@ -93,80 +93,160 @@
     </section>
 
     <section id="adminView" class="screen hidden">
-        <section class="admin-grid">
-            <section class="panel">
-                <h2>Categorias</h2>
-                <form id="categoryForm" class="stack-form">
-                    <label>Nombre <input name="nombre" type="text"></label>
-                    <button class="primary-button" type="submit">Crear categoria</button>
-                </form>
-            </section>
+        <nav class="module-tabs" aria-label="Módulos de administración">
+            <button class="admin-tab active" type="button" data-admin-tab="catalogo">Películas</button>
+            <button class="admin-tab" type="button" data-admin-tab="salas">Salas</button>
+            <button class="admin-tab" type="button" data-admin-tab="funciones">Funciones</button>
+            <button class="admin-tab" type="button" data-admin-tab="espectadores">Espectadores</button>
+            <button class="admin-tab" type="button" data-admin-tab="confiteria">Confitería</button>
+            <button class="admin-tab" type="button" data-admin-tab="datos">Datos</button>
+        </nav>
 
-            <section class="panel">
-                <h2>Peliculas</h2>
-                <form id="movieForm" class="stack-form">
-                    <label>Titulo <input name="titulo" type="text"></label>
-                    <label>Duracion <input name="duracion" type="number"></label>
-                    <label>Categoria existente <select name="categoriaId"></select></label>
-                    <label>Nueva categoria <input name="nuevaCategoria" type="text" placeholder="Opcional"></label>
-                    <button class="primary-button" type="submit">Crear pelicula</button>
-                </form>
-            </section>
+        <section class="status-strip">
+            <span id="categoryCount">Categorías: 0</span>
+            <span id="movieCount">Películas: 0</span>
+            <span id="roomCount">Salas: 0</span>
+            <span id="functionCount">Funciones: 0</span>
+            <span id="ticketCount">Tickets: 0</span>
+        </section>
 
-            <section class="panel">
-                <h2>Salas y butacas</h2>
-                <form id="roomForm" class="stack-form">
-                    <label>Nombre <input name="nombre" type="text"></label>
-                    <label>Filas <input name="filas" type="number"></label>
-                    <label>Butacas por fila <input name="butacasPorFila" type="number"></label>
-                    <button class="primary-button" type="submit">Crear sala automatica</button>
-                </form>
-            </section>
+        <section class="admin-module active" data-admin-panel="catalogo">
+            <section class="split-layout">
+                <section class="module-panel">
+                    <div class="panel-heading">
+                        <h2>Catálogo</h2>
+                    </div>
 
-            <section class="panel">
-                <h2>Funciones</h2>
-                <form id="functionForm" class="stack-form">
-                    <label>Pelicula <select name="peliculaId"></select></label>
-                    <label>Sala <select name="salaId"></select></label>
-                    <label>Fecha <input name="fecha" type="date"></label>
-                    <label>Horario <input name="horario" type="time"></label>
-                    <label>Formato
-                        <select name="formato">
-                            <option value="DOS_D">DOS_D</option>
-                            <option value="TRES_D">TRES_D</option>
-                        </select>
-                    </label>
-                    <label>Precio entrada <input name="precioEntrada" type="number" step="0.01"></label>
-                    <button class="primary-button" type="submit">Crear funcion</button>
-                </form>
-            </section>
+                    <form id="categoryForm" class="stack-form">
+                        <h3>Nueva categoría</h3>
+                        <label>Nombre <input name="nombre" type="text"></label>
+                        <button class="primary-button" type="submit">Crear categoría</button>
+                    </form>
 
-            <section class="panel">
-                <h2>Confiteria</h2>
-                <form id="productForm" class="stack-form">
-                    <label>Nombre <input name="nombre" type="text"></label>
-                    <label>Precio <input name="precio" type="number" step="0.01"></label>
-                    <label>Tipo
-                        <select name="tipo">
-                            <option value="POCHOCLOS">POCHOCLOS</option>
-                            <option value="BEBIDA">BEBIDA</option>
-                            <option value="DULCE">DULCE</option>
-                            <option value="COMBO">COMBO</option>
-                        </select>
-                    </label>
-                    <label>Tamano
-                        <select name="tamano">
-                            <option value="CHICO">CHICO</option>
-                            <option value="MEDIANO">MEDIANO</option>
-                            <option value="GRANDE">GRANDE</option>
-                            <option value="UNICO">UNICO</option>
-                        </select>
-                    </label>
-                    <button class="primary-button" type="submit">Crear producto</button>
-                </form>
-            </section>
+                    <div class="section-line"></div>
 
-            <section class="panel data-panel">
+                    <form id="movieForm" class="stack-form">
+                        <h3>Nueva película</h3>
+                        <label>Título <input name="titulo" type="text"></label>
+                        <label>Duración <input name="duracion" type="number"></label>
+                        <label>Categoría existente <select name="categoriaId"></select></label>
+                        <label>Nueva categoría <input name="nuevaCategoria" type="text" placeholder="Opcional"></label>
+                        <button class="primary-button" type="submit">Crear película</button>
+                    </form>
+                </section>
+
+                <section class="module-panel">
+                    <div class="panel-heading">
+                        <h2>Listado</h2>
+                    </div>
+                    <div id="catalogData" class="data-lists"></div>
+                </section>
+            </section>
+        </section>
+
+        <section class="admin-module" data-admin-panel="salas">
+            <section class="split-layout">
+                <section class="module-panel">
+                    <div class="panel-heading">
+                        <h2>Salas y butacas</h2>
+                    </div>
+                    <form id="roomForm" class="stack-form">
+                        <label>Nombre <input name="nombre" type="text"></label>
+                        <label>Filas <input name="filas" type="number"></label>
+                        <label>Butacas por fila <input name="butacasPorFila" type="number"></label>
+                        <button class="primary-button" type="submit">Crear sala automática</button>
+                    </form>
+                </section>
+
+                <section class="module-panel">
+                    <div class="panel-heading">
+                        <h2>Listado</h2>
+                    </div>
+                    <div id="roomData" class="data-lists"></div>
+                </section>
+            </section>
+        </section>
+
+        <section class="admin-module" data-admin-panel="funciones">
+            <section class="split-layout">
+                <section class="module-panel">
+                    <div class="panel-heading">
+                        <h2>Funciones</h2>
+                    </div>
+                    <form id="functionForm" class="stack-form">
+                        <label>Película <select name="peliculaId"></select></label>
+                        <label>Sala <select name="salaId"></select></label>
+                        <label>Fecha <input name="fecha" type="date"></label>
+                        <label>Horario <input name="horario" type="time"></label>
+                        <label>Formato
+                            <select name="formato">
+                                <option value="DOS_D">DOS_D</option>
+                                <option value="TRES_D">TRES_D</option>
+                            </select>
+                        </label>
+                        <label>Precio entrada <input name="precioEntrada" type="number" step="0.01"></label>
+                        <button class="primary-button" type="submit">Crear función</button>
+                    </form>
+                </section>
+
+                <section class="module-panel">
+                    <div class="panel-heading">
+                        <h2>Listado</h2>
+                    </div>
+                    <div id="functionData" class="data-lists"></div>
+                </section>
+            </section>
+        </section>
+
+        <section class="admin-module" data-admin-panel="espectadores">
+            <section class="module-panel">
+                <div class="panel-heading">
+                    <h2>Espectadores y entradas</h2>
+                </div>
+                <div id="spectatorData" class="data-lists"></div>
+            </section>
+        </section>
+
+        <section class="admin-module" data-admin-panel="confiteria">
+            <section class="split-layout">
+                <section class="module-panel">
+                    <div class="panel-heading">
+                        <h2>Confitería</h2>
+                    </div>
+                    <form id="productForm" class="stack-form">
+                        <label>Nombre <input name="nombre" type="text"></label>
+                        <label>Precio <input name="precio" type="number" step="0.01"></label>
+                        <label>Tipo
+                            <select name="tipo">
+                                <option value="POCHOCLOS">POCHOCLOS</option>
+                                <option value="BEBIDA">BEBIDA</option>
+                                <option value="DULCE">DULCE</option>
+                                <option value="COMBO">COMBO</option>
+                            </select>
+                        </label>
+                        <label>Tamaño
+                            <select name="tamano">
+                                <option value="CHICO">CHICO</option>
+                                <option value="MEDIANO">MEDIANO</option>
+                                <option value="GRANDE">GRANDE</option>
+                                <option value="UNICO">UNICO</option>
+                            </select>
+                        </label>
+                        <button class="primary-button" type="submit">Crear producto</button>
+                    </form>
+                </section>
+
+                <section class="module-panel">
+                    <div class="panel-heading">
+                        <h2>Listado</h2>
+                    </div>
+                    <div id="productData" class="data-lists"></div>
+                </section>
+            </section>
+        </section>
+
+        <section class="admin-module" data-admin-panel="datos">
+            <section class="module-panel">
                 <div class="panel-heading">
                     <h2>Datos cargados</h2>
                 </div>
@@ -175,15 +255,15 @@
         </section>
     </section>
 
-    <section class="panel response-panel">
+    <section class="module-panel response-panel">
         <div class="panel-heading">
-            <h2>Respuesta</h2>
+            <h2>Estado / respuesta</h2>
             <button id="copyResponseButton" class="secondary-button" type="button">Copiar</button>
         </div>
         <pre id="responseOutput">{}</pre>
     </section>
 </div>
 
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
