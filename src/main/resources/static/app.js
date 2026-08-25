@@ -18,7 +18,7 @@ const state = {
     spectator: null,
     selectedMovie: null,
     selectedFunction: null,
-    selectedSeat: null,
+    selectedSeats: [],
     data: emptyData()
 };
 
@@ -46,7 +46,10 @@ async function initApp() {
     bind("#refreshButton", "click", refreshCurrentView);
     bind("#movieSearch", "input", renderMovies);
     bind("#categoryFilter", "change", renderMovies);
+    bind("#ticketQuantity", "input", renderCheckout);
+    bind("#productTypeFilter", "change", renderConsumption);
     bind("#buyButton", "click", buyTicket);
+    bind("#buildRoomMatrixButton", "click", renderRoomMatrixEditor);
 
     bind("#categoryForm", "submit", createCategory);
     bind("#movieForm", "submit", createMovie);
@@ -205,7 +208,7 @@ async function refreshCurrentView() {
 function resetPurchase() {
     state.selectedMovie = null;
     state.selectedFunction = null;
-    state.selectedSeat = null;
+    state.selectedSeats = [];
 }
 
 function renderSpectatorView() {
@@ -262,7 +265,7 @@ function renderMovies() {
                 <button class="function-button ${state.selectedFunction?.id === funcion.id ? "selected" : ""}"
                         type="button"
                         data-function-id="${funcion.id}">
-                    ${funcion.fecha} ${shortTime(funcion.horario)} - ${funcion.formato} - $${money(funcion.precioEntrada)}
+                    ${funcion.fecha} ${shortTime(funcion.horario)} - ${formatFunction(funcion.formato)} - $${money(funcion.precioEntrada)}
                 </button>
               `).join("");
 
@@ -287,16 +290,38 @@ function renderMovies() {
 function selectFunction(id) {
     state.selectedFunction = state.data.funciones.find(funcion => funcion.id === id);
     state.selectedMovie = state.data.peliculas.find(pelicula => pelicula.id === state.selectedFunction.peliculaId);
-    state.selectedSeat = null;
+    state.selectedSeats = [];
     renderMovies();
     renderCheckout();
 }
 
 function renderCheckout() {
+    state.selectedSeats = state.selectedSeats.slice(0, selectedQuantity());
+    renderPurchaseSteps();
     renderSelectionSummary();
     renderSeats();
     renderConsumption();
     renderPayment();
+    renderBuyButton();
+}
+
+function renderPurchaseSteps() {
+    const steps = $("#purchaseSteps");
+
+    if (!steps) {
+        return;
+    }
+
+    const cantidad = selectedQuantity();
+    const firstReady = state.selectedFunction && state.selectedSeats.length === cantidad;
+    const secondReady = firstReady;
+    const thirdReady = Boolean(state.spectator?.metodosDePago?.length);
+
+    steps.innerHTML = `
+        <span class="${firstReady ? "done" : "active"}">1. Película y butacas</span>
+        <span class="${secondReady ? "active" : ""}">2. Consumo opcional</span>
+        <span class="${thirdReady ? "done" : ""}">3. Pago</span>
+    `;
 }
 
 function renderSelectionSummary() {
@@ -307,11 +332,15 @@ function renderSelectionSummary() {
         return;
     }
 
+    const cantidad = selectedQuantity();
+    const butacas = state.selectedSeats.map(butaca => `${butaca.fila}${butaca.numero}`).join(", ");
+
     summary.innerHTML = `
         <strong>${state.selectedMovie.titulo}</strong><br>
-        ${state.selectedFunction.fecha} ${shortTime(state.selectedFunction.horario)} - ${state.selectedFunction.formato}<br>
-        Entrada: $${money(state.selectedFunction.precioEntrada)}
-        ${state.selectedSeat ? `<br>Butaca: ${state.selectedSeat.fila}${state.selectedSeat.numero}` : ""}
+        ${state.selectedFunction.fecha} ${shortTime(state.selectedFunction.horario)} - ${formatFunction(state.selectedFunction.formato)}<br>
+        Entradas: ${cantidad} x $${money(state.selectedFunction.precioEntrada)}<br>
+        Total entradas: $${money(state.selectedFunction.precioEntrada * cantidad)}
+        ${butacas ? `<br>Butacas: ${escapeHtml(butacas)}` : `<br>Elegí ${cantidad} butaca${cantidad === 1 ? "" : "s"}.`}
     `;
 }
 
@@ -323,31 +352,104 @@ function renderSeats() {
         return;
     }
 
-    const seats = state.data.butacas
-        .filter(butaca => butaca.salaId === state.selectedFunction.salaId && butaca.estado === "DISPONIBLE")
-        .sort((a, b) => `${a.fila}${a.numero}`.localeCompare(`${b.fila}${b.numero}`, "es", { numeric: true }));
+    const seats = seatsForSelectedRoom();
 
     if (seats.length === 0) {
         seatList.innerHTML = `<div class="info-box">No hay butacas disponibles.</div>`;
         return;
     }
 
-    seats.forEach(butaca => {
+    seatList.appendChild(renderSeatMatrix(seats, butaca => {
         const button = document.createElement("button");
-        button.className = `seat-button ${state.selectedSeat?.id === butaca.id ? "selected" : ""}`;
+        const selected = state.selectedSeats.some(selectedSeat => selectedSeat.id === butaca.id);
+        button.className = `seat-button ${selected ? "selected" : ""} ${butaca.estado !== "DISPONIBLE" ? "blocked" : ""}`;
         button.type = "button";
         button.textContent = `${butaca.fila}${butaca.numero}`;
+        button.disabled = butaca.estado !== "DISPONIBLE";
         button.addEventListener("click", () => {
-            state.selectedSeat = butaca;
+            toggleSeatSelection(butaca);
             renderCheckout();
         });
-        seatList.appendChild(button);
+        return button;
+    }));
+}
+
+function selectedQuantity() {
+    const quantity = Number($("#ticketQuantity")?.value || 1);
+    return Math.max(1, quantity);
+}
+
+function selectionIsReady() {
+    return Boolean(state.selectedFunction) && state.selectedSeats.length === selectedQuantity();
+}
+
+function toggleSeatSelection(butaca) {
+    const exists = state.selectedSeats.some(selectedSeat => selectedSeat.id === butaca.id);
+
+    if (exists) {
+        state.selectedSeats = state.selectedSeats.filter(selectedSeat => selectedSeat.id !== butaca.id);
+        return;
+    }
+
+    if (state.selectedSeats.length >= selectedQuantity()) {
+        state.selectedSeats.shift();
+    }
+
+    state.selectedSeats.push(butaca);
+}
+
+function seatsForSelectedRoom() {
+    return state.data.butacas
+        .filter(butaca => butaca.salaId === state.selectedFunction.salaId)
+        .sort((a, b) => `${a.fila}${a.numero}`.localeCompare(`${b.fila}${b.numero}`, "es", { numeric: true }));
+}
+
+function renderSeatMatrix(seats, buttonFactory) {
+    const matrix = document.createElement("div");
+    matrix.className = "seat-matrix";
+
+    const filas = [...new Set(seats.map(butaca => butaca.fila))];
+    const maxNumero = Math.max(...seats.map(butaca => butaca.numero));
+
+    filas.forEach(fila => {
+        const row = document.createElement("div");
+        row.className = "seat-row";
+
+        const rowLabel = document.createElement("span");
+        rowLabel.className = "seat-row-label";
+        rowLabel.textContent = fila;
+        row.appendChild(rowLabel);
+
+        for (let numero = 1; numero <= maxNumero; numero++) {
+            const butaca = seats.find(seat => seat.fila === fila && seat.numero === numero);
+
+            if (!butaca) {
+                const gap = document.createElement("span");
+                gap.className = "seat-gap";
+                row.appendChild(gap);
+                continue;
+            }
+
+            row.appendChild(buttonFactory(butaca));
+        }
+
+        matrix.appendChild(row);
     });
+
+    return matrix;
 }
 
 function renderConsumption() {
     const container = $("#consumptionList");
+    const filterBox = $("#productTypeFilterBox");
+    const selectedType = $("#productTypeFilter")?.value || "";
     container.innerHTML = "";
+    filterBox?.classList.toggle("hidden", state.data.productos.length === 0);
+
+    if (!selectionIsReady()) {
+        filterBox?.classList.add("hidden");
+        return;
+    }
 
     if (state.data.productos.length === 0) {
         container.innerHTML = `<div class="info-box">No hay productos de confitería cargados.</div>`;
@@ -358,11 +460,21 @@ function renderConsumption() {
     title.textContent = "Consumo opcional";
     container.appendChild(title);
 
-    state.data.productos.forEach(producto => {
+    const productos = state.data.productos.filter(producto => !selectedType || producto.tipo === selectedType);
+
+    if (productos.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "info-box";
+        empty.textContent = "No hay productos para esa categoría.";
+        container.appendChild(empty);
+        return;
+    }
+
+    productos.forEach(producto => {
         const row = document.createElement("label");
         row.className = "consumption-row";
         row.innerHTML = `
-            <span>${producto.nombre} · ${producto.tipo} · $${money(producto.precio)}</span>
+            <span>${escapeHtml(producto.nombre)} - ${labelProductType(producto.tipo)} - $${money(producto.precio)}</span>
             <input type="number" min="0" value="0" data-product-id="${producto.id}">
         `;
         container.appendChild(row);
@@ -372,18 +484,24 @@ function renderConsumption() {
 function renderPayment() {
     const box = $("#paymentBox");
 
-    if (!state.spectator) {
+    if (!state.spectator || !selectionIsReady()) {
         box.innerHTML = "";
         return;
     }
 
-    if (state.spectator.metodoDePagoId) {
-        box.innerHTML = `<div class="info-box">Método de pago asociado: #${state.spectator.metodoDePagoId}</div>`;
-        return;
-    }
+    const metodos = state.spectator.metodosDePago || [];
+    const opciones = metodos.map(metodo => `
+        <option value="${metodo.id}">Tarjeta terminada en ${escapeHtml(metodo.ultimosNumeros)} - ${escapeHtml(metodo.nombre)} ${escapeHtml(metodo.apellido)}</option>
+    `).join("");
 
     box.innerHTML = `
         <h3>Método de pago</h3>
+        <label>Tarjeta para pagar
+            <select id="paymentMethodSelect">
+                ${opciones}
+                <option value="new">${metodos.length ? "Agregar otra tarjeta" : "Cargar nueva tarjeta"}</option>
+            </select>
+        </label>
         <div class="payment-grid">
             <label>Número <input id="payNumber" type="text" placeholder="16 dígitos"></label>
             <label>Vencimiento <input id="payExpiration" type="month"></label>
@@ -394,31 +512,54 @@ function renderPayment() {
     `;
 }
 
+function renderBuyButton() {
+    const button = $("#buyButton");
+
+    if (!button) {
+        return;
+    }
+
+    button.disabled = !selectionIsReady();
+    button.textContent = selectionIsReady() && selectedQuantity() > 1 ? "Comprar entradas" : "Comprar entrada";
+
+    if (!selectionIsReady()) {
+        button.textContent = "Elegí función y butacas";
+    }
+}
+
 async function buyTicket() {
-    if (!state.selectedFunction || !state.selectedSeat) {
-        setOutput({ error: "Elegí una función y una butaca." }, true);
+    const cantidad = selectedQuantity();
+
+    if (!state.selectedFunction || state.selectedSeats.length !== cantidad) {
+        setOutput({ error: `Elegí una función y ${cantidad} butaca${cantidad === 1 ? "" : "s"}.` }, true);
         return;
     }
 
     try {
-        await ensurePaymentMethod();
+        const metodoDePagoId = await ensurePaymentMethod();
 
-        const entrada = await request(api.entradas, {
-            method: "POST",
-            body: {
-                precio: state.selectedFunction.precioEntrada,
-                espectadorId: state.spectator.id,
-                funcionId: state.selectedFunction.id,
-                butacaId: state.selectedSeat.id
-            }
-        });
+        const entradas = [];
+        for (const butaca of state.selectedSeats) {
+            const entrada = await request(api.entradas, {
+                method: "POST",
+                body: {
+                    precio: state.selectedFunction.precioEntrada,
+                    espectadorId: state.spectator.id,
+                    funcionId: state.selectedFunction.id,
+                    butacaId: butaca.id
+                }
+            });
+            entradas.push(entrada);
+        }
 
         const ticket = await request(api.tickets, {
             method: "POST",
-            body: { espectadorId: state.spectator.id }
+            body: { espectadorId: state.spectator.id, metodoDePagoId }
         });
 
-        await request(`${api.tickets}/${ticket.id}/entradas/${entrada.id}`, { method: "POST" });
+        for (const entrada of entradas) {
+            await request(`${api.tickets}/${ticket.id}/entradas/${entrada.id}`, { method: "POST" });
+        }
 
         const items = [];
         for (const input of document.querySelectorAll("[data-product-id]")) {
@@ -437,20 +578,28 @@ async function buyTicket() {
             }
         }
 
-        const entradaPagada = await request(`${api.entradas}/${entrada.id}/pagar`, { method: "PUT" });
+        const entradasPagadas = [];
+        for (const entrada of entradas) {
+            const entradaPagada = await request(`${api.entradas}/${entrada.id}/pagar`, { method: "PUT" });
+            entradasPagadas.push(entradaPagada);
+        }
+
+        const ticketCompleto = await request(`${api.tickets}/${ticket.id}`);
         await loadAll();
         state.spectator = await request(`${api.espectadores}/${state.spectator.id}`);
         resetPurchase();
         renderSpectatorView();
-        setOutput({ ticket, entrada: entradaPagada, items });
+        setOutput({ ticket: ticketCompleto, entradas: entradasPagadas, items });
     } catch (error) {
         setOutput(error, true);
     }
 }
 
 async function ensurePaymentMethod() {
-    if (state.spectator.metodoDePagoId) {
-        return;
+    const selected = $("#paymentMethodSelect")?.value;
+
+    if (selected && selected !== "new") {
+        return Number(selected);
     }
 
     const metodoPago = await request(api.metodosPago, {
@@ -467,6 +616,8 @@ async function ensurePaymentMethod() {
     state.spectator = await request(`${api.espectadores}/${state.spectator.id}/metodo-pago/${metodoPago.id}`, {
         method: "PUT"
     });
+
+    return metodoPago.id;
 }
 
 function renderAdminView() {
@@ -551,13 +702,71 @@ async function createMovie(event) {
 async function createRoomWithSeats(event) {
     event.preventDefault();
     const form = event.currentTarget;
+    if ($("#roomMatrixEditor").children.length === 0) {
+        renderRoomMatrixEditor();
+    }
 
-    await adminPost(`${api.salas}/con-butacas`, {
+    const butacas = collectRoomSeats();
+
+    if (butacas.length === 0) {
+        setOutput({ error: "La sala debe tener al menos una butaca activa." }, true);
+        return;
+    }
+
+    await adminPost(`${api.salas}/con-matriz`, {
         nombre: form.nombre.value,
-        filas: Number(form.filas.value),
-        butacasPorFila: Number(form.butacasPorFila.value)
+        butacas
     });
     form.reset();
+    $("#roomMatrixEditor").innerHTML = "";
+}
+
+function renderRoomMatrixEditor() {
+    const form = $("#roomForm");
+    const editor = $("#roomMatrixEditor");
+    const filas = Number(form.filas.value);
+    const butacasPorFila = Number(form.butacasPorFila.value);
+
+    editor.innerHTML = "";
+
+    if (filas <= 0 || butacasPorFila <= 0) {
+        setOutput({ error: "Indicá filas y butacas por fila para armar la matriz." }, true);
+        return;
+    }
+
+    for (let fila = 0; fila < filas; fila++) {
+        const letraFila = String.fromCharCode("A".charCodeAt(0) + fila);
+        const row = document.createElement("div");
+        row.className = "seat-row";
+
+        const rowLabel = document.createElement("span");
+        rowLabel.className = "seat-row-label";
+        rowLabel.textContent = letraFila;
+        row.appendChild(rowLabel);
+
+        for (let numero = 1; numero <= butacasPorFila; numero++) {
+            const button = document.createElement("button");
+            button.className = "seat-button matrix-seat active";
+            button.type = "button";
+            button.textContent = `${letraFila}${numero}`;
+            button.dataset.fila = letraFila;
+            button.dataset.numero = String(numero);
+            button.addEventListener("click", () => {
+                button.classList.toggle("active");
+                button.classList.toggle("removed");
+            });
+            row.appendChild(button);
+        }
+
+        editor.appendChild(row);
+    }
+}
+
+function collectRoomSeats() {
+    return [...document.querySelectorAll("#roomMatrixEditor .matrix-seat.active")].map(button => ({
+        fila: button.dataset.fila,
+        numero: Number(button.dataset.numero)
+    }));
 }
 
 async function createFunction(event) {
@@ -606,9 +815,10 @@ function renderAdminData() {
         ["Salas", state.data.salas, ["id", "nombre", "capacidad"]],
         ["Butacas", state.data.butacas, ["id", "fila", "numero", "estado", "salaId"]],
         ["Funciones", state.data.funciones, ["id", "peliculaTitulo", "fecha", "horario", "formato", "precioEntrada"]],
-        ["Espectadores", state.data.espectadores, ["id", "nombre", "apellido", "email", "metodoDePagoId"]],
+        ["Espectadores", state.data.espectadores, ["id", "nombre", "apellido", "email", "metodosDePago"]],
+        ["Métodos de pago", state.data.metodosPago, ["id", "ultimosNumeros", "nombre", "apellido", "espectadorId"]],
         ["Entradas", state.data.entradas, ["id", "precio", "estado", "espectadorId", "funcionId", "butacaId", "ticketId"]],
-        ["Tickets", state.data.tickets, ["id", "espectadorId", "total", "entradasIds", "itemsConsumoIds"]],
+        ["Tickets", state.data.tickets, ["id", "espectadorId", "metodoDePagoResumen", "total", "entradas", "itemsConsumo"]],
         ["Productos", state.data.productos, ["id", "nombre", "precio", "tipo", "tamano"]],
         ["Consumos", state.data.items, ["id", "productoNombre", "cantidad", "ticketId", "subtotal"]]
     ];
@@ -616,8 +826,8 @@ function renderAdminData() {
     renderDataGroup("#catalogData", allLists.slice(0, 2));
     renderDataGroup("#roomData", allLists.slice(2, 4));
     renderDataGroup("#functionData", [allLists[4]]);
-    renderDataGroup("#spectatorData", allLists.slice(5, 8));
-    renderDataGroup("#productData", allLists.slice(8, 10));
+    renderDataGroup("#spectatorData", allLists.slice(5, 9));
+    renderDataGroup("#productData", allLists.slice(9, 11));
     renderDataGroup("#adminData", allLists);
 }
 
@@ -692,6 +902,29 @@ function money(value) {
     return Number(value || 0).toFixed(2);
 }
 
+function formatFunction(value) {
+    if (value === "DOS_D") {
+        return "2D";
+    }
+
+    if (value === "TRES_D") {
+        return "3D";
+    }
+
+    return value || "";
+}
+
+function labelProductType(value) {
+    const labels = {
+        POCHOCLOS: "Pochoclos",
+        BEBIDA: "Bebidas",
+        DULCE: "Dulces",
+        COMBO: "Combos"
+    };
+
+    return labels[value] || value;
+}
+
 function labelForColumn(column) {
     const labels = {
         id: "ID",
@@ -711,7 +944,10 @@ function labelForColumn(column) {
         precioEntrada: "Precio entrada",
         apellido: "Apellido",
         email: "Email",
+        metodosDePago: "Métodos de pago",
         metodoDePagoId: "Método de pago ID",
+        metodoDePagoResumen: "Método de pago",
+        ultimosNumeros: "Últimos números",
         precio: "Precio",
         espectadorId: "Espectador ID",
         funcionId: "Función ID",
@@ -732,7 +968,37 @@ function labelForColumn(column) {
 
 function formatValue(value) {
     if (Array.isArray(value)) {
-        return value.length ? value.join(", ") : "-";
+        if (!value.length) {
+            return "-";
+        }
+
+        return value.map(item => {
+            if (typeof item !== "object" || item === null) {
+                return item;
+            }
+
+            if (item.ultimosNumeros) {
+                return `Tarjeta terminada en ${item.ultimosNumeros}`;
+            }
+
+            if (item.butaca) {
+                return `${item.pelicula} - ${item.butaca} - $${money(item.precio)}`;
+            }
+
+            if (item.producto) {
+                return `${item.producto} x${item.cantidad} - $${money(item.subtotal)}`;
+            }
+
+            return `#${item.id}`;
+        }).join(", ");
+    }
+
+    if (value === "DOS_D" || value === "TRES_D") {
+        return formatFunction(value);
+    }
+
+    if (["POCHOCLOS", "BEBIDA", "DULCE", "COMBO"].includes(value)) {
+        return labelProductType(value);
     }
 
     if (value === null || value === undefined || value === "") {

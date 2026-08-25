@@ -22,6 +22,9 @@ public class Ticket {
     @ManyToOne
     @JoinColumn(name = "espectador_id")
     private Espectador espectador;
+    @ManyToOne
+    @JoinColumn(name = "metodo_pago_id")
+    private MetodoDePago metodoDePago;
     @OneToMany(mappedBy = "ticket")
     private List<Entrada> entradas;
     @OneToMany(mappedBy = "ticket")
@@ -34,8 +37,13 @@ public class Ticket {
     }
 
     public Ticket(Espectador espectador) {
+        this(espectador, null);
+    }
+
+    public Ticket(Espectador espectador, MetodoDePago metodoDePago) {
         this.id = 0;
         this.espectador = espectador;
+        this.metodoDePago = metodoDePago;
         this.entradas = new ArrayList<>();
         this.itemsConsumo = new ArrayList<>();
         this.codigoQR = generarCodigoQR();
@@ -101,6 +109,10 @@ public class Ticket {
 
     public Espectador getEspectador() {
         return espectador;
+    }
+
+    public MetodoDePago getMetodoDePago() {
+        return metodoDePago;
     }
 
     public List<Entrada> getEntradas() {

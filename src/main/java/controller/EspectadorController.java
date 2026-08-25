@@ -1,6 +1,7 @@
 package controller;
 
 import modelo.Espectador;
+import modelo.MetodoDePago;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -78,7 +79,8 @@ public class EspectadorController {
     }
 
     public record EspectadorResponse(int id, String nombre, String apellido, String email,
-                                     boolean emailVerificado, Integer metodoDePagoId, int cantidadEntradas) {
+                                     boolean emailVerificado, Integer metodoDePagoId,
+                                     List<MetodoDePagoResumen> metodosDePago, int cantidadEntradas) {
         public static EspectadorResponse desde(Espectador espectador) {
             Integer metodoDePagoId = espectador.getMetodoDePago() == null ? null : espectador.getMetodoDePago().getId();
             return new EspectadorResponse(
@@ -88,7 +90,19 @@ public class EspectadorController {
                     espectador.getEmail(),
                     espectador.isEmailVerificado(),
                     metodoDePagoId,
+                    espectador.getMetodosDePago().stream().map(MetodoDePagoResumen::desde).toList(),
                     espectador.getCantidadEntradas()
+            );
+        }
+    }
+
+    public record MetodoDePagoResumen(int id, String ultimosNumeros, String nombre, String apellido) {
+        public static MetodoDePagoResumen desde(MetodoDePago metodoDePago) {
+            return new MetodoDePagoResumen(
+                    metodoDePago.getId(),
+                    metodoDePago.getUltimosNumeros(),
+                    metodoDePago.getNombre(),
+                    metodoDePago.getApellido()
             );
         }
     }

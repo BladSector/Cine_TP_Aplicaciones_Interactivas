@@ -52,6 +52,12 @@ public class SalaController {
         ));
     }
 
+    @PostMapping("/con-matriz")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SalaResponse guardarConMatriz(@RequestBody SalaConMatrizRequest request) {
+        return SalaResponse.desde(salaService.guardarConMatriz(request.nombre(), request.butacas()));
+    }
+
     @PutMapping("/{id}")
     public SalaResponse actualizar(@PathVariable int id, @RequestBody SalaRequest request) {
         return SalaResponse.desde(salaService.actualizar(id, request.nombre(), request.capacidad()));
@@ -67,6 +73,9 @@ public class SalaController {
     }
 
     public record SalaConButacasRequest(String nombre, int filas, int butacasPorFila) {
+    }
+
+    public record SalaConMatrizRequest(String nombre, List<SalaService.UbicacionButaca> butacas) {
     }
 
     public record SalaResponse(int id, String nombre, int capacidad) {

@@ -69,6 +69,7 @@
         <section class="module-toolbar">
             <label>Buscar película <input id="movieSearch" type="search" placeholder="Nombre de película"></label>
             <label>Categoría <select id="categoryFilter"></select></label>
+            <label>Cantidad de entradas <input id="ticketQuantity" type="number" min="1" value="1"></label>
         </section>
 
         <section class="split-layout">
@@ -83,8 +84,18 @@
                 <div class="panel-heading">
                     <h2>Compra</h2>
                 </div>
+                <div id="purchaseSteps" class="purchase-steps"></div>
                 <div id="selectionSummary" class="info-box">Elegí una función para comenzar.</div>
                 <div id="seatList" class="seat-list"></div>
+                <label id="productTypeFilterBox" class="hidden">Categoría de consumo
+                    <select id="productTypeFilter">
+                        <option value="">Todas</option>
+                        <option value="POCHOCLOS">Pochoclos</option>
+                        <option value="BEBIDA">Bebidas</option>
+                        <option value="DULCE">Dulces</option>
+                        <option value="COMBO">Combos</option>
+                    </select>
+                </label>
                 <div id="consumptionList" class="record-list"></div>
                 <div id="paymentBox" class="payment-box"></div>
                 <button id="buyButton" class="primary-button wide-button" type="button">Comprar entrada</button>
@@ -156,7 +167,10 @@
                         <label>Nombre <input name="nombre" type="text"></label>
                         <label>Filas <input name="filas" type="number"></label>
                         <label>Butacas por fila <input name="butacasPorFila" type="number"></label>
-                        <button class="primary-button" type="submit">Crear sala automática</button>
+                        <button id="buildRoomMatrixButton" class="secondary-button" type="button">Previsualizar sala</button>
+                        <div id="roomMatrixEditor" class="seat-matrix"></div>
+                        <p class="muted">Tocá una butaca de la matriz para quitarla o volver a agregarla antes de crear la sala.</p>
+                        <button class="primary-button" type="submit">Crear sala</button>
                     </form>
                 </section>
 
@@ -182,8 +196,8 @@
                         <label>Horario <input name="horario" type="time"></label>
                         <label>Formato
                             <select name="formato">
-                                <option value="DOS_D">DOS_D</option>
-                                <option value="TRES_D">TRES_D</option>
+                                <option value="DOS_D">2D</option>
+                                <option value="TRES_D">3D</option>
                             </select>
                         </label>
                         <label>Precio de entrada <input name="precioEntrada" type="number" step="0.01"></label>
@@ -265,6 +279,6 @@
     </section>
 </div>
 
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

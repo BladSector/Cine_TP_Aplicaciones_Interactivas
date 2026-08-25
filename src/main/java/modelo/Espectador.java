@@ -7,9 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -26,13 +24,13 @@ public class Espectador {
     private String contrasenia;
     @OneToMany(mappedBy = "espectador")
     private List<Entrada> entradas;
-    @OneToOne
-    @JoinColumn(name = "metodo_pago_id")
-    private MetodoDePago metodoDePago;
+    @OneToMany(mappedBy = "espectador")
+    private List<MetodoDePago> metodosDePago;
     private boolean emailVerificado;
 
     protected Espectador(){
         this.entradas= new ArrayList<>();
+        this.metodosDePago = new ArrayList<>();
     }
 
     public Espectador(String nombre, String apellido,
@@ -44,6 +42,7 @@ public class Espectador {
         this.email = email;
         this.contrasenia = contrasenia;
         this.entradas = new ArrayList<>();
+        this.metodosDePago = new ArrayList<>();
         this.emailVerificado = false;
     }
 
@@ -63,7 +62,15 @@ public class Espectador {
     }
 
     public void agregarMetodoDePago(MetodoDePago metodoDePago) {
-        this.metodoDePago = metodoDePago;
+        if (metodoDePago == null) {
+            throw new IllegalArgumentException("El método de pago no puede ser null.");
+        }
+
+        if (!metodosDePago.contains(metodoDePago)) {
+            metodosDePago.add(metodoDePago);
+        }
+
+        metodoDePago.asignarEspectador(this);
     }
 
     public boolean esClienteFrecuente() {
@@ -103,7 +110,11 @@ public class Espectador {
     }
 
     public MetodoDePago getMetodoDePago() {
-        return metodoDePago;
+        return metodosDePago.isEmpty() ? null : metodosDePago.get(0);
+    }
+
+    public List<MetodoDePago> getMetodosDePago() {
+        return metodosDePago;
     }
 
     public boolean isEmailVerificado() {

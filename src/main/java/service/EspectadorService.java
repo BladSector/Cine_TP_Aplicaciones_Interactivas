@@ -44,6 +44,7 @@ public class EspectadorService {
         MetodoDePago metodoDePago = metodoDePagoRepository.findById(metodoDePagoId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe un metodo de pago con ese id."));
         espectador.agregarMetodoDePago(metodoDePago);
+        metodoDePagoRepository.save(metodoDePago);
         return espectadorRepository.save(espectador);
     }
 

@@ -70,14 +70,17 @@ public class MetodoDePagoController {
     public record MetodoDePagoRequest(String numero, YearMonth fechaVencimiento, String nombre, String apellido, String cvv) {
     }
 
-    public record MetodoDePagoResponse(int id, String numero, YearMonth fechaVencimiento, String nombre, String apellido) {
+    public record MetodoDePagoResponse(int id, String ultimosNumeros, YearMonth fechaVencimiento,
+                                       String nombre, String apellido, Integer espectadorId) {
         public static MetodoDePagoResponse desde(MetodoDePago metodoDePago) {
+            Integer espectadorId = metodoDePago.getEspectador() == null ? null : metodoDePago.getEspectador().getId();
             return new MetodoDePagoResponse(
                     metodoDePago.getId(),
-                    metodoDePago.getNumero(),
+                    metodoDePago.getUltimosNumeros(),
                     metodoDePago.getFechaVencimiento(),
                     metodoDePago.getNombre(),
-                    metodoDePago.getApellido()
+                    metodoDePago.getApellido(),
+                    espectadorId
             );
         }
     }

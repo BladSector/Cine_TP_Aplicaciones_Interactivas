@@ -61,6 +61,26 @@ public class SalaService {
         }
     }
 
+    public Sala guardarConMatriz(String nombre, List<UbicacionButaca> ubicaciones) {
+        if (ubicaciones == null || ubicaciones.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La sala debe tener al menos una butaca.");
+        }
+
+        try {
+            Sala sala = salaRepository.save(new Sala(nombre, ubicaciones.size()));
+
+            for (UbicacionButaca ubicacion : ubicaciones) {
+                Butaca butaca = new Butaca(ubicacion.fila(), ubicacion.numero(), sala);
+                sala.agregarButaca(butaca);
+                butacaRepository.save(butaca);
+            }
+
+            return sala;
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
     public Sala actualizar(int id, String nombre, int capacidad) {
         try {
             Sala sala = buscarPorId(id);
@@ -74,5 +94,8 @@ public class SalaService {
     public void eliminar(int id) {
         Sala sala = buscarPorId(id);
         salaRepository.delete(sala);
+    }
+
+    public record UbicacionButaca(String fila, int numero) {
     }
 }

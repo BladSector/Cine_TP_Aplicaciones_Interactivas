@@ -6,6 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.YearMonth;
@@ -23,6 +25,9 @@ public class MetodoDePago {
     private String nombre;
     private String apellido;
     private String cvv;
+    @ManyToOne
+    @JoinColumn(name = "espectador_id")
+    private Espectador espectador;
 
     protected MetodoDePago() {
     }
@@ -34,6 +39,7 @@ public class MetodoDePago {
         this.nombre = nombre;
         this.apellido= apellido;
         this.cvv = cvv;
+        this.espectador = null;
         //valida los datos y si no pasa validarDatos() no se crea.
         if (!validarDatos()) {
             throw new IllegalArgumentException("Los datos del metodo de pago no son validos.");
@@ -75,6 +81,14 @@ public class MetodoDePago {
         this.id = id;
     }
 
+    public void asignarEspectador(Espectador espectador) {
+        if (espectador == null) {
+            throw new IllegalArgumentException("El espectador no puede ser null.");
+        }
+
+        this.espectador = espectador;
+    }
+
     public int getId() {
         return id;
     }
@@ -97,5 +111,17 @@ public class MetodoDePago {
 
     public String getCvv() {
         return cvv;
+    }
+
+    public Espectador getEspectador() {
+        return espectador;
+    }
+
+    public String getUltimosNumeros() {
+        if (numero == null || numero.length() < 4) {
+            return "";
+        }
+
+        return numero.substring(numero.length() - 4);
     }
 }

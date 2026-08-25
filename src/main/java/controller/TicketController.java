@@ -2,6 +2,7 @@ package controller;
 
 import modelo.Entrada;
 import modelo.ItemConsumo;
+import modelo.MetodoDePago;
 import modelo.Ticket;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -40,7 +41,7 @@ public class TicketController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public TicketResponse guardar(@RequestBody TicketRequest request) {
-        return TicketResponse.desde(ticketService.guardar(request.espectadorId()));
+        return TicketResponse.desde(ticketService.guardar(request.espectadorId(), request.metodoDePagoId()));
     }
 
     @PostMapping("/{id}/entradas/{entradaId}")
@@ -59,19 +60,46 @@ public class TicketController {
         ticketService.eliminar(id);
     }
 
-    public record TicketRequest(int espectadorId) {
+    public record TicketRequest(int espectadorId, Integer metodoDePagoId) {
     }
 
     public record TicketResponse(int id, int espectadorId, String codigoQR,
-                                 List<Integer> entradasIds, List<Integer> itemsConsumoIds, double total) {
+                                 Integer metodoDePagoId, String metodoDePagoResumen,
+                                 List<EntradaDetalle> entradas, List<ItemConsumoDetalle> itemsConsumo, double total) {
         public static TicketResponse desde(Ticket ticket) {
+            MetodoDePago metodoDePago = ticket.getMetodoDePago();
             return new TicketResponse(
                     ticket.getId(),
                     ticket.getEspectador().getId(),
                     ticket.getCodigoQR(),
-                    ticket.getEntradas().stream().map(Entrada::getId).toList(),
-                    ticket.getItemsConsumo().stream().map(ItemConsumo::getId).toList(),
+                    metodoDePago == null ? null : metodoDePago.getId(),
+                    metodoDePago == null ? null : "Tarjeta terminada en " + metodoDePago.getUltimosNumeros(),
+                    ticket.getEntradas().stream().map(EntradaDetalle::desde).toList(),
+                    ticket.getItemsConsumo().stream().map(ItemConsumoDetalle::desde).toList(),
                     ticket.calcularTotal()
+            );
+        }
+    }
+
+    public record EntradaDetalle(int id, String pelicula, String sala, String butaca, double precio) {
+        public static EntradaDetalle desde(Entrada entrada) {
+            return new EntradaDetalle(
+                    entrada.getId(),
+                    entrada.getFuncion().getPelicula().getTitulo(),
+                    entrada.getFuncion().getSala().getNombre(),
+                    entrada.getButaca().getFila() + entrada.getButaca().getNumero(),
+                    entrada.getPrecio()
+            );
+        }
+    }
+
+    public record ItemConsumoDetalle(int id, String producto, int cantidad, double subtotal) {
+        public static ItemConsumoDetalle desde(ItemConsumo itemConsumo) {
+            return new ItemConsumoDetalle(
+                    itemConsumo.getId(),
+                    itemConsumo.getProducto().getNombre(),
+                    itemConsumo.getCantidad(),
+                    itemConsumo.calcularSubtotal()
             );
         }
     }
