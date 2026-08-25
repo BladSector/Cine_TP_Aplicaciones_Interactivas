@@ -786,7 +786,12 @@ function renderRoomMatrixEditor() {
         return;
     }
 
-    editor.appendChild(renderScreen());
+    const seatMap = document.createElement("div");
+    seatMap.className = "seat-map room-map-editor";
+    seatMap.appendChild(renderScreen());
+
+    const matrix = document.createElement("div");
+    matrix.className = "seat-matrix";
 
     for (let fila = 0; fila < filas; fila++) {
         const letraFila = String.fromCharCode("A".charCodeAt(0) + fila);
@@ -808,12 +813,19 @@ function renderRoomMatrixEditor() {
             button.addEventListener("click", () => {
                 button.classList.toggle("active");
                 button.classList.toggle("removed");
+                button.textContent = button.classList.contains("active") ? `${letraFila}${numero}` : "";
+                updateRoomSeatCounter();
             });
             row.appendChild(button);
         }
 
-        editor.appendChild(row);
+        matrix.appendChild(row);
     }
+
+    seatMap.appendChild(matrix);
+    seatMap.appendChild(renderRoomEditorHelp());
+    editor.appendChild(seatMap);
+    updateRoomSeatCounter();
 }
 
 function collectRoomSeats() {
@@ -821,6 +833,27 @@ function collectRoomSeats() {
         fila: button.dataset.fila,
         numero: Number(button.dataset.numero)
     }));
+}
+
+function renderRoomEditorHelp() {
+    const help = document.createElement("div");
+    help.className = "room-editor-help";
+    help.innerHTML = `
+        <strong id="roomSeatCounter">0 butacas activas</strong>
+        <span>Tocá una butaca para quitarla. Volvé a tocarla para agregarla otra vez.</span>
+    `;
+    return help;
+}
+
+function updateRoomSeatCounter() {
+    const counter = $("#roomSeatCounter");
+
+    if (!counter) {
+        return;
+    }
+
+    const activeSeats = collectRoomSeats().length;
+    counter.textContent = `${activeSeats} butaca${activeSeats === 1 ? "" : "s"} activa${activeSeats === 1 ? "" : "s"}`;
 }
 
 async function createFunction(event) {

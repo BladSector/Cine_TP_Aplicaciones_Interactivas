@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TP Cine API</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
 <main id="loginView" class="desktop-shell login-shell">
@@ -165,11 +165,10 @@
                     </div>
                     <form id="roomForm" class="stack-form">
                         <label>Nombre <input name="nombre" type="text"></label>
-                        <label>Filas <input name="filas" type="number"></label>
-                        <label>Butacas por fila <input name="butacasPorFila" type="number"></label>
+                        <label>Filas <input name="filas" type="number" min="1"></label>
+                        <label>Butacas por fila <input name="butacasPorFila" type="number" min="1"></label>
                         <button id="buildRoomMatrixButton" class="secondary-button" type="button">Previsualizar sala</button>
-                        <div id="roomMatrixEditor" class="seat-matrix"></div>
-                        <p class="muted">Tocá una butaca de la matriz para quitarla o volver a agregarla antes de crear la sala.</p>
+                        <div id="roomMatrixEditor" class="room-preview"></div>
                         <button class="primary-button" type="submit">Crear sala</button>
                     </form>
                 </section>
@@ -285,6 +284,6 @@
     </section>
 </div>
 
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

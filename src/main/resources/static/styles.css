@@ -483,13 +483,13 @@ textarea:focus {
 }
 
 .seat-button {
-    width: 52px;
-    min-height: 42px;
+    width: 40px;
+    min-height: 38px;
     position: relative;
-    padding: 19px 0 3px;
+    padding: 21px 0 3px;
     border-color: #d9deea;
     color: #0f2f83;
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1;
 }
 
@@ -497,9 +497,9 @@ textarea:focus {
     content: "";
     position: absolute;
     left: 50%;
-    top: 7px;
-    width: 22px;
-    height: 14px;
+    top: 6px;
+    width: 18px;
+    height: 12px;
     border-radius: 5px 5px 2px 2px;
     background: #0f2f83;
     box-shadow:
@@ -507,6 +507,14 @@ textarea:focus {
         7px 6px 0 -4px #0f2f83,
         0 11px 0 -5px #0f2f83;
     transform: translateX(-50%);
+}
+
+.seat-button.selected::before {
+    background: var(--accent);
+    box-shadow:
+        -6px 5px 0 -4px var(--accent),
+        6px 5px 0 -4px var(--accent),
+        0 10px 0 -5px var(--accent);
 }
 
 .seat-button.blocked,
@@ -533,29 +541,48 @@ textarea:focus {
     border-style: dashed;
     background: transparent;
     color: #9aa4b2;
-    opacity: 0.55;
+    opacity: 0.45;
+}
+
+.seat-button.matrix-seat.removed:hover {
+    border-color: var(--focus);
+    opacity: 1;
 }
 
 .seat-button.matrix-seat.removed::before {
-    background: #a7adba;
-    box-shadow:
-        -7px 6px 0 -4px #a7adba,
-        7px 6px 0 -4px #a7adba,
-        0 11px 0 -5px #a7adba;
+    display: none;
 }
 
 .seat-matrix {
     display: grid;
-    gap: 7px;
+    gap: 9px;
     max-width: 100%;
     overflow-x: auto;
     padding-bottom: 2px;
+}
+
+.room-preview:empty {
+    display: none;
+}
+
+.room-preview {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #f8fafc;
+    padding: 14px;
 }
 
 .seat-map {
     display: grid;
     gap: 18px;
     padding: 12px 4px;
+}
+
+.room-map-editor {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 18px;
 }
 
 .screen-shape {
@@ -576,16 +603,16 @@ textarea:focus {
 .seat-row {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: 52px;
-    gap: 7px;
+    grid-auto-columns: 40px;
+    gap: 6px;
     align-items: center;
-    justify-content: start;
+    justify-content: center;
 }
 
 .seat-row-label,
 .seat-gap {
     display: inline-grid;
-    width: 52px;
+    width: 40px;
     min-height: 36px;
     place-items: center;
 }
@@ -598,6 +625,19 @@ textarea:focus {
 
 .seat-gap {
     border: 1px dashed transparent;
+}
+
+.room-editor-help {
+    display: grid;
+    gap: 3px;
+    justify-items: center;
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+.room-editor-help strong {
+    color: var(--ink);
 }
 
 .seat-legend {
