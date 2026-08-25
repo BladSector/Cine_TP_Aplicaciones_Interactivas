@@ -23,17 +23,20 @@ public class TicketService {
     private final EntradaRepository entradaRepository;
     private final ItemConsumoRepository itemConsumoRepository;
     private final MetodoDePagoRepository metodoDePagoRepository;
+    private final EmailService emailService;
 
     public TicketService(TicketRepository ticketRepository,
                          EspectadorRepository espectadorRepository,
                          EntradaRepository entradaRepository,
                          ItemConsumoRepository itemConsumoRepository,
-                         MetodoDePagoRepository metodoDePagoRepository) {
+                         MetodoDePagoRepository metodoDePagoRepository,
+                         EmailService emailService) {
         this.ticketRepository = ticketRepository;
         this.espectadorRepository = espectadorRepository;
         this.entradaRepository = entradaRepository;
         this.itemConsumoRepository = itemConsumoRepository;
         this.metodoDePagoRepository = metodoDePagoRepository;
+        this.emailService = emailService;
     }
 
     public List<Ticket> listar() {
@@ -61,6 +64,10 @@ public class TicketService {
 
                 if (metodoDePago.getEspectador() == null || metodoDePago.getEspectador().getId() != espectador.getId()) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El metodo de pago no pertenece al espectador.");
+                }
+
+                if (metodoDePago.estaVencido()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El metodo de pago esta vencido.");
                 }
             }
 
@@ -94,6 +101,12 @@ public class TicketService {
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
+    }
+
+    public Ticket enviarPorMail(int id) {
+        Ticket ticket = buscarPorId(id);
+        emailService.enviarTicket(ticket);
+        return ticket;
     }
 
     public void eliminar(int id) {

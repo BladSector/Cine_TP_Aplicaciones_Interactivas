@@ -46,9 +46,9 @@ public class MetodoDePago {
         }
     }
 
-    //Verifica que la fecha de vencimiento sea válida (!vacío y fecha posterior a la actual).
+    // Verifica si la tarjeta esta vencida o si no tiene fecha cargada.
     public boolean estaVencido() {
-        return fechaVencimiento == null || fechaVencimiento.isBefore(YearMonth.now());
+        return fechaVencimiento == null || !fechaVencimiento.isAfter(YearMonth.now());
     }
 
     // isBlank() verifica que el nombre no este vacío ni tenga solo espacios.

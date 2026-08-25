@@ -14,10 +14,14 @@ import java.util.List;
 public class EspectadorService {
     private final EspectadorRepository espectadorRepository;
     private final MetodoDePagoRepository metodoDePagoRepository;
+    private final EmailService emailService;
 
-    public EspectadorService(EspectadorRepository espectadorRepository, MetodoDePagoRepository metodoDePagoRepository) {
+    public EspectadorService(EspectadorRepository espectadorRepository,
+                             MetodoDePagoRepository metodoDePagoRepository,
+                             EmailService emailService) {
         this.espectadorRepository = espectadorRepository;
         this.metodoDePagoRepository = metodoDePagoRepository;
+        this.emailService = emailService;
     }
 
     public List<Espectador> listar() {
@@ -30,7 +34,9 @@ public class EspectadorService {
     }
 
     public Espectador guardar(String nombre, String apellido, String email, String contrasenia) {
-        return espectadorRepository.save(new Espectador(nombre, apellido, email, contrasenia));
+        Espectador espectador = espectadorRepository.save(new Espectador(nombre, apellido, email, contrasenia));
+        emailService.enviarConfirmacionCuenta(espectador);
+        return espectador;
     }
 
     public Espectador actualizar(int id, String nombre, String apellido, String email, String contrasenia) {

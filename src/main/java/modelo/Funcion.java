@@ -63,6 +63,7 @@ public class Funcion {
 
     private boolean validarDatos() {
         return fecha != null
+                && !fecha.isBefore(LocalDate.now())
                 && horario != null
                 && pelicula != null
                 && sala != null

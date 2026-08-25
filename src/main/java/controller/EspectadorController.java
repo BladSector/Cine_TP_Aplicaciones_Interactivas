@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import service.EspectadorService;
 
+import java.time.YearMonth;
 import java.util.List;
 
 @RestController
@@ -96,11 +97,12 @@ public class EspectadorController {
         }
     }
 
-    public record MetodoDePagoResumen(int id, String ultimosNumeros, String nombre, String apellido) {
+    public record MetodoDePagoResumen(int id, String ultimosNumeros, YearMonth fechaVencimiento, String nombre, String apellido) {
         public static MetodoDePagoResumen desde(MetodoDePago metodoDePago) {
             return new MetodoDePagoResumen(
                     metodoDePago.getId(),
                     metodoDePago.getUltimosNumeros(),
+                    metodoDePago.getFechaVencimiento(),
                     metodoDePago.getNombre(),
                     metodoDePago.getApellido()
             );

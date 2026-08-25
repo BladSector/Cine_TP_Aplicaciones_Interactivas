@@ -39,6 +39,8 @@ async function initApp() {
     adminView = $("#adminView");
     responseOutput = $("#responseOutput");
 
+    setInputDateLimits();
+
     bind("#enterSpectatorButton", "click", enterSelectedSpectator);
     bind("#createSpectatorButton", "click", createAndEnterSpectator);
     bind("#enterAdminButton", "click", enterAdmin);
@@ -85,6 +87,16 @@ function bind(selector, event, handler) {
     }
 
     element.addEventListener(event, handler);
+}
+
+function setInputDateLimits() {
+    document.querySelectorAll("input[type='date']").forEach(input => {
+        input.min = todayValue();
+    });
+
+    document.querySelectorAll("input[type='month']").forEach(input => {
+        input.min = nextMonthValue();
+    });
 }
 
 function emptyData() {
@@ -238,7 +250,13 @@ function renderProfile() {
 
     const metodos = state.spectator.metodosDePago || [];
     const tarjetas = metodos.length
-        ? metodos.map(metodo => `<li>Tarjeta terminada en ${escapeHtml(metodo.ultimosNumeros)} - ${escapeHtml(metodo.nombre)} ${escapeHtml(metodo.apellido)}</li>`).join("")
+        ? metodos.map(metodo => `
+            <li>
+                Tarjeta terminada en ${escapeHtml(metodo.ultimosNumeros)}
+                - vence ${escapeHtml(metodo.fechaVencimiento)}
+                ${paymentIsExpired(metodo.fechaVencimiento) ? " - vencida" : ""}
+            </li>
+        `).join("")
         : `<li>No hay métodos de pago cargados.</li>`;
 
     box.innerHTML = `
@@ -590,8 +608,13 @@ function renderPayment() {
     }
 
     const metodos = state.spectator.metodosDePago || [];
+    const hasValidMethod = metodos.some(metodo => !paymentIsExpired(metodo.fechaVencimiento));
     const opciones = metodos.map(metodo => `
-        <option value="${metodo.id}">Tarjeta terminada en ${escapeHtml(metodo.ultimosNumeros)} - ${escapeHtml(metodo.nombre)} ${escapeHtml(metodo.apellido)}</option>
+        <option value="${metodo.id}" ${paymentIsExpired(metodo.fechaVencimiento) ? "disabled" : ""}>
+            Tarjeta terminada en ${escapeHtml(metodo.ultimosNumeros)}
+            - vence ${escapeHtml(metodo.fechaVencimiento)}
+            ${paymentIsExpired(metodo.fechaVencimiento) ? " - vencida" : ""}
+        </option>
     `).join("");
 
     box.innerHTML = `
@@ -599,7 +622,7 @@ function renderPayment() {
         <label>Tarjeta para pagar
             <select id="paymentMethodSelect">
                 ${opciones}
-                <option value="new">${metodos.length ? "Agregar otra tarjeta" : "Cargar nueva tarjeta"}</option>
+                <option value="new" ${hasValidMethod ? "" : "selected"}>${metodos.length ? "Agregar otra tarjeta" : "Cargar nueva tarjeta"}</option>
             </select>
         </label>
         <div class="payment-grid">
@@ -685,6 +708,7 @@ async function buyTicket() {
         }
 
         const ticketCompleto = await request(`${api.tickets}/${ticket.id}`);
+        await request(`${api.tickets}/${ticket.id}/enviar-mail`, { method: "POST" });
         await loadAll();
         state.spectator = await request(`${api.espectadores}/${state.spectator.id}`);
         state.selectedSeats = [];
@@ -701,8 +725,16 @@ async function ensurePaymentMethod() {
     const selected = $("#paymentMethodSelect")?.value;
 
     if (selected && selected !== "new") {
+        const metodo = state.spectator.metodosDePago?.find(item => item.id === Number(selected));
+
+        if (metodo && paymentIsExpired(metodo.fechaVencimiento)) {
+            throw { error: "El método de pago seleccionado está vencido." };
+        }
+
         return Number(selected);
     }
+
+    validatePaymentExpiration($("#payExpiration").value);
 
     const metodoPago = await request(api.metodosPago, {
         method: "POST",
@@ -749,6 +781,8 @@ async function addPaymentFromProfile(event) {
     const form = event.currentTarget;
 
     try {
+        validatePaymentExpiration(form.fechaVencimiento.value);
+
         const metodoPago = await request(api.metodosPago, {
             method: "POST",
             body: {
@@ -1057,6 +1091,11 @@ async function createFunction(event) {
     event.preventDefault();
     const form = event.currentTarget;
 
+    if (dateIsBeforeToday(form.fecha.value)) {
+        setOutput({ error: "La fecha de la función debe ser de hoy o posterior." }, true);
+        return;
+    }
+
     await adminPost(api.funciones, {
         fecha: form.fecha.value,
         horario: normalizeTime(form.horario.value),
@@ -1073,6 +1112,11 @@ async function updateFunction(event) {
     event.preventDefault();
     const form = event.currentTarget;
     const id = Number(form.elements.id.value);
+
+    if (dateIsBeforeToday(form.fecha.value)) {
+        setOutput({ error: "La fecha de la función debe ser de hoy o posterior." }, true);
+        return;
+    }
 
     await adminPut(`${api.funciones}/${id}`, {
         fecha: form.fecha.value,
@@ -1308,6 +1352,54 @@ async function request(url, options = {}) {
 
 function normalizeTime(value) {
     return value && value.length === 5 ? `${value}:00` : value;
+}
+
+function dateIsBeforeToday(value) {
+    if (!value) {
+        return true;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const selected = new Date(`${value}T00:00:00`);
+    return selected < today;
+}
+
+function todayValue() {
+    return formatDateInputValue(new Date());
+}
+
+function nextMonthValue() {
+    const date = new Date();
+    date.setMonth(date.getMonth() + 1);
+    return formatDateInputValue(date).slice(0, 7);
+}
+
+function formatDateInputValue(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+function validatePaymentExpiration(value) {
+    if (paymentIsExpired(value)) {
+        throw { error: "La fecha de vencimiento debe ser posterior al mes actual." };
+    }
+}
+
+function paymentIsExpired(value) {
+    if (!value) {
+        return true;
+    }
+
+    const [year, month] = value.split("-").map(Number);
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1;
+
+    return year < currentYear || (year === currentYear && month <= currentMonth);
 }
 
 function shortTime(value) {
