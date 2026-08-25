@@ -24,6 +24,8 @@ public class Funcion {
     private Sala sala;
     @Enumerated(EnumType.STRING)
     private FormatoFuncion formato;
+    @Enumerated(EnumType.STRING)
+    private IdiomaFuncion idioma;
     private double precioEntrada;
     @OneToMany(mappedBy = "funcion")
     private List<Entrada> entradas;
@@ -32,20 +34,25 @@ public class Funcion {
         this.entradas= new ArrayList<>();
     }
     public Funcion(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala) {
-        this(fecha, horario, pelicula, sala, FormatoFuncion.DOS_D, 0);
+        this(fecha, horario, pelicula, sala, FormatoFuncion.DOS_D, IdiomaFuncion.SUBTITULADA, 0);
     }
 
     public Funcion(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato) {
-        this(fecha, horario, pelicula, sala, formato, 0);
+        this(fecha, horario, pelicula, sala, formato, IdiomaFuncion.SUBTITULADA, 0);
     }
 
     public Funcion(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato, double precioEntrada) {
+        this(fecha, horario, pelicula, sala, formato, IdiomaFuncion.SUBTITULADA, precioEntrada);
+    }
+
+    public Funcion(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato, IdiomaFuncion idioma, double precioEntrada) {
         this.id = 0;
         this.fecha = fecha;
         this.horario = horario;
         this.pelicula = pelicula;
         this.sala = sala;
         this.formato = formato;
+        this.idioma = idioma;
         this.precioEntrada = precioEntrada;
         this.entradas = new ArrayList<>();
 
@@ -60,19 +67,25 @@ public class Funcion {
                 && pelicula != null
                 && sala != null
                 && formato != null
+                && idioma != null
                 && precioEntrada >= 0;
     }
 
     public void actualizarDatos(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato) {
-        actualizarDatos(fecha, horario, pelicula, sala, formato, precioEntrada);
+        actualizarDatos(fecha, horario, pelicula, sala, formato, idioma, precioEntrada);
     }
 
     public void actualizarDatos(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato, double precioEntrada) {
+        actualizarDatos(fecha, horario, pelicula, sala, formato, idioma, precioEntrada);
+    }
+
+    public void actualizarDatos(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato, IdiomaFuncion idioma, double precioEntrada) {
         this.fecha = fecha;
         this.horario = horario;
         this.pelicula = pelicula;
         this.sala = sala;
         this.formato = formato;
+        this.idioma = idioma;
         this.precioEntrada = precioEntrada;
 
         if (!validarDatos()) {
@@ -134,6 +147,10 @@ public class Funcion {
 
     public FormatoFuncion getFormato() {
         return formato;
+    }
+
+    public IdiomaFuncion getIdioma() {
+        return idioma;
     }
 
     public double getPrecioEntrada() {

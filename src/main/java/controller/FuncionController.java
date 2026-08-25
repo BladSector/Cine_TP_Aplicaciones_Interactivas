@@ -2,6 +2,7 @@ package controller;
 
 import modelo.FormatoFuncion;
 import modelo.Funcion;
+import modelo.IdiomaFuncion;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,6 +49,7 @@ public class FuncionController {
                 request.peliculaId(),
                 request.salaId(),
                 request.formato(),
+                request.idioma(),
                 request.precioEntrada()
         ));
     }
@@ -61,6 +63,7 @@ public class FuncionController {
                 request.peliculaId(),
                 request.salaId(),
                 request.formato(),
+                request.idioma(),
                 request.precioEntrada()
         ));
     }
@@ -71,10 +74,10 @@ public class FuncionController {
         funcionService.eliminar(id);
     }
 
-    public record FuncionRequest(LocalDate fecha, LocalTime horario, int peliculaId, int salaId, FormatoFuncion formato, double precioEntrada) {
+    public record FuncionRequest(LocalDate fecha, LocalTime horario, int peliculaId, int salaId, FormatoFuncion formato, IdiomaFuncion idioma, double precioEntrada) {
     }
 
-    public record FuncionResponse(int id, LocalDate fecha, LocalTime horario, FormatoFuncion formato,
+    public record FuncionResponse(int id, LocalDate fecha, LocalTime horario, FormatoFuncion formato, IdiomaFuncion idioma,
                                   double precioEntrada, int peliculaId, String peliculaTitulo, int salaId, String salaNombre) {
         public static FuncionResponse desde(Funcion funcion) {
             return new FuncionResponse(
@@ -82,6 +85,7 @@ public class FuncionController {
                     funcion.getFecha(),
                     funcion.getHorario(),
                     funcion.getFormato(),
+                    funcion.getIdioma(),
                     funcion.getPrecioEntrada(),
                     funcion.getPelicula().getId(),
                     funcion.getPelicula().getTitulo(),

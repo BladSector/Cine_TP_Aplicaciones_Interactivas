@@ -2,6 +2,7 @@ package service;
 
 import modelo.FormatoFuncion;
 import modelo.Funcion;
+import modelo.IdiomaFuncion;
 import modelo.Pelicula;
 import modelo.Sala;
 import org.springframework.http.HttpStatus;
@@ -36,22 +37,22 @@ public class FuncionService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe una funcion con ese id."));
     }
 
-    public Funcion guardar(LocalDate fecha, LocalTime horario, int peliculaId, int salaId, FormatoFuncion formato, double precioEntrada) {
+    public Funcion guardar(LocalDate fecha, LocalTime horario, int peliculaId, int salaId, FormatoFuncion formato, IdiomaFuncion idioma, double precioEntrada) {
         try {
             Pelicula pelicula = buscarPelicula(peliculaId);
             Sala sala = buscarSala(salaId);
-            return funcionRepository.save(new Funcion(fecha, horario, pelicula, sala, formato, precioEntrada));
+            return funcionRepository.save(new Funcion(fecha, horario, pelicula, sala, formato, idioma, precioEntrada));
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
 
-    public Funcion actualizar(int id, LocalDate fecha, LocalTime horario, int peliculaId, int salaId, FormatoFuncion formato, double precioEntrada) {
+    public Funcion actualizar(int id, LocalDate fecha, LocalTime horario, int peliculaId, int salaId, FormatoFuncion formato, IdiomaFuncion idioma, double precioEntrada) {
         try {
             Funcion funcion = buscarPorId(id);
             Pelicula pelicula = buscarPelicula(peliculaId);
             Sala sala = buscarSala(salaId);
-            funcion.actualizarDatos(fecha, horario, pelicula, sala, formato, precioEntrada);
+            funcion.actualizarDatos(fecha, horario, pelicula, sala, formato, idioma, precioEntrada);
             return funcionRepository.save(funcion);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());

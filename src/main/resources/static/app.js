@@ -252,8 +252,10 @@ function renderMovies() {
 
     movies.forEach(pelicula => {
         const functions = state.data.funciones.filter(funcion => funcion.peliculaId === pelicula.id);
+        const formatos = [...new Set(functions.map(funcion => formatFunction(funcion.formato)))];
+        const idiomas = [...new Set(functions.map(funcion => formatLanguage(funcion.idioma)))];
         const card = document.createElement("article");
-        card.className = "movie-card";
+        card.className = "movie-card movie-detail";
         card.classList.toggle("selected", state.selectedMovie?.id === pelicula.id);
         const poster = pelicula.portadaUrl
             ? `<img class="movie-poster" src="${pelicula.portadaUrl}" alt="Portada de ${escapeHtml(pelicula.titulo)}">`
@@ -265,7 +267,7 @@ function renderMovies() {
                 <button class="function-button ${state.selectedFunction?.id === funcion.id ? "selected" : ""}"
                         type="button"
                         data-function-id="${funcion.id}">
-                    ${funcion.fecha} ${shortTime(funcion.horario)} - ${formatFunction(funcion.formato)} - $${money(funcion.precioEntrada)}
+                    ${funcion.fecha} ${shortTime(funcion.horario)} - ${formatFunction(funcion.formato)} - ${formatLanguage(funcion.idioma)} - $${money(funcion.precioEntrada)}
                 </button>
               `).join("");
 
@@ -273,8 +275,27 @@ function renderMovies() {
             ${poster}
             <div class="movie-info">
                 <h3>${escapeHtml(pelicula.titulo)}</h3>
-                <p class="muted">${escapeHtml(pelicula.categoriaNombre)} - ${pelicula.duracion} min</p>
+                <div class="movie-facts">
+                    <div>
+                        <span>Formatos</span>
+                        <strong>${formatos.length ? escapeHtml(formatos.join(", ")) : "Sin funciones"}</strong>
+                    </div>
+                    <div>
+                        <span>Duración</span>
+                        <strong>${formatDuration(pelicula.duracion)}</strong>
+                    </div>
+                    <div>
+                        <span>Categoría</span>
+                        <strong>${escapeHtml(pelicula.categoriaNombre)}</strong>
+                    </div>
+                    <div>
+                        <span>Idiomas</span>
+                        <strong>${idiomas.length ? escapeHtml(idiomas.join(", ")) : "Sin funciones"}</strong>
+                    </div>
+                </div>
+                <h4>Sinopsis</h4>
                 <p>${escapeHtml(pelicula.descripcion || "Sin descripción cargada.")}</p>
+                <h4>Funciones disponibles</h4>
                 <div class="function-list">${functionButtons}</div>
             </div>
         `;
@@ -328,7 +349,10 @@ function renderSelectionSummary() {
     const summary = $("#selectionSummary");
 
     if (!state.selectedFunction || !state.selectedMovie) {
-        summary.textContent = "Elegí una función para comenzar.";
+        summary.innerHTML = `
+            <h3>Datos de la compra</h3>
+            <p>Elegí una función para comenzar.</p>
+        `;
         return;
     }
 
@@ -336,11 +360,16 @@ function renderSelectionSummary() {
     const butacas = state.selectedSeats.map(butaca => `${butaca.fila}${butaca.numero}`).join(", ");
 
     summary.innerHTML = `
-        <strong>${state.selectedMovie.titulo}</strong><br>
-        ${state.selectedFunction.fecha} ${shortTime(state.selectedFunction.horario)} - ${formatFunction(state.selectedFunction.formato)}<br>
-        Entradas: ${cantidad} x $${money(state.selectedFunction.precioEntrada)}<br>
-        Total entradas: $${money(state.selectedFunction.precioEntrada * cantidad)}
-        ${butacas ? `<br>Butacas: ${escapeHtml(butacas)}` : `<br>Elegí ${cantidad} butaca${cantidad === 1 ? "" : "s"}.`}
+        <h3>Datos de la compra</h3>
+        <p><strong>Fecha y hora de la función:</strong><br>${state.selectedFunction.fecha}, ${shortTime(state.selectedFunction.horario)}.</p>
+        <p><strong>Película:</strong><br>${escapeHtml(state.selectedMovie.titulo)}.</p>
+        <p><strong>Sala:</strong><br>${escapeHtml(state.selectedFunction.salaNombre)}.</p>
+        <p><strong>Formato e idioma:</strong><br>${formatFunction(state.selectedFunction.formato)} - ${formatLanguage(state.selectedFunction.idioma)}.</p>
+        <p><strong>Butacas:</strong><br>${butacas ? escapeHtml(butacas) : `Elegí ${cantidad} butaca${cantidad === 1 ? "" : "s"}.`}</p>
+        <div class="summary-total">
+            <span>${cantidad} entrada${cantidad === 1 ? "" : "s"}</span>
+            <strong>$${money(state.selectedFunction.precioEntrada * cantidad)}</strong>
+        </div>
     `;
 }
 
@@ -359,7 +388,10 @@ function renderSeats() {
         return;
     }
 
-    seatList.appendChild(renderSeatMatrix(seats, butaca => {
+    const seatMap = document.createElement("div");
+    seatMap.className = "seat-map";
+    seatMap.appendChild(renderScreen());
+    seatMap.appendChild(renderSeatMatrix(seats, butaca => {
         const button = document.createElement("button");
         const selected = state.selectedSeats.some(selectedSeat => selectedSeat.id === butaca.id);
         button.className = `seat-button ${selected ? "selected" : ""} ${butaca.estado !== "DISPONIBLE" ? "blocked" : ""}`;
@@ -372,6 +404,8 @@ function renderSeats() {
         });
         return button;
     }));
+    seatMap.appendChild(renderSeatLegend());
+    seatList.appendChild(seatMap);
 }
 
 function selectedQuantity() {
@@ -437,6 +471,24 @@ function renderSeatMatrix(seats, buttonFactory) {
     });
 
     return matrix;
+}
+
+function renderScreen() {
+    const screen = document.createElement("div");
+    screen.className = "screen-shape";
+    screen.textContent = "PANTALLA";
+    return screen;
+}
+
+function renderSeatLegend() {
+    const legend = document.createElement("div");
+    legend.className = "seat-legend";
+    legend.innerHTML = `
+        <span><i class="legend-seat available"></i>Disponible</span>
+        <span><i class="legend-seat selected"></i>Seleccionada</span>
+        <span><i class="legend-seat blocked"></i>No disponible</span>
+    `;
+    return legend;
 }
 
 function renderConsumption() {
@@ -734,6 +786,8 @@ function renderRoomMatrixEditor() {
         return;
     }
 
+    editor.appendChild(renderScreen());
+
     for (let fila = 0; fila < filas; fila++) {
         const letraFila = String.fromCharCode("A".charCodeAt(0) + fila);
         const row = document.createElement("div");
@@ -779,6 +833,7 @@ async function createFunction(event) {
         peliculaId: Number(form.peliculaId.value),
         salaId: Number(form.salaId.value),
         formato: form.formato.value,
+        idioma: form.idioma.value,
         precioEntrada: Number(form.precioEntrada.value)
     });
     form.reset();
@@ -814,7 +869,7 @@ function renderAdminData() {
         ["Películas", state.data.peliculas, ["id", "titulo", "descripcion", "categoriaNombre"]],
         ["Salas", state.data.salas, ["id", "nombre", "capacidad"]],
         ["Butacas", state.data.butacas, ["id", "fila", "numero", "estado", "salaId"]],
-        ["Funciones", state.data.funciones, ["id", "peliculaTitulo", "fecha", "horario", "formato", "precioEntrada"]],
+        ["Funciones", state.data.funciones, ["id", "peliculaTitulo", "fecha", "horario", "formato", "idioma", "precioEntrada"]],
         ["Espectadores", state.data.espectadores, ["id", "nombre", "apellido", "email", "metodosDePago"]],
         ["Métodos de pago", state.data.metodosPago, ["id", "ultimosNumeros", "nombre", "apellido", "espectadorId"]],
         ["Entradas", state.data.entradas, ["id", "precio", "estado", "espectadorId", "funcionId", "butacaId", "ticketId"]],
@@ -914,6 +969,30 @@ function formatFunction(value) {
     return value || "";
 }
 
+function formatLanguage(value) {
+    if (value === "ESPANIOL") {
+        return "Español";
+    }
+
+    if (value === "SUBTITULADA") {
+        return "Subtitulada";
+    }
+
+    return value || "";
+}
+
+function formatDuration(minutes) {
+    const total = Number(minutes || 0);
+
+    if (total < 60) {
+        return `${total} min`;
+    }
+
+    const hours = Math.floor(total / 60);
+    const remainingMinutes = total % 60;
+    return `${hours} h ${remainingMinutes} min`;
+}
+
 function labelProductType(value) {
     const labels = {
         POCHOCLOS: "Pochoclos",
@@ -941,6 +1020,7 @@ function labelForColumn(column) {
         fecha: "Fecha",
         horario: "Horario",
         formato: "Formato",
+        idioma: "Idioma",
         precioEntrada: "Precio entrada",
         apellido: "Apellido",
         email: "Email",
@@ -995,6 +1075,10 @@ function formatValue(value) {
 
     if (value === "DOS_D" || value === "TRES_D") {
         return formatFunction(value);
+    }
+
+    if (value === "ESPANIOL" || value === "SUBTITULADA") {
+        return formatLanguage(value);
     }
 
     if (["POCHOCLOS", "BEBIDA", "DULCE", "COMBO"].includes(value)) {
