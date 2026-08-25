@@ -81,15 +81,18 @@ public class ButacaController {
     public record BloqueoRequest(int minutos) {
     }
 
-    public record ButacaResponse(int id, String fila, int numero, EstadoButaca estado, LocalDateTime bloqueoHasta, int salaId) {
+    public record ButacaResponse(int id, String fila, int numero, String butacaNombre,
+                                 EstadoButaca estado, LocalDateTime bloqueoHasta, int salaId, String salaNombre) {
         public static ButacaResponse desde(Butaca butaca) {
             return new ButacaResponse(
                     butaca.getId(),
                     butaca.getFila(),
                     butaca.getNumero(),
+                    butaca.getFila() + butaca.getNumero(),
                     butaca.getEstado(),
                     butaca.getBloqueoHasta(),
-                    butaca.getSala().getId()
+                    butaca.getSala().getId(),
+                    butaca.getSala().getNombre()
             );
         }
     }

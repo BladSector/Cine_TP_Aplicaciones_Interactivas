@@ -84,7 +84,9 @@ public class EntradaController {
     }
 
     public record EntradaResponse(int id, double precio, EstadoEntrada estado, LocalDateTime horario,
-                                  int espectadorId, int funcionId, int butacaId, Integer ticketId) {
+                                  int espectadorId, String espectadorNombre,
+                                  int funcionId, String funcionDetalle, String peliculaTitulo, String salaNombre,
+                                  int butacaId, String butacaNombre, Integer ticketId) {
         public static EntradaResponse desde(Entrada entrada) {
             Integer ticketId = entrada.getTicket() == null ? null : entrada.getTicket().getId();
             return new EntradaResponse(
@@ -93,8 +95,13 @@ public class EntradaController {
                     entrada.getEstado(),
                     entrada.getHorario(),
                     entrada.getEspectador().getId(),
+                    entrada.getEspectador().getNombre() + " " + entrada.getEspectador().getApellido(),
                     entrada.getFuncion().getId(),
+                    entrada.getFuncion().getFecha() + " " + entrada.getFuncion().getHorario(),
+                    entrada.getFuncion().getPelicula().getTitulo(),
+                    entrada.getFuncion().getSala().getNombre(),
                     entrada.getButaca().getId(),
+                    entrada.getButaca().getFila() + entrada.getButaca().getNumero(),
                     ticketId
             );
         }

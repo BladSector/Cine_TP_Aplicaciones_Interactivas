@@ -63,7 +63,7 @@ public class TicketController {
     public record TicketRequest(int espectadorId, Integer metodoDePagoId) {
     }
 
-    public record TicketResponse(int id, int espectadorId, String codigoQR,
+    public record TicketResponse(int id, int espectadorId, String espectadorNombre, String codigoQR,
                                  Integer metodoDePagoId, String metodoDePagoResumen,
                                  List<EntradaDetalle> entradas, List<ItemConsumoDetalle> itemsConsumo, double total) {
         public static TicketResponse desde(Ticket ticket) {
@@ -71,6 +71,7 @@ public class TicketController {
             return new TicketResponse(
                     ticket.getId(),
                     ticket.getEspectador().getId(),
+                    ticket.getEspectador().getNombre() + " " + ticket.getEspectador().getApellido(),
                     ticket.getCodigoQR(),
                     metodoDePago == null ? null : metodoDePago.getId(),
                     metodoDePago == null ? null : "Tarjeta terminada en " + metodoDePago.getUltimosNumeros(),
