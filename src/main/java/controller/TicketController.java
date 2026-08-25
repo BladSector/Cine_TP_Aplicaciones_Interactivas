@@ -81,13 +81,18 @@ public class TicketController {
         }
     }
 
-    public record EntradaDetalle(int id, String pelicula, String sala, String butaca, double precio) {
+    public record EntradaDetalle(int id, String pelicula, String sala, String butaca,
+                                 String fecha, String horario, String formato, String idioma, double precio) {
         public static EntradaDetalle desde(Entrada entrada) {
             return new EntradaDetalle(
                     entrada.getId(),
                     entrada.getFuncion().getPelicula().getTitulo(),
                     entrada.getFuncion().getSala().getNombre(),
                     entrada.getButaca().getFila() + entrada.getButaca().getNumero(),
+                    entrada.getFuncion().getFecha().toString(),
+                    entrada.getFuncion().getHorario().toString(),
+                    entrada.getFuncion().getFormato().name(),
+                    entrada.getFuncion().getIdioma().name(),
                     entrada.getPrecio()
             );
         }

@@ -43,7 +43,6 @@ async function initApp() {
     bind("#createSpectatorButton", "click", createAndEnterSpectator);
     bind("#enterAdminButton", "click", enterAdmin);
     bind("#logoutButton", "click", logout);
-    bind("#refreshButton", "click", refreshCurrentView);
     bind("#movieSearch", "input", renderMovies);
     bind("#categoryFilter", "change", renderMovies);
     bind("#ticketQuantity", "input", renderCheckout);
@@ -56,6 +55,14 @@ async function initApp() {
     bind("#roomForm", "submit", createRoomWithSeats);
     bind("#functionForm", "submit", createFunction);
     bind("#productForm", "submit", createProduct);
+    bind("#profileEditForm", "submit", updateProfile);
+    bind("#profilePaymentForm", "submit", addPaymentFromProfile);
+    bind("#movieEditForm", "submit", updateMovie);
+    bind("#roomEditForm", "submit", updateRoom);
+    bind("#functionEditForm", "submit", updateFunction);
+    bind("#cancelMovieEditButton", "click", () => cancelEdit("#movieEditForm"));
+    bind("#cancelRoomEditButton", "click", () => cancelEdit("#roomEditForm"));
+    bind("#cancelFunctionEditButton", "click", () => cancelEdit("#functionEditForm"));
     document.querySelectorAll("[data-admin-tab]").forEach(button => {
         button.addEventListener("click", () => setAdminTab(button.dataset.adminTab));
     });
@@ -209,12 +216,45 @@ function resetPurchase() {
     state.selectedMovie = null;
     state.selectedFunction = null;
     state.selectedSeats = [];
+    $("#purchasePanel")?.classList.add("hidden");
+    $("#profilePanel")?.classList.remove("hidden");
+    clearTicketOutput();
 }
 
 function renderSpectatorView() {
     renderCategoryFilter();
+    renderProfile();
     renderMovies();
     renderCheckout();
+}
+
+function renderProfile() {
+    const box = $("#profileBox");
+    const form = $("#profileEditForm");
+
+    if (!box || !state.spectator) {
+        return;
+    }
+
+    const metodos = state.spectator.metodosDePago || [];
+    const tarjetas = metodos.length
+        ? metodos.map(metodo => `<li>Tarjeta terminada en ${escapeHtml(metodo.ultimosNumeros)} - ${escapeHtml(metodo.nombre)} ${escapeHtml(metodo.apellido)}</li>`).join("")
+        : `<li>No hay métodos de pago cargados.</li>`;
+
+    box.innerHTML = `
+        <p><strong>${escapeHtml(state.spectator.nombre)} ${escapeHtml(state.spectator.apellido)}</strong></p>
+        <p>${escapeHtml(state.spectator.email)}</p>
+        <p>Entradas compradas: ${state.spectator.cantidadEntradas}</p>
+        <h3>Métodos de pago</h3>
+        <ul>${tarjetas}</ul>
+    `;
+
+    if (form) {
+        form.nombre.value = state.spectator.nombre || "";
+        form.apellido.value = state.spectator.apellido || "";
+        form.email.value = state.spectator.email || "";
+        form.contrasenia.value = "";
+    }
 }
 
 function renderCategoryFilter() {
@@ -312,11 +352,19 @@ function selectFunction(id) {
     state.selectedFunction = state.data.funciones.find(funcion => funcion.id === id);
     state.selectedMovie = state.data.peliculas.find(pelicula => pelicula.id === state.selectedFunction.peliculaId);
     state.selectedSeats = [];
+    $("#purchasePanel")?.classList.remove("hidden");
+    clearTicketOutput();
     renderMovies();
     renderCheckout();
 }
 
 function renderCheckout() {
+    $("#purchasePanel")?.classList.toggle("hidden", !state.selectedFunction);
+
+    if (!state.selectedFunction) {
+        return;
+    }
+
     state.selectedSeats = state.selectedSeats.slice(0, selectedQuantity());
     renderPurchaseSteps();
     renderSelectionSummary();
@@ -639,8 +687,10 @@ async function buyTicket() {
         const ticketCompleto = await request(`${api.tickets}/${ticket.id}`);
         await loadAll();
         state.spectator = await request(`${api.espectadores}/${state.spectator.id}`);
-        resetPurchase();
+        state.selectedSeats = [];
         renderSpectatorView();
+        $("#purchasePanel")?.classList.remove("hidden");
+        showTicket(ticketCompleto);
         setOutput({ ticket: ticketCompleto, entradas: entradasPagadas, items });
     } catch (error) {
         setOutput(error, true);
@@ -670,6 +720,118 @@ async function ensurePaymentMethod() {
     });
 
     return metodoPago.id;
+}
+
+async function updateProfile(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    try {
+        state.spectator = await request(`${api.espectadores}/${state.spectator.id}`, {
+            method: "PUT",
+            body: {
+                nombre: form.nombre.value,
+                apellido: form.apellido.value,
+                email: form.email.value,
+                contrasenia: form.contrasenia.value
+            }
+        });
+        await loadAll();
+        renderSpectatorView();
+        setOutput(state.spectator);
+    } catch (error) {
+        setOutput(error, true);
+    }
+}
+
+async function addPaymentFromProfile(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    try {
+        const metodoPago = await request(api.metodosPago, {
+            method: "POST",
+            body: {
+                numero: form.numero.value,
+                fechaVencimiento: form.fechaVencimiento.value,
+                nombre: form.nombre.value,
+                apellido: form.apellido.value,
+                cvv: form.cvv.value
+            }
+        });
+
+        state.spectator = await request(`${api.espectadores}/${state.spectator.id}/metodo-pago/${metodoPago.id}`, {
+            method: "PUT"
+        });
+
+        form.reset();
+        await loadAll();
+        renderSpectatorView();
+        setOutput(state.spectator);
+    } catch (error) {
+        setOutput(error, true);
+    }
+}
+
+function clearTicketOutput() {
+    const output = $("#ticketOutput");
+
+    if (output) {
+        output.innerHTML = "";
+    }
+}
+
+function showTicket(ticket) {
+    const output = $("#ticketOutput");
+
+    if (!output) {
+        return;
+    }
+
+    const entradas = ticket.entradas || [];
+    const consumos = ticket.itemsConsumo || [];
+    const primeraEntrada = entradas[0];
+    const butacas = entradas.map(entrada => entrada.butaca).join(", ");
+    const consumosTexto = consumos.length
+        ? consumos.map(item => `${escapeHtml(item.producto)} x${item.cantidad}`).join(", ")
+        : "Sin consumo";
+
+    output.innerHTML = `
+        <article class="ticket-card">
+            <div>
+                <p class="eyebrow">Ticket generado</p>
+                <h3>${escapeHtml(primeraEntrada?.pelicula || state.selectedMovie?.titulo || "Compra")}</h3>
+                <p class="muted">${escapeHtml(ticket.codigoQR)}</p>
+            </div>
+            <div class="qr-box" aria-label="Código QR visual">${renderQrPattern(ticket.codigoQR)}</div>
+            <div class="ticket-details">
+                <p><strong>Función:</strong> ${escapeHtml(primeraEntrada?.fecha || state.selectedFunction?.fecha || "-")} ${shortTime(primeraEntrada?.horario || state.selectedFunction?.horario || "")}</p>
+                <p><strong>Sala:</strong> ${escapeHtml(primeraEntrada?.sala || state.selectedFunction?.salaNombre || "-")}</p>
+                <p><strong>Formato:</strong> ${formatFunction(primeraEntrada?.formato || state.selectedFunction?.formato)} - ${formatLanguage(primeraEntrada?.idioma || state.selectedFunction?.idioma)}</p>
+                <p><strong>Butacas:</strong> ${escapeHtml(butacas || "-")}</p>
+                <p><strong>Consumos:</strong> ${consumosTexto}</p>
+                <p><strong>Pago:</strong> ${escapeHtml(ticket.metodoDePagoResumen || "-")}</p>
+                <div class="summary-total">
+                    <span>Total</span>
+                    <strong>$${money(ticket.total)}</strong>
+                </div>
+            </div>
+        </article>
+    `;
+}
+
+function renderQrPattern(value) {
+    const text = String(value || "TICKET");
+    let seed = 0;
+
+    for (let index = 0; index < text.length; index++) {
+        seed = (seed * 31 + text.charCodeAt(index)) % 9973;
+    }
+
+    return Array.from({ length: 100 }, (_, index) => {
+        const filled = index < 30 || (index + seed + Math.floor(index / 10)) % 3 !== 0;
+        return `<span class="${filled ? "filled" : ""}"></span>`;
+    }).join("");
 }
 
 function renderAdminView() {
@@ -704,12 +866,20 @@ function renderAdminSummary() {
 
 function fillAdminSelects() {
     fillSelect("#movieForm select[name='categoriaId']", state.data.categorias, item => item.nombre, true);
+    fillSelect("#movieEditForm select[name='categoriaId']", state.data.categorias, item => item.nombre);
     fillSelect("#functionForm select[name='peliculaId']", state.data.peliculas, item => item.titulo);
     fillSelect("#functionForm select[name='salaId']", state.data.salas, item => `${item.nombre} (${item.capacidad})`);
+    fillSelect("#functionEditForm select[name='peliculaId']", state.data.peliculas, item => item.titulo);
+    fillSelect("#functionEditForm select[name='salaId']", state.data.salas, item => `${item.nombre} (${item.capacidad})`);
 }
 
 function fillSelect(selector, items, labelFactory, allowEmpty = false) {
     const select = $(selector);
+
+    if (!select) {
+        return;
+    }
+
     select.innerHTML = allowEmpty ? `<option value="">Crear categoría nueva si se completa abajo</option>` : "";
 
     items.forEach(item => {
@@ -725,6 +895,22 @@ async function createCategory(event) {
     const form = event.currentTarget;
     await adminPost(api.categorias, { nombre: form.nombre.value });
     form.reset();
+}
+
+async function updateMovie(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const id = Number(form.elements.id.value);
+    const peliculaActual = state.data.peliculas.find(pelicula => pelicula.id === id);
+    const portadaNueva = await readImageAsDataUrl(form.portada.files[0]);
+
+    await adminPut(`${api.peliculas}/${id}`, {
+        titulo: form.titulo.value,
+        duracion: Number(form.duracion.value),
+        descripcion: form.descripcion.value,
+        portadaUrl: portadaNueva || peliculaActual?.portadaUrl || "",
+        categoriaId: Number(form.categoriaId.value)
+    }, "#movieEditForm");
 }
 
 async function createMovie(event) {
@@ -771,6 +957,17 @@ async function createRoomWithSeats(event) {
     });
     form.reset();
     $("#roomMatrixEditor").innerHTML = "";
+}
+
+async function updateRoom(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const id = Number(form.elements.id.value);
+
+    await adminPut(`${api.salas}/${id}`, {
+        nombre: form.nombre.value,
+        capacidad: Number(form.capacidad.value)
+    }, "#roomEditForm");
 }
 
 function renderRoomMatrixEditor() {
@@ -872,6 +1069,22 @@ async function createFunction(event) {
     form.reset();
 }
 
+async function updateFunction(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const id = Number(form.elements.id.value);
+
+    await adminPut(`${api.funciones}/${id}`, {
+        fecha: form.fecha.value,
+        horario: normalizeTime(form.horario.value),
+        peliculaId: Number(form.peliculaId.value),
+        salaId: Number(form.salaId.value),
+        formato: form.formato.value,
+        idioma: form.idioma.value,
+        precioEntrada: Number(form.precioEntrada.value)
+    }, "#functionEditForm");
+}
+
 async function createProduct(event) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -889,6 +1102,18 @@ async function adminPost(url, body) {
     try {
         const response = await request(url, { method: "POST", body });
         setOutput(response);
+        await loadAll();
+        renderAdminView();
+    } catch (error) {
+        setOutput(error, true);
+    }
+}
+
+async function adminPut(url, body, formSelector) {
+    try {
+        const response = await request(url, { method: "PUT", body });
+        setOutput(response);
+        cancelEdit(formSelector);
         await loadAll();
         renderAdminView();
     } catch (error) {
@@ -930,30 +1155,133 @@ function renderDataGroup(selector, lists) {
         <article class="data-card">
             <h3>${title}</h3>
             <label class="table-search">Buscar <input type="search" data-table-filter placeholder="Filtrar ${title.toLowerCase()}"></label>
-            <div class="data-list">${renderTable(rows, columns)}</div>
+            <div class="data-list">${renderTable(rows, columns, title)}</div>
         </article>
     `).join("");
 
     container.querySelectorAll("[data-table-filter]").forEach(input => {
         input.addEventListener("input", () => filterTable(input));
     });
+
+    container.querySelectorAll("[data-edit-type]").forEach(button => {
+        button.addEventListener("click", () => startEdit(button.dataset.editType, Number(button.dataset.editId)));
+    });
 }
 
-function renderTable(rows, columns) {
+function renderTable(rows, columns, title) {
     if (!rows.length) {
         return `<p class="muted">Sin datos</p>`;
     }
 
+    const editType = editTypeForTitle(title);
+    const actionHeader = editType ? `<th>Acciones</th>` : "";
+
     return `
         <table>
-            <thead><tr>${columns.map(column => `<th>${labelForColumn(column)}</th>`).join("")}</tr></thead>
+            <thead><tr>${columns.map(column => `<th>${labelForColumn(column)}</th>`).join("")}${actionHeader}</tr></thead>
             <tbody>
                 ${rows.map(row => `
-                    <tr>${columns.map(column => `<td>${escapeHtml(formatValue(row[column]))}</td>`).join("")}</tr>
+                    <tr>
+                        ${columns.map(column => `<td>${escapeHtml(formatValue(row[column]))}</td>`).join("")}
+                        ${editType ? `<td><button class="table-action" type="button" data-edit-type="${editType}" data-edit-id="${row.id}">Editar</button></td>` : ""}
+                    </tr>
                 `).join("")}
             </tbody>
         </table>
     `;
+}
+
+function editTypeForTitle(title) {
+    const types = {
+        "Películas": "movie",
+        "Salas": "room",
+        "Funciones": "function"
+    };
+
+    return types[title] || "";
+}
+
+function startEdit(type, id) {
+    if (type === "movie") {
+        startMovieEdit(id);
+    }
+
+    if (type === "room") {
+        startRoomEdit(id);
+    }
+
+    if (type === "function") {
+        startFunctionEdit(id);
+    }
+}
+
+function startMovieEdit(id) {
+    const pelicula = state.data.peliculas.find(item => item.id === id);
+    const form = $("#movieEditForm");
+
+    if (!pelicula || !form) {
+        return;
+    }
+
+    state.adminTab = "catalogo";
+    renderAdminTabs();
+    form.classList.remove("hidden");
+    form.elements.id.value = pelicula.id;
+    form.titulo.value = pelicula.titulo || "";
+    form.duracion.value = pelicula.duracion || "";
+    form.descripcion.value = pelicula.descripcion || "";
+    form.categoriaId.value = pelicula.categoriaId;
+    form.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function startRoomEdit(id) {
+    const sala = state.data.salas.find(item => item.id === id);
+    const form = $("#roomEditForm");
+
+    if (!sala || !form) {
+        return;
+    }
+
+    state.adminTab = "salas";
+    renderAdminTabs();
+    form.classList.remove("hidden");
+    form.elements.id.value = sala.id;
+    form.nombre.value = sala.nombre || "";
+    form.capacidad.value = sala.capacidad || "";
+    form.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function startFunctionEdit(id) {
+    const funcion = state.data.funciones.find(item => item.id === id);
+    const form = $("#functionEditForm");
+
+    if (!funcion || !form) {
+        return;
+    }
+
+    state.adminTab = "funciones";
+    renderAdminTabs();
+    form.classList.remove("hidden");
+    form.elements.id.value = funcion.id;
+    form.peliculaId.value = funcion.peliculaId;
+    form.salaId.value = funcion.salaId;
+    form.fecha.value = funcion.fecha || "";
+    form.horario.value = shortTime(funcion.horario);
+    form.formato.value = funcion.formato || "DOS_D";
+    form.idioma.value = funcion.idioma || "ESPANIOL";
+    form.precioEntrada.value = funcion.precioEntrada || "";
+    form.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function cancelEdit(selector) {
+    const form = $(selector);
+
+    if (!form) {
+        return;
+    }
+
+    form.reset();
+    form.classList.add("hidden");
 }
 
 async function request(url, options = {}) {

@@ -35,7 +35,10 @@ public class EspectadorService {
 
     public Espectador actualizar(int id, String nombre, String apellido, String email, String contrasenia) {
         Espectador espectador = buscarPorId(id);
-        espectador.actualizarDatos(nombre, apellido, email, contrasenia);
+        String contraseniaActualizada = contrasenia == null || contrasenia.isBlank()
+                ? espectador.getContrasenia()
+                : contrasenia;
+        espectador.actualizarDatos(nombre, apellido, email, contraseniaActualizada);
         return espectadorRepository.save(espectador);
     }
 

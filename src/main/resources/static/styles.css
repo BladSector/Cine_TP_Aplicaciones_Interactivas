@@ -306,7 +306,8 @@ textarea:focus {
 .secondary-button,
 .danger-button,
 .function-button,
-.seat-button {
+.seat-button,
+.table-action {
     min-height: 36px;
     border: 1px solid var(--line);
     border-radius: 4px;
@@ -351,6 +352,12 @@ textarea:focus {
 
 .wide-button {
     width: 100%;
+}
+
+.table-action {
+    min-height: 30px;
+    padding: 0 9px;
+    font-size: 12px;
 }
 
 .muted {
@@ -709,6 +716,61 @@ textarea:focus {
     display: grid;
     gap: 8px;
     margin-top: 10px;
+}
+
+.payment-grid h3 {
+    margin-top: 6px;
+}
+
+.profile-box ul {
+    margin: 0 0 10px;
+    padding-left: 18px;
+}
+
+.ticket-output {
+    margin-top: 12px;
+}
+
+.ticket-card {
+    display: grid;
+    gap: 14px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #ffffff;
+    padding: 14px;
+}
+
+.ticket-card h3 {
+    color: var(--accent-dark);
+    font-size: 18px;
+}
+
+.qr-box {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 3px;
+    width: 156px;
+    height: 156px;
+    border: 8px solid #ffffff;
+    background: #ffffff;
+    box-shadow: 0 0 0 1px var(--line);
+}
+
+.qr-box span {
+    background: #ffffff;
+}
+
+.qr-box span.filled {
+    background: #111827;
+}
+
+.ticket-details {
+    display: grid;
+    gap: 6px;
+}
+
+.ticket-details p {
+    margin-bottom: 0;
 }
 
 .data-lists {
