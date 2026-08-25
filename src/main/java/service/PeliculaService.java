@@ -29,21 +29,21 @@ public class PeliculaService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe una pelicula con ese id."));
     }
 
-    public Pelicula guardar(String titulo, int duracion, int categoriaId) {
+    public Pelicula guardar(String titulo, int duracion, String descripcion, String portadaUrl, int categoriaId) {
         try {
             Categoria categoria = buscarCategoria(categoriaId);
-            Pelicula pelicula = new Pelicula(titulo, duracion, categoria);
+            Pelicula pelicula = new Pelicula(titulo, duracion, descripcion, portadaUrl, categoria);
             return peliculaRepository.save(pelicula);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
 
-    public Pelicula actualizar(int id, String titulo, int duracion, int categoriaId) {
+    public Pelicula actualizar(int id, String titulo, int duracion, String descripcion, String portadaUrl, int categoriaId) {
         try {
             Pelicula pelicula = buscarPorId(id);
             Categoria categoria = buscarCategoria(categoriaId);
-            pelicula.actualizarDatos(titulo, duracion, categoria);
+            pelicula.actualizarDatos(titulo, duracion, descripcion, portadaUrl, categoria);
             return peliculaRepository.save(pelicula);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());

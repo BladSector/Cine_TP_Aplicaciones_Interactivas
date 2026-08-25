@@ -28,7 +28,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
     font: inherit;
 }
 
@@ -270,7 +271,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
     width: 100%;
     min-height: 36px;
     border: 1px solid var(--line);
@@ -280,8 +282,14 @@ select {
     color: var(--ink);
 }
 
+textarea {
+    min-height: 96px;
+    resize: vertical;
+}
+
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
     border-color: var(--focus);
     outline: 2px solid rgba(37, 99, 235, 0.14);
 }
@@ -352,6 +360,36 @@ select:focus {
 
 .movie-card.selected {
     border-color: var(--accent);
+}
+
+.movie-card {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+}
+
+.movie-info {
+    min-width: 0;
+}
+
+.movie-poster {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--surface-strong);
+    object-fit: cover;
+}
+
+.placeholder-poster {
+    display: grid;
+    place-items: center;
+    padding: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
 }
 
 .movie-card h3,
@@ -487,5 +525,9 @@ pre {
 
     .form-grid {
         grid-template-columns: 1fr;
+    }
+
+    .movie-card {
+        grid-template-columns: 82px minmax(0, 1fr);
     }
 }

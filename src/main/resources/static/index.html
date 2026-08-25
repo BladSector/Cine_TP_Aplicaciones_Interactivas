@@ -13,7 +13,7 @@
             <p class="eyebrow">Sistema de cine</p>
             <h1>TP Cine API</h1>
         </div>
-        <span class="status-pill">Localhost 8080</span>
+        <span class="status-pill">Servidor local</span>
     </header>
 
     <section class="login-layout">
@@ -129,6 +129,8 @@
                         <h3>Nueva película</h3>
                         <label>Título <input name="titulo" type="text"></label>
                         <label>Duración <input name="duracion" type="number"></label>
+                        <label>Descripción <textarea name="descripcion" rows="4"></textarea></label>
+                        <label>Portada <input name="portada" type="file" accept="image/*"></label>
                         <label>Categoría existente <select name="categoriaId"></select></label>
                         <label>Nueva categoría <input name="nuevaCategoria" type="text" placeholder="Opcional"></label>
                         <button class="primary-button" type="submit">Crear película</button>
@@ -184,7 +186,7 @@
                                 <option value="TRES_D">TRES_D</option>
                             </select>
                         </label>
-                        <label>Precio entrada <input name="precioEntrada" type="number" step="0.01"></label>
+                        <label>Precio de entrada <input name="precioEntrada" type="number" step="0.01"></label>
                         <button class="primary-button" type="submit">Crear función</button>
                     </form>
                 </section>
@@ -258,12 +260,11 @@
     <section class="module-panel response-panel">
         <div class="panel-heading">
             <h2>Estado / respuesta</h2>
-            <button id="copyResponseButton" class="secondary-button" type="button">Copiar</button>
         </div>
         <pre id="responseOutput">{}</pre>
     </section>
 </div>
 
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

@@ -39,12 +39,25 @@ public class PeliculaController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PeliculaResponse guardar(@RequestBody PeliculaRequest request) {
-        return PeliculaResponse.desde(peliculaService.guardar(request.titulo(), request.duracion(), request.categoriaId()));
+        return PeliculaResponse.desde(peliculaService.guardar(
+                request.titulo(),
+                request.duracion(),
+                request.descripcion(),
+                request.portadaUrl(),
+                request.categoriaId()
+        ));
     }
 
     @PutMapping("/{id}")
     public PeliculaResponse actualizar(@PathVariable int id, @RequestBody PeliculaRequest request) {
-        return PeliculaResponse.desde(peliculaService.actualizar(id, request.titulo(), request.duracion(), request.categoriaId()));
+        return PeliculaResponse.desde(peliculaService.actualizar(
+                id,
+                request.titulo(),
+                request.duracion(),
+                request.descripcion(),
+                request.portadaUrl(),
+                request.categoriaId()
+        ));
     }
 
     @DeleteMapping("/{id}")
@@ -53,15 +66,18 @@ public class PeliculaController {
         peliculaService.eliminar(id);
     }
 
-    public record PeliculaRequest(String titulo, int duracion, int categoriaId) {
+    public record PeliculaRequest(String titulo, int duracion, String descripcion, String portadaUrl, int categoriaId) {
     }
 
-    public record PeliculaResponse(int id, String titulo, int duracion, int categoriaId, String categoriaNombre) {
+    public record PeliculaResponse(int id, String titulo, int duracion, String descripcion, String portadaUrl,
+                                   int categoriaId, String categoriaNombre) {
         public static PeliculaResponse desde(Pelicula pelicula) {
             return new PeliculaResponse(
                     pelicula.getId(),
                     pelicula.getTitulo(),
                     pelicula.getDuracion(),
+                    pelicula.getDescripcion(),
+                    pelicula.getPortadaUrl(),
                     pelicula.getCategoria().getId(),
                     pelicula.getCategoria().getNombre()
             );

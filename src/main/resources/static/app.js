@@ -44,7 +44,6 @@ async function initApp() {
     bind("#enterAdminButton", "click", enterAdmin);
     bind("#logoutButton", "click", logout);
     bind("#refreshButton", "click", refreshCurrentView);
-    bind("#copyResponseButton", "click", copyResponse);
     bind("#movieSearch", "input", renderMovies);
     bind("#categoryFilter", "change", renderMovies);
     bind("#buyButton", "click", buyTicket);
@@ -71,7 +70,7 @@ function bind(selector, event, handler) {
     const element = $(selector);
 
     if (!element) {
-        console.warn(`No se encontro el elemento ${selector}`);
+        console.warn(`No se encontró el elemento ${selector}`);
         return;
     }
 
@@ -127,7 +126,7 @@ async function enterSelectedSpectator() {
     const id = Number($("#spectatorSelect").value);
 
     if (!id) {
-        setOutput({ error: "Primero crea o selecciona un espectador." }, true);
+        setOutput({ error: "Primero creá o seleccioná un espectador." }, true);
         return;
     }
 
@@ -173,7 +172,7 @@ async function enterRole(role) {
         renderSpectatorView();
     } else {
         $("#roleLabel").textContent = "Administrador";
-        $("#viewTitle").textContent = "Gestion del cine";
+        $("#viewTitle").textContent = "Gestión del cine";
         renderAdminView();
     }
 }
@@ -244,7 +243,7 @@ function renderMovies() {
     container.innerHTML = "";
 
     if (movies.length === 0) {
-        container.innerHTML = `<div class="summary-box">No hay peliculas para mostrar.</div>`;
+        container.innerHTML = `<div class="info-box">No hay películas para mostrar.</div>`;
         return;
     }
 
@@ -252,6 +251,10 @@ function renderMovies() {
         const functions = state.data.funciones.filter(funcion => funcion.peliculaId === pelicula.id);
         const card = document.createElement("article");
         card.className = "movie-card";
+        card.classList.toggle("selected", state.selectedMovie?.id === pelicula.id);
+        const poster = pelicula.portadaUrl
+            ? `<img class="movie-poster" src="${pelicula.portadaUrl}" alt="Portada de ${escapeHtml(pelicula.titulo)}">`
+            : `<div class="movie-poster placeholder-poster">Sin portada</div>`;
 
         const functionButtons = functions.length === 0
             ? `<p class="muted">Sin funciones cargadas.</p>`
@@ -259,14 +262,18 @@ function renderMovies() {
                 <button class="function-button ${state.selectedFunction?.id === funcion.id ? "selected" : ""}"
                         type="button"
                         data-function-id="${funcion.id}">
-                    ${funcion.fecha} ${shortTime(funcion.horario)} · ${funcion.formato} · $${money(funcion.precioEntrada)}
+                    ${funcion.fecha} ${shortTime(funcion.horario)} - ${funcion.formato} - $${money(funcion.precioEntrada)}
                 </button>
               `).join("");
 
         card.innerHTML = `
-            <h3>${pelicula.titulo}</h3>
-            <p class="muted">${pelicula.categoriaNombre} · ${pelicula.duracion} min</p>
-            <div class="function-list">${functionButtons}</div>
+            ${poster}
+            <div class="movie-info">
+                <h3>${escapeHtml(pelicula.titulo)}</h3>
+                <p class="muted">${escapeHtml(pelicula.categoriaNombre)} - ${pelicula.duracion} min</p>
+                <p>${escapeHtml(pelicula.descripcion || "Sin descripción cargada.")}</p>
+                <div class="function-list">${functionButtons}</div>
+            </div>
         `;
 
         card.querySelectorAll("[data-function-id]").forEach(button => {
@@ -296,13 +303,13 @@ function renderSelectionSummary() {
     const summary = $("#selectionSummary");
 
     if (!state.selectedFunction || !state.selectedMovie) {
-        summary.textContent = "Elegi una funcion para comenzar.";
+        summary.textContent = "Elegí una función para comenzar.";
         return;
     }
 
     summary.innerHTML = `
         <strong>${state.selectedMovie.titulo}</strong><br>
-        ${state.selectedFunction.fecha} ${shortTime(state.selectedFunction.horario)} · ${state.selectedFunction.formato}<br>
+        ${state.selectedFunction.fecha} ${shortTime(state.selectedFunction.horario)} - ${state.selectedFunction.formato}<br>
         Entrada: $${money(state.selectedFunction.precioEntrada)}
         ${state.selectedSeat ? `<br>Butaca: ${state.selectedSeat.fila}${state.selectedSeat.numero}` : ""}
     `;
@@ -321,7 +328,7 @@ function renderSeats() {
         .sort((a, b) => `${a.fila}${a.numero}`.localeCompare(`${b.fila}${b.numero}`, "es", { numeric: true }));
 
     if (seats.length === 0) {
-        seatList.innerHTML = `<div class="summary-box">No hay butacas disponibles.</div>`;
+        seatList.innerHTML = `<div class="info-box">No hay butacas disponibles.</div>`;
         return;
     }
 
@@ -343,7 +350,7 @@ function renderConsumption() {
     container.innerHTML = "";
 
     if (state.data.productos.length === 0) {
-        container.innerHTML = `<div class="summary-box">No hay productos de confiteria cargados.</div>`;
+        container.innerHTML = `<div class="info-box">No hay productos de confitería cargados.</div>`;
         return;
     }
 
@@ -371,25 +378,25 @@ function renderPayment() {
     }
 
     if (state.spectator.metodoDePagoId) {
-        box.innerHTML = `<div class="summary-box">Metodo de pago asociado: #${state.spectator.metodoDePagoId}</div>`;
+        box.innerHTML = `<div class="info-box">Método de pago asociado: #${state.spectator.metodoDePagoId}</div>`;
         return;
     }
 
     box.innerHTML = `
-        <h3>Metodo de pago</h3>
+        <h3>Método de pago</h3>
         <div class="payment-grid">
-            <label>Numero <input id="payNumber" type="text" placeholder="16 digitos"></label>
+            <label>Número <input id="payNumber" type="text" placeholder="16 dígitos"></label>
             <label>Vencimiento <input id="payExpiration" type="month"></label>
             <label>Nombre <input id="payName" type="text"></label>
             <label>Apellido <input id="payLastName" type="text"></label>
-            <label>CVV <input id="payCvv" type="password" placeholder="3 digitos"></label>
+            <label>CVV <input id="payCvv" type="password" placeholder="3 dígitos"></label>
         </div>
     `;
 }
 
 async function buyTicket() {
     if (!state.selectedFunction || !state.selectedSeat) {
-        setOutput({ error: "Elegí una funcion y una butaca." }, true);
+        setOutput({ error: "Elegí una función y una butaca." }, true);
         return;
     }
 
@@ -500,7 +507,7 @@ function fillAdminSelects() {
 
 function fillSelect(selector, items, labelFactory, allowEmpty = false) {
     const select = $(selector);
-    select.innerHTML = allowEmpty ? `<option value="">Crear nueva si se completa abajo</option>` : "";
+    select.innerHTML = allowEmpty ? `<option value="">Crear categoría nueva si se completa abajo</option>` : "";
 
     items.forEach(item => {
         const option = document.createElement("option");
@@ -521,6 +528,7 @@ async function createMovie(event) {
     event.preventDefault();
     const form = event.currentTarget;
     let categoriaId = Number(form.categoriaId.value);
+    const portadaUrl = await readImageAsDataUrl(form.portada.files[0]);
 
     if (form.nuevaCategoria.value.trim()) {
         const categoria = await request(api.categorias, {
@@ -533,6 +541,8 @@ async function createMovie(event) {
     await adminPost(api.peliculas, {
         titulo: form.titulo.value,
         duracion: Number(form.duracion.value),
+        descripcion: form.descripcion.value,
+        portadaUrl,
         categoriaId
     });
     form.reset();
@@ -591,8 +601,8 @@ async function adminPost(url, body) {
 
 function renderAdminData() {
     const allLists = [
-        ["Categorias", state.data.categorias, ["id", "nombre"]],
-        ["Peliculas", state.data.peliculas, ["id", "titulo", "categoriaNombre"]],
+        ["Categorías", state.data.categorias, ["id", "nombre"]],
+        ["Películas", state.data.peliculas, ["id", "titulo", "descripcion", "categoriaNombre"]],
         ["Salas", state.data.salas, ["id", "nombre", "capacidad"]],
         ["Butacas", state.data.butacas, ["id", "fila", "numero", "estado", "salaId"]],
         ["Funciones", state.data.funciones, ["id", "peliculaTitulo", "fecha", "horario", "formato", "precioEntrada"]],
@@ -638,10 +648,10 @@ function renderTable(rows, columns) {
 
     return `
         <table>
-            <thead><tr>${columns.map(column => `<th>${column}</th>`).join("")}</tr></thead>
+            <thead><tr>${columns.map(column => `<th>${labelForColumn(column)}</th>`).join("")}</tr></thead>
             <tbody>
                 ${rows.map(row => `
-                    <tr>${columns.map(column => `<td>${formatValue(row[column])}</td>`).join("")}</tr>
+                    <tr>${columns.map(column => `<td>${escapeHtml(formatValue(row[column]))}</td>`).join("")}</tr>
                 `).join("")}
             </tbody>
         </table>
@@ -682,6 +692,44 @@ function money(value) {
     return Number(value || 0).toFixed(2);
 }
 
+function labelForColumn(column) {
+    const labels = {
+        id: "ID",
+        titulo: "Título",
+        descripcion: "Descripción",
+        categoriaNombre: "Categoría",
+        nombre: "Nombre",
+        capacidad: "Capacidad",
+        fila: "Fila",
+        numero: "Número",
+        estado: "Estado",
+        salaId: "Sala ID",
+        peliculaTitulo: "Título",
+        fecha: "Fecha",
+        horario: "Horario",
+        formato: "Formato",
+        precioEntrada: "Precio entrada",
+        apellido: "Apellido",
+        email: "Email",
+        metodoDePagoId: "Método de pago ID",
+        precio: "Precio",
+        espectadorId: "Espectador ID",
+        funcionId: "Función ID",
+        butacaId: "Butaca ID",
+        ticketId: "Ticket ID",
+        total: "Total",
+        entradasIds: "Entradas IDs",
+        itemsConsumoIds: "Consumos IDs",
+        tipo: "Tipo",
+        tamano: "Tamaño",
+        productoNombre: "Producto",
+        cantidad: "Cantidad",
+        subtotal: "Subtotal"
+    };
+
+    return labels[column] || column;
+}
+
 function formatValue(value) {
     if (Array.isArray(value)) {
         return value.length ? value.join(", ") : "-";
@@ -696,6 +744,25 @@ function formatValue(value) {
     }
 
     return String(value);
+}
+
+function readImageAsDataUrl(file) {
+    if (!file) {
+        return Promise.resolve("");
+    }
+
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("No se pudo leer la portada."));
+        reader.readAsDataURL(file);
+    });
+}
+
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value ?? "";
+    return div.innerHTML;
 }
 
 function filterTable(input) {
@@ -713,15 +780,6 @@ function setText(selector, text) {
 
     if (element) {
         element.textContent = text;
-    }
-}
-
-async function copyResponse() {
-    try {
-        await navigator.clipboard.writeText(responseOutput.textContent);
-        setOutput({ estado: "Respuesta copiada" });
-    } catch {
-        setOutput({ aviso: "No se pudo copiar automaticamente. Podes seleccionar el texto y copiarlo manualmente." }, true);
     }
 }
 
