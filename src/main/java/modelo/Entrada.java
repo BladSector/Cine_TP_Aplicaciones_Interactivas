@@ -102,7 +102,6 @@ public class Entrada {
             throw new IllegalArgumentException("No se puede reembolsar una entrada ya escaneada.");
         }
 
-        butaca.liberarButaca();
         this.estado = EstadoEntrada.REEMBOLSADA;
     }
 
@@ -111,7 +110,6 @@ public class Entrada {
             throw new IllegalArgumentException("No se puede cancelar una entrada pagada o escaneada.");
         }
 
-        butaca.liberarButaca();
         this.estado = EstadoEntrada.CANCELADA;
     }
 

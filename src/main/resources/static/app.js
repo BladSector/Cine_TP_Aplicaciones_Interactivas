@@ -460,10 +460,11 @@ function renderSeats() {
     seatMap.appendChild(renderSeatMatrix(seats, butaca => {
         const button = document.createElement("button");
         const selected = state.selectedSeats.some(selectedSeat => selectedSeat.id === butaca.id);
-        button.className = `seat-button ${selected ? "selected" : ""} ${butaca.estado !== "DISPONIBLE" ? "blocked" : ""}`;
+        const unavailable = seatIsUnavailableForSelectedFunction(butaca);
+        button.className = `seat-button ${selected ? "selected" : ""} ${unavailable ? "blocked" : ""}`;
         button.type = "button";
         button.textContent = `${butaca.fila}${butaca.numero}`;
-        button.disabled = butaca.estado !== "DISPONIBLE";
+        button.disabled = unavailable;
         button.addEventListener("click", () => {
             toggleSeatSelection(butaca);
             renderCheckout();
@@ -481,6 +482,19 @@ function selectedQuantity() {
 
 function selectionIsReady() {
     return Boolean(state.selectedFunction) && state.selectedSeats.length === selectedQuantity();
+}
+
+function seatIsUnavailableForSelectedFunction(butaca) {
+    if (butaca.estado !== "DISPONIBLE") {
+        return true;
+    }
+
+    return state.data.entradas.some(entrada =>
+        entrada.funcionId === state.selectedFunction.id
+        && entrada.butacaId === butaca.id
+        && entrada.estado !== "REEMBOLSADA"
+        && entrada.estado !== "CANCELADA"
+    );
 }
 
 function toggleSeatSelection(butaca) {

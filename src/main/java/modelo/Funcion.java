@@ -110,7 +110,6 @@ public class Funcion {
         LocalDateTime horarioEntrada = LocalDateTime.of(fecha, horario);
         //this significa "esta misma función"
         Entrada entrada = new Entrada(precio, espectador, this, butaca, horarioEntrada);
-        entrada.asignarButaca();
 
         entradas.add(entrada);
         espectador.agregarEntrada(entrada);

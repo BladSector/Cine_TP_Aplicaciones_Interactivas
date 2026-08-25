@@ -3,6 +3,7 @@ package service;
 import modelo.Butaca;
 import modelo.Entrada;
 import modelo.Espectador;
+import modelo.EstadoEntrada;
 import modelo.Funcion;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -45,8 +46,15 @@ public class EntradaService {
             Espectador espectador = buscarEspectador(espectadorId);
             Funcion funcion = buscarFuncion(funcionId);
             Butaca butaca = buscarButaca(butacaId);
+
+            if (entradaRepository.existeEntradaActivaParaButaca(
+                    funcionId,
+                    butacaId,
+                    List.of(EstadoEntrada.REEMBOLSADA, EstadoEntrada.CANCELADA))) {
+                throw new IllegalArgumentException("La butaca ya esta ocupada para esta funcion.");
+            }
+
             Entrada entrada = funcion.venderEntrada(precio, espectador, butaca);
-            butacaRepository.save(butaca);
             return entradaRepository.save(entrada);
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
