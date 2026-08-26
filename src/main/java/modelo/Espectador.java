@@ -110,11 +110,23 @@ public class Espectador {
     }
 
     public MetodoDePago getMetodoDePago() {
-        return metodosDePago.isEmpty() ? null : metodosDePago.get(0);
+        for (MetodoDePago metodoDePago : metodosDePago) {
+            if (metodoDePago.isActiva()) {
+                return metodoDePago;
+            }
+        }
+
+        return null;
     }
 
     public List<MetodoDePago> getMetodosDePago() {
         return metodosDePago;
+    }
+
+    public List<MetodoDePago> getMetodosDePagoActivos() {
+        return metodosDePago.stream()
+                .filter(MetodoDePago::isActiva)
+                .toList();
     }
 
     public boolean isEmailVerificado() {

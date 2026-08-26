@@ -71,7 +71,8 @@ public class MetodoDePagoController {
     }
 
     public record MetodoDePagoResponse(int id, String ultimosNumeros, YearMonth fechaVencimiento,
-                                       String nombre, String apellido, Integer espectadorId, String espectadorNombre) {
+                                       String nombre, String apellido, boolean activa,
+                                       Integer espectadorId, String espectadorNombre) {
         public static MetodoDePagoResponse desde(MetodoDePago metodoDePago) {
             Integer espectadorId = metodoDePago.getEspectador() == null ? null : metodoDePago.getEspectador().getId();
             String espectadorNombre = metodoDePago.getEspectador() == null
@@ -83,6 +84,7 @@ public class MetodoDePagoController {
                     metodoDePago.getFechaVencimiento(),
                     metodoDePago.getNombre(),
                     metodoDePago.getApellido(),
+                    metodoDePago.isActiva(),
                     espectadorId,
                     espectadorNombre
             );

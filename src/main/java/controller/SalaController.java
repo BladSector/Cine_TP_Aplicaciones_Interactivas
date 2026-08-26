@@ -63,6 +63,11 @@ public class SalaController {
         return SalaResponse.desde(salaService.actualizar(id, request.nombre(), request.capacidad()));
     }
 
+    @PutMapping("/{id}/matriz")
+    public SalaResponse actualizarConMatriz(@PathVariable int id, @RequestBody SalaMatrizUpdateRequest request) {
+        return SalaResponse.desde(salaService.actualizarConMatriz(id, request.nombre(), request.butacasActivasIds()));
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminar(@PathVariable int id) {
@@ -76,6 +81,9 @@ public class SalaController {
     }
 
     public record SalaConMatrizRequest(String nombre, List<SalaService.UbicacionButaca> butacas) {
+    }
+
+    public record SalaMatrizUpdateRequest(String nombre, List<Integer> butacasActivasIds) {
     }
 
     public record SalaResponse(int id, String nombre, int capacidad) {

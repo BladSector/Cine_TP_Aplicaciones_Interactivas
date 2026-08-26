@@ -2,7 +2,6 @@ package controller;
 
 import modelo.Entrada;
 import modelo.ItemConsumo;
-import modelo.MetodoDePago;
 import modelo.Ticket;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -72,14 +71,13 @@ public class TicketController {
                                  Integer metodoDePagoId, String metodoDePagoResumen,
                                  List<EntradaDetalle> entradas, List<ItemConsumoDetalle> itemsConsumo, double total) {
         public static TicketResponse desde(Ticket ticket) {
-            MetodoDePago metodoDePago = ticket.getMetodoDePago();
             return new TicketResponse(
                     ticket.getId(),
                     ticket.getEspectador().getId(),
                     ticket.getEspectador().getNombre() + " " + ticket.getEspectador().getApellido(),
                     ticket.getCodigoQR(),
-                    metodoDePago == null ? null : metodoDePago.getId(),
-                    metodoDePago == null ? null : "Tarjeta terminada en " + metodoDePago.getUltimosNumeros(),
+                    null,
+                    ticket.getMetodoDePagoResumen(),
                     ticket.getEntradas().stream().map(EntradaDetalle::desde).toList(),
                     ticket.getItemsConsumo().stream().map(ItemConsumoDetalle::desde).toList(),
                     ticket.calcularTotal()

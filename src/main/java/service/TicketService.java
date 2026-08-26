@@ -66,12 +66,20 @@ public class TicketService {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El metodo de pago no pertenece al espectador.");
                 }
 
+                if (!metodoDePago.isActiva()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El metodo de pago ya no esta activo.");
+                }
+
                 if (metodoDePago.estaVencido()) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El metodo de pago esta vencido.");
                 }
             }
 
-            return ticketRepository.save(new Ticket(espectador, metodoDePago));
+            String metodoDePagoResumen = metodoDePago == null
+                    ? null
+                    : "Tarjeta terminada en " + metodoDePago.getUltimosNumeros();
+
+            return ticketRepository.save(new Ticket(espectador, metodoDePagoResumen));
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }

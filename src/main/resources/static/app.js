@@ -15,10 +15,16 @@ const api = {
 const state = {
     role: null,
     adminTab: "catalogo",
+    spectatorPage: "catalog",
+    purchaseStep: "seats",
     spectator: null,
     selectedMovie: null,
     selectedFunction: null,
     selectedSeats: [],
+    selectedConsumptions: {},
+    selectedProductType: "",
+    selectedPublicDate: "",
+    selectedMovieDate: "",
     data: emptyData()
 };
 
@@ -31,6 +37,12 @@ let adminView;
 let responseOutput;
 
 document.addEventListener("DOMContentLoaded", initApp);
+window.addEventListener("pageshow", () => {
+    if (!loginView || !loginView.classList.contains("hidden")) {
+        resetLoginForms();
+        renderLogin();
+    }
+});
 
 async function initApp() {
     loginView = $("#loginView");
@@ -43,13 +55,22 @@ async function initApp() {
 
     bind("#enterSpectatorButton", "click", enterSelectedSpectator);
     bind("#createSpectatorButton", "click", createAndEnterSpectator);
+    bind("#showRegisterButton", "click", showRegisterForm);
+    bind("#forgotPasswordButton", "click", showRecoverPasswordModal);
+    bind("#closeMailModalButton", "click", closeMailModal);
     bind("#enterAdminButton", "click", enterAdmin);
+    bind("#publicMovieSearch", "input", renderPublicMovies);
+    bind("#publicCategoryFilter", "change", renderPublicMovies);
+    bind("#publicFormatFilter", "change", renderPublicMovies);
+    bind("#homeButton", "click", showCatalogPage);
+    bind("#profileButton", "click", showProfilePage);
     bind("#logoutButton", "click", logout);
     bind("#movieSearch", "input", renderMovies);
     bind("#categoryFilter", "change", renderMovies);
-    bind("#ticketQuantity", "input", renderCheckout);
-    bind("#productTypeFilter", "change", renderConsumption);
+    bind("#movieFormatFilter", "change", renderMovies);
     bind("#buyButton", "click", buyTicket);
+    bind("#backPurchaseStepButton", "click", goBackPurchaseStep);
+    bind("#nextPurchaseStepButton", "click", goNextPurchaseStep);
     bind("#buildRoomMatrixButton", "click", renderRoomMatrixEditor);
 
     bind("#categoryForm", "submit", createCategory);
@@ -59,6 +80,9 @@ async function initApp() {
     bind("#productForm", "submit", createProduct);
     bind("#profileEditForm", "submit", updateProfile);
     bind("#profilePaymentForm", "submit", addPaymentFromProfile);
+    bind("#showProfileEditButton", "click", () => toggleProfileForm("#profileEditForm", "#profilePaymentForm"));
+    bind("#showProfilePaymentButton", "click", () => toggleProfileForm("#profilePaymentForm", "#profileEditForm"));
+    bind("#showPasswordChangeButton", "click", togglePasswordChange);
     bind("#movieEditForm", "submit", updateMovie);
     bind("#roomEditForm", "submit", updateRoom);
     bind("#functionEditForm", "submit", updateFunction);
@@ -128,52 +152,321 @@ async function loadAll() {
 }
 
 function renderLogin() {
-    const select = $("#spectatorSelect");
-    select.innerHTML = "";
+    const adminMode = isAdminPath();
+    $("#publicCatalogPanel")?.classList.toggle("hidden", adminMode);
+    $("#spectatorLoginPanel")?.classList.toggle("hidden", adminMode);
+    $("#adminLoginPanel")?.classList.toggle("hidden", !adminMode);
+    $("#newAccountBox")?.classList.add("hidden");
 
-    if (state.data.espectadores.length === 0) {
-        select.innerHTML = `<option value="">No hay espectadores cargados</option>`;
+    if (adminMode) {
+        $("#adminUser").value = "";
+        $("#adminPassword").value = "";
+        $("#loginView")?.classList.add("admin-login-mode");
+    } else {
+        $("#loginView")?.classList.remove("admin-login-mode");
+        state.selectedPublicDate ||= todayValue();
+        renderPublicCategoryFilter();
+        renderDateStrip("#publicDateStrip", state.selectedPublicDate, value => {
+            state.selectedPublicDate = value;
+            renderPublicMovies();
+        });
+        renderPublicMovies();
+    }
+
+    resetLoginForms();
+}
+
+function showRegisterForm() {
+    const box = $("#newAccountBox");
+
+    if (!box) {
         return;
     }
 
-    state.data.espectadores.forEach(espectador => {
-        const option = document.createElement("option");
-        option.value = espectador.id;
-        option.textContent = `${espectador.nombre} ${espectador.apellido} - ${espectador.email}`;
-        select.appendChild(option);
+    box.classList.toggle("hidden");
+}
+
+function resetLoginForms() {
+    [
+        "#loginSpectatorEmail",
+        "#loginSpectatorPassword",
+        "#newSpectatorName",
+        "#newSpectatorLastName",
+        "#newSpectatorEmail",
+        "#newSpectatorPassword",
+        "#newSpectatorPasswordConfirm"
+    ].forEach(selector => {
+        const input = $(selector);
+
+        if (input) {
+            input.value = "";
+        }
     });
 }
 
 async function enterSelectedSpectator() {
-    const id = Number($("#spectatorSelect").value);
+    const email = $("#loginSpectatorEmail").value.trim();
+    const contrasenia = $("#loginSpectatorPassword").value;
 
-    if (!id) {
-        setOutput({ error: "Primero creá o seleccioná un espectador." }, true);
+    if (!email || !contrasenia) {
+        showNoticeModal("Datos incompletos", "Ingresá email y contraseña para entrar.", true);
         return;
     }
 
-    state.spectator = await request(`${api.espectadores}/${id}`);
-    enterRole("spectator");
+    try {
+        state.spectator = await request(`${api.espectadores}/login`, {
+            method: "POST",
+            body: { email, contrasenia }
+        });
+        enterRole("spectator");
+    } catch (error) {
+        showNoticeModal("No se pudo ingresar", errorMessage(error), true);
+        setOutput(error, true);
+    }
 }
 
 async function createAndEnterSpectator() {
+    const contrasenia = $("#newSpectatorPassword").value;
+    const contraseniaConfirmacion = $("#newSpectatorPasswordConfirm").value;
+
+    if (contrasenia !== contraseniaConfirmacion) {
+        showNoticeModal("Contraseñas distintas", "Las contraseñas no son idénticas.", true);
+        return;
+    }
+
     const payload = {
         nombre: $("#newSpectatorName").value,
         apellido: $("#newSpectatorLastName").value,
         email: $("#newSpectatorEmail").value,
-        contrasenia: $("#newSpectatorPassword").value
+        contrasenia,
+        contraseniaConfirmacion
     };
 
     try {
         state.spectator = await request(api.espectadores, { method: "POST", body: payload });
         await loadAll();
+        showConfirmationMailModal(state.spectator);
         enterRole("spectator");
     } catch (error) {
+        showNoticeModal("No se pudo crear la cuenta", errorMessage(error), true);
         setOutput(error, true);
     }
 }
 
+function showRecoverPasswordModal() {
+    openMailModal(
+        "Recuperar contraseña",
+        `
+            <div class="fake-mail">
+                <p class="eyebrow">Seguridad de la cuenta</p>
+                <h3>Restablecer contraseña</h3>
+                <form id="recoverEmailModalForm" class="stack-form">
+                    <label>Email <input name="email" type="email"></label>
+                    <button class="primary-button" type="submit">Continuar</button>
+                </form>
+            </div>
+        `
+    );
+
+    $("#recoverEmailModalForm")?.addEventListener("submit", requestPasswordRecovery);
+}
+
+async function requestPasswordRecovery(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const email = form.email.value.trim();
+
+    if (!email) {
+        showNoticeModal("Email incompleto", "Ingresá el email de la cuenta.", true);
+        return;
+    }
+
+    try {
+        const espectador = await request(`${api.espectadores}/solicitar-recuperacion`, {
+            method: "POST",
+            body: { email }
+        });
+        openMailModal(
+            "Mail de recuperación",
+            `
+                <div class="fake-mail">
+                    <p class="eyebrow">Cine API</p>
+                    <h3>Cambiar contraseña</h3>
+                    <p>Recibimos una solicitud para <strong>${escapeHtml(espectador.email)}</strong>.</p>
+                    <form id="recoverPasswordModalForm" class="stack-form">
+                        <input name="email" type="hidden" value="${escapeHtml(espectador.email)}">
+                        <label>Nueva contraseña <input name="nuevaContrasenia" type="password"></label>
+                        <label>Repetir nueva contraseña <input name="nuevaContraseniaConfirmacion" type="password"></label>
+                        <button class="primary-button" type="submit">Cambiar contraseña</button>
+                    </form>
+                </div>
+            `
+        );
+        $("#recoverPasswordModalForm")?.addEventListener("submit", recoverPassword);
+        setOutput({
+            estado: "Mail de recuperación enviado",
+            detalle: "Como es ilustrativo, se abre una ventana simulando el mail.",
+            espectador
+        });
+    } catch (error) {
+        showNoticeModal("Email no encontrado", errorMessage(error), true);
+        setOutput(error, true);
+    }
+}
+
+async function recoverPassword(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    if (form.nuevaContrasenia.value !== form.nuevaContraseniaConfirmacion.value) {
+        showNoticeModal("Contraseñas distintas", "Las contraseñas nuevas no son idénticas.", true);
+        return;
+    }
+
+    try {
+        const espectador = await request(`${api.espectadores}/recuperar-contrasenia`, {
+            method: "POST",
+            body: {
+                email: form.email.value,
+                nuevaContrasenia: form.nuevaContrasenia.value,
+                nuevaContraseniaConfirmacion: form.nuevaContraseniaConfirmacion.value
+            }
+        });
+        await loadAll();
+        renderLogin();
+        showNoticeModal("Contraseña actualizada", `Ya podés ingresar con la nueva contraseña de ${espectador.email}.`);
+        setOutput({ estado: "Contraseña actualizada", espectador });
+    } catch (error) {
+        showNoticeModal("No se pudo cambiar", errorMessage(error), true);
+        setOutput(error, true);
+    }
+}
+
+function showConfirmationMailModal(espectador) {
+    openMailModal(
+        "Confirmación de email",
+        `
+            <div class="fake-mail">
+                <p class="eyebrow">Cine API</p>
+                <h3>Confirmá tu cuenta</h3>
+                <p>Hola ${escapeHtml(espectador.nombre)}, confirmá el email <strong>${escapeHtml(espectador.email)}</strong> para activar tu perfil.</p>
+                <button class="primary-button" type="button" id="confirmEmailModalButton">Confirmar email</button>
+            </div>
+        `
+    );
+
+    $("#confirmEmailModalButton")?.addEventListener("click", async () => {
+        try {
+            state.spectator = await request(`${api.espectadores}/${espectador.id}/verificar-mail`, { method: "PUT" });
+            await loadAll();
+            renderSpectatorView();
+            closeMailModal();
+            setOutput({ estado: "Email confirmado", espectador: state.spectator });
+        } catch (error) {
+            setOutput(error, true);
+        }
+    });
+}
+
+function openMailModal(title, bodyHtml) {
+    const modal = $("#mailModal");
+    const titleElement = $("#mailModalTitle");
+    const body = $("#mailModalBody");
+
+    if (!modal || !titleElement || !body) {
+        return;
+    }
+
+    titleElement.textContent = title;
+    body.innerHTML = bodyHtml;
+    modal.classList.remove("hidden");
+    bindModalCloseButtons();
+}
+
+function closeMailModal() {
+    $("#mailModal")?.classList.add("hidden");
+}
+
+function bindModalCloseButtons() {
+    document.querySelectorAll("[data-close-modal]").forEach(button => {
+        button.addEventListener("click", closeMailModal);
+    });
+}
+
+function showNoticeModal(title, message, isError = false) {
+    openMailModal(
+        title,
+        `
+            <div class="fake-mail ${isError ? "notice-error" : "notice-ok"}">
+                <p class="eyebrow">${isError ? "Atención" : "Confirmación"}</p>
+                <h3>${escapeHtml(title)}</h3>
+                <p>${escapeHtml(message)}</p>
+                <button class="primary-button" type="button" data-close-modal>Cerrar</button>
+            </div>
+        `
+    );
+}
+
+function showConfirmModal(title, message, onConfirm) {
+    openMailModal(
+        title,
+        `
+            <div class="fake-mail">
+                <p class="eyebrow">Confirmación</p>
+                <h3>${escapeHtml(title)}</h3>
+                <p>${escapeHtml(message)}</p>
+                <div class="button-row">
+                    <button class="danger-button" type="button" id="confirmModalAcceptButton">Salir</button>
+                    <button class="secondary-button" type="button" data-close-modal>Cancelar</button>
+                </div>
+            </div>
+        `
+    );
+
+    $("#confirmModalAcceptButton")?.addEventListener("click", () => {
+        closeMailModal();
+        onConfirm();
+    });
+}
+
+function errorMessage(error) {
+    if (!error) {
+        return "Ocurrió un error inesperado.";
+    }
+
+    if (typeof error === "string") {
+        return error;
+    }
+
+    if (typeof error.error === "string") {
+        return error.error;
+    }
+
+    if (error.error?.message) {
+        return error.error.message;
+    }
+
+    if (error.error?.error) {
+        return error.error.error;
+    }
+
+    return "Ocurrió un error inesperado.";
+}
+
 function enterAdmin() {
+    if (!isAdminPath()) {
+        showNoticeModal("Acceso administrador", "Entrá desde http://localhost:8080/admin para usar el panel administrador.", true);
+        return;
+    }
+
+    const usuario = $("#adminUser")?.value.trim();
+    const contrasenia = $("#adminPassword")?.value;
+
+    if (usuario !== "admin" || contrasenia !== "admin") {
+        showNoticeModal("Credenciales incorrectas", "El usuario o la contraseña del administrador no son correctos.", true);
+        return;
+    }
+
     state.adminTab = "catalogo";
     enterRole("admin");
 }
@@ -184,12 +477,16 @@ async function enterRole(role) {
     appView.classList.remove("hidden");
     spectatorView.classList.toggle("hidden", role !== "spectator");
     adminView.classList.toggle("hidden", role !== "admin");
+    $("#homeButton")?.classList.toggle("hidden", role !== "spectator");
+    $("#profileButton")?.classList.toggle("hidden", role !== "spectator");
+    $("#responsePanel")?.classList.toggle("hidden", role !== "admin");
 
     await loadAll();
 
     if (role === "spectator") {
         $("#roleLabel").textContent = "Espectador";
         $("#viewTitle").textContent = `${state.spectator.nombre} ${state.spectator.apellido}`;
+        state.spectatorPage = "catalog";
         resetPurchase();
         renderSpectatorView();
     } else {
@@ -200,11 +497,25 @@ async function enterRole(role) {
 }
 
 function logout() {
+    if (state.role) {
+        showConfirmModal("Cerrar sesión", "¿Querés salir de tu sesión actual?", performLogout);
+        return;
+    }
+
+    performLogout();
+}
+
+function performLogout() {
     state.role = null;
     state.spectator = null;
+    state.spectatorPage = "catalog";
+    state.purchaseStep = "seats";
     resetPurchase();
     appView.classList.add("hidden");
     loginView.classList.remove("hidden");
+    $("#homeButton")?.classList.add("hidden");
+    $("#profileButton")?.classList.add("hidden");
+    $("#responsePanel")?.classList.add("hidden");
     renderLogin();
 }
 
@@ -228,16 +539,49 @@ function resetPurchase() {
     state.selectedMovie = null;
     state.selectedFunction = null;
     state.selectedSeats = [];
+    state.selectedConsumptions = {};
+    state.selectedProductType = "";
+    state.purchaseStep = "seats";
     $("#purchasePanel")?.classList.add("hidden");
     $("#profilePanel")?.classList.remove("hidden");
     clearTicketOutput();
 }
 
 function renderSpectatorView() {
+    state.selectedMovieDate ||= todayValue();
     renderCategoryFilter();
     renderProfile();
+    renderDateStrip("#movieDateStrip", state.selectedMovieDate, value => {
+        state.selectedMovieDate = value;
+        renderMovies();
+    });
     renderMovies();
     renderCheckout();
+    renderSpectatorPages();
+}
+
+function showCatalogPage() {
+    state.spectatorPage = "catalog";
+    state.purchaseStep = "seats";
+    renderSpectatorView();
+}
+
+function showProfilePage() {
+    state.spectatorPage = "profile";
+    renderSpectatorView();
+}
+
+function showPurchasePage() {
+    state.spectatorPage = "purchase";
+    renderSpectatorView();
+}
+
+function renderSpectatorPages() {
+    $("#catalogPage")?.classList.toggle("hidden", state.spectatorPage !== "catalog");
+    $("#profilePanel")?.classList.toggle("hidden", state.spectatorPage !== "profile");
+    $("#purchasePanel")?.classList.toggle("hidden", state.spectatorPage !== "purchase" || !state.selectedFunction);
+    $("#movieToolbar")?.classList.toggle("hidden", state.spectatorPage !== "catalog");
+    $("#homeButton")?.classList.toggle("hidden", state.role !== "spectator" || state.spectatorPage === "catalog");
 }
 
 function renderProfile() {
@@ -251,13 +595,31 @@ function renderProfile() {
     const metodos = state.spectator.metodosDePago || [];
     const tarjetas = metodos.length
         ? metodos.map(metodo => `
-            <li>
-                Tarjeta terminada en ${escapeHtml(metodo.ultimosNumeros)}
-                - vence ${escapeHtml(metodo.fechaVencimiento)}
-                ${paymentIsExpired(metodo.fechaVencimiento) ? " - vencida" : ""}
+            <li class="payment-method-row">
+                <span>
+                    Tarjeta terminada en ${escapeHtml(metodo.ultimosNumeros)}
+                    - vence ${escapeHtml(metodo.fechaVencimiento)}
+                    ${paymentIsExpired(metodo.fechaVencimiento) ? " - vencida" : ""}
+                </span>
+                <button class="table-action danger-action" type="button" data-delete-payment-id="${metodo.id}">Eliminar</button>
             </li>
         `).join("")
         : `<li>No hay métodos de pago cargados.</li>`;
+    const tickets = state.data.tickets.filter(ticket => ticket.espectadorId === state.spectator.id);
+    const ticketsHtml = tickets.length
+        ? tickets.map(ticket => {
+            const entrada = ticket.entradas?.[0];
+            const detalle = entrada
+                ? `${entrada.pelicula} - ${formatDateShort(entrada.fecha)} ${shortTime(entrada.horario)} - ${entrada.sala}`
+                : `Ticket ${ticket.id}`;
+            return `
+                <button class="ticket-list-button" type="button" data-ticket-id="${ticket.id}">
+                    <strong>${escapeHtml(detalle)}</strong>
+                    <span>${ticket.entradas?.length || 0} entrada${ticket.entradas?.length === 1 ? "" : "s"} - $${money(ticket.total)}</span>
+                </button>
+            `;
+        }).join("")
+        : `<p class="muted">Todavía no tenés entradas compradas.</p>`;
 
     box.innerHTML = `
         <p><strong>${escapeHtml(state.spectator.nombre)} ${escapeHtml(state.spectator.apellido)}</strong></p>
@@ -265,13 +627,66 @@ function renderProfile() {
         <p>Entradas compradas: ${state.spectator.cantidadEntradas}</p>
         <h3>Métodos de pago</h3>
         <ul>${tarjetas}</ul>
+        <h3>Mis entradas</h3>
+        <div class="ticket-list">${ticketsHtml}</div>
     `;
+
+    box.querySelectorAll("[data-ticket-id]").forEach(button => {
+        button.addEventListener("click", () => {
+            const ticket = state.data.tickets.find(item => item.id === Number(button.dataset.ticketId));
+
+            if (ticket) {
+                showTicketModal(ticket);
+            }
+        });
+    });
+
+    box.querySelectorAll("[data-delete-payment-id]").forEach(button => {
+        button.addEventListener("click", () => deletePaymentMethod(Number(button.dataset.deletePaymentId)));
+    });
 
     if (form) {
         form.nombre.value = state.spectator.nombre || "";
         form.apellido.value = state.spectator.apellido || "";
         form.email.value = state.spectator.email || "";
-        form.contrasenia.value = "";
+        form.contraseniaActual.value = "";
+        form.nuevaContrasenia.value = "";
+        form.nuevaContraseniaConfirmacion.value = "";
+    }
+
+    $("#passwordChangeBox")?.classList.add("hidden");
+}
+
+function toggleProfileForm(selector, otherSelector) {
+    const form = $(selector);
+    const otherForm = $(otherSelector);
+
+    if (!form) {
+        return;
+    }
+
+    form.classList.toggle("hidden");
+
+    if (otherForm && form !== otherForm) {
+        otherForm.classList.add("hidden");
+    }
+}
+
+function togglePasswordChange() {
+    $("#passwordChangeBox")?.classList.toggle("hidden");
+}
+
+async function deletePaymentMethod(id) {
+    try {
+        await request(`${api.metodosPago}/${id}`, { method: "DELETE" });
+        await loadAll();
+        state.spectator = await request(`${api.espectadores}/${state.spectator.id}`);
+        renderSpectatorView();
+        showNoticeModal("Tarjeta eliminada", "El método de pago se quitó de tu perfil.");
+        setOutput({ estado: "Método de pago eliminado", id });
+    } catch (error) {
+        showNoticeModal("No se pudo eliminar", errorMessage(error), true);
+        setOutput(error, true);
     }
 }
 
@@ -290,16 +705,55 @@ function renderCategoryFilter() {
     select.value = selected;
 }
 
+function renderPublicCategoryFilter() {
+    const select = $("#publicCategoryFilter");
+
+    if (!select) {
+        return;
+    }
+
+    const selected = select.value;
+    select.innerHTML = `<option value="">Todas</option>`;
+
+    state.data.categorias.forEach(categoria => {
+        const option = document.createElement("option");
+        option.value = categoria.id;
+        option.textContent = categoria.nombre;
+        select.appendChild(option);
+    });
+
+    select.value = selected;
+}
+
+function renderPublicMovies() {
+    const container = $("#publicMovieList");
+
+    if (!container) {
+        return;
+    }
+
+    const query = $("#publicMovieSearch")?.value.trim().toLowerCase() || "";
+    const categoryId = Number($("#publicCategoryFilter")?.value || 0);
+    const format = $("#publicFormatFilter")?.value || "";
+    const movies = filteredMovies(query, categoryId, format, state.selectedPublicDate);
+
+    container.innerHTML = "";
+    if (movies.length === 0) {
+        container.innerHTML = `<div class="info-box">No hay películas para mostrar.</div>`;
+        return;
+    }
+
+    movies.forEach(pelicula => {
+        container.appendChild(renderScheduleMovieCard(pelicula, true));
+    });
+}
+
 function renderMovies() {
     const container = $("#movieList");
     const query = $("#movieSearch").value.trim().toLowerCase();
     const categoryId = Number($("#categoryFilter").value);
-
-    const movies = state.data.peliculas.filter(pelicula => {
-        const matchesName = !query || pelicula.titulo.toLowerCase().includes(query);
-        const matchesCategory = !categoryId || pelicula.categoriaId === categoryId;
-        return matchesName && matchesCategory;
-    });
+    const format = $("#movieFormatFilter")?.value || "";
+    const movies = filteredMovies(query, categoryId, format, state.selectedMovieDate);
 
     container.innerHTML = "";
 
@@ -309,82 +763,125 @@ function renderMovies() {
     }
 
     movies.forEach(pelicula => {
-        const functions = state.data.funciones.filter(funcion => funcion.peliculaId === pelicula.id);
-        const formatos = [...new Set(functions.map(funcion => formatFunction(funcion.formato)))];
-        const idiomas = [...new Set(functions.map(funcion => formatLanguage(funcion.idioma)))];
-        const card = document.createElement("article");
-        card.className = "movie-card movie-detail";
-        card.classList.toggle("selected", state.selectedMovie?.id === pelicula.id);
-        const poster = pelicula.portadaUrl
-            ? `<img class="movie-poster" src="${pelicula.portadaUrl}" alt="Portada de ${escapeHtml(pelicula.titulo)}">`
-            : `<div class="movie-poster placeholder-poster">Sin portada</div>`;
-
-        const functionButtons = functions.length === 0
-            ? `<p class="muted">Sin funciones cargadas.</p>`
-            : functions.map(funcion => `
-                <button class="function-button ${state.selectedFunction?.id === funcion.id ? "selected" : ""}"
-                        type="button"
-                        data-function-id="${funcion.id}">
-                    ${funcion.fecha} ${shortTime(funcion.horario)} - ${formatFunction(funcion.formato)} - ${formatLanguage(funcion.idioma)} - $${money(funcion.precioEntrada)}
-                </button>
-              `).join("");
-
-        card.innerHTML = `
-            ${poster}
-            <div class="movie-info">
-                <h3>${escapeHtml(pelicula.titulo)}</h3>
-                <div class="movie-facts">
-                    <div>
-                        <span>Formatos</span>
-                        <strong>${formatos.length ? escapeHtml(formatos.join(", ")) : "Sin funciones"}</strong>
-                    </div>
-                    <div>
-                        <span>Duración</span>
-                        <strong>${formatDuration(pelicula.duracion)}</strong>
-                    </div>
-                    <div>
-                        <span>Categoría</span>
-                        <strong>${escapeHtml(pelicula.categoriaNombre)}</strong>
-                    </div>
-                    <div>
-                        <span>Idiomas</span>
-                        <strong>${idiomas.length ? escapeHtml(idiomas.join(", ")) : "Sin funciones"}</strong>
-                    </div>
-                </div>
-                <h4>Sinopsis</h4>
-                <p>${escapeHtml(pelicula.descripcion || "Sin descripción cargada.")}</p>
-                <h4>Funciones disponibles</h4>
-                <div class="function-list">${functionButtons}</div>
-            </div>
-        `;
-
-        card.querySelectorAll("[data-function-id]").forEach(button => {
-            button.addEventListener("click", () => selectFunction(Number(button.dataset.functionId)));
-        });
-
-        container.appendChild(card);
+        container.appendChild(renderScheduleMovieCard(pelicula, false));
     });
+}
+
+function filteredMovies(query, categoryId, format, date) {
+    return state.data.peliculas.filter(pelicula => {
+        const functions = functionsForMovie(pelicula.id, { format, date });
+        const allFunctions = state.data.funciones.filter(funcion => funcion.peliculaId === pelicula.id);
+        const matchesSearch = movieMatchesSearch(pelicula, allFunctions, query);
+        const matchesCategory = !categoryId || pelicula.categoriaId === categoryId;
+        return matchesSearch && matchesCategory && functions.length > 0;
+    });
+}
+
+function functionsForMovie(peliculaId, filters = {}) {
+    return state.data.funciones
+        .filter(funcion => funcion.peliculaId === peliculaId)
+        .filter(funcion => !filters.date || funcion.fecha === filters.date)
+        .filter(funcion => !filters.format || funcion.formato === filters.format)
+        .sort((a, b) => `${a.fecha} ${a.horario}`.localeCompare(`${b.fecha} ${b.horario}`));
+}
+
+function renderScheduleMovieCard(pelicula, isPublic) {
+    const activeDate = isPublic ? state.selectedPublicDate : state.selectedMovieDate;
+    const activeFormat = isPublic ? $("#publicFormatFilter")?.value || "" : $("#movieFormatFilter")?.value || "";
+    const functions = functionsForMovie(pelicula.id, { date: activeDate, format: activeFormat });
+    const groups = groupFunctions(functions);
+    const card = document.createElement("article");
+    card.className = "schedule-movie-card";
+    card.classList.toggle("selected", state.selectedMovie?.id === pelicula.id);
+
+    const poster = pelicula.portadaUrl
+        ? `<img class="schedule-poster" src="${pelicula.portadaUrl}" alt="Portada de ${escapeHtml(pelicula.titulo)}">`
+        : `<div class="schedule-poster placeholder-poster">Sin portada</div>`;
+
+    card.innerHTML = `
+        <div class="poster-wrap">
+            <span class="poster-ribbon">Cartelera</span>
+            ${poster}
+        </div>
+        <div class="schedule-movie-info">
+            <span class="movie-chip">${escapeHtml(pelicula.categoriaNombre || "Sin categoría")}</span>
+            <h3>${escapeHtml(pelicula.titulo)}</h3>
+            <div class="public-movie-meta">
+                <span>${formatDuration(pelicula.duracion)}</span>
+                <span>${escapeHtml(formatDateRange(functions))}</span>
+            </div>
+            <p>${escapeHtml(shortDescription(pelicula.descripcion))}</p>
+            <div class="showtime-groups">
+                ${groups.length ? groups.map(group => `
+                    <section class="showtime-group">
+                        <h4>${escapeHtml(group.label)}</h4>
+                        <div class="showtime-list">
+                            ${group.functions.map(funcion => `
+                                <button class="showtime-button ${state.selectedFunction?.id === funcion.id ? "selected" : ""}"
+                                        type="button"
+                                        data-function-id="${funcion.id}"
+                                        data-public-function="${isPublic}">
+                                    <span>${shortTime(funcion.horario)}</span>
+                                    <small>${formatDateShort(funcion.fecha)} - $${money(funcion.precioEntrada)}</small>
+                                </button>
+                            `).join("")}
+                        </div>
+                    </section>
+                `).join("") : `<p class="muted">Sin funciones cargadas.</p>`}
+            </div>
+        </div>
+    `;
+
+    card.querySelectorAll("[data-function-id]").forEach(button => {
+        button.addEventListener("click", () => {
+            if (isPublic) {
+                showNoticeModal("Ingresá para comprar", "Iniciá sesión o creá una cuenta para elegir butacas.", false);
+                return;
+            }
+
+            selectFunction(Number(button.dataset.functionId));
+        });
+    });
+
+    return card;
+}
+
+function groupFunctions(functions) {
+    const groups = new Map();
+
+    functions.forEach(funcion => {
+        const key = `${funcion.formato}-${funcion.idioma}`;
+        const label = `${formatFunction(funcion.formato)} ${formatLanguage(funcion.idioma)}`;
+
+        if (!groups.has(key)) {
+            groups.set(key, { label, functions: [] });
+        }
+
+        groups.get(key).functions.push(funcion);
+    });
+
+    return [...groups.values()];
 }
 
 function selectFunction(id) {
     state.selectedFunction = state.data.funciones.find(funcion => funcion.id === id);
     state.selectedMovie = state.data.peliculas.find(pelicula => pelicula.id === state.selectedFunction.peliculaId);
     state.selectedSeats = [];
-    $("#purchasePanel")?.classList.remove("hidden");
+    state.purchaseStep = "seats";
+    state.spectatorPage = "purchase";
     clearTicketOutput();
     renderMovies();
     renderCheckout();
+    renderSpectatorPages();
 }
 
 function renderCheckout() {
-    $("#purchasePanel")?.classList.toggle("hidden", !state.selectedFunction);
-
     if (!state.selectedFunction) {
         return;
     }
 
-    state.selectedSeats = state.selectedSeats.slice(0, selectedQuantity());
     renderPurchaseSteps();
+    renderCheckoutStepVisibility();
     renderSelectionSummary();
     renderSeats();
     renderConsumption();
@@ -399,16 +896,57 @@ function renderPurchaseSteps() {
         return;
     }
 
-    const cantidad = selectedQuantity();
-    const firstReady = state.selectedFunction && state.selectedSeats.length === cantidad;
-    const secondReady = firstReady;
-    const thirdReady = Boolean(state.spectator?.metodosDePago?.length);
+    const firstReady = selectionIsReady();
+    const secondReady = state.purchaseStep === "consumption" || state.purchaseStep === "payment";
+    const thirdReady = state.purchaseStep === "payment";
 
     steps.innerHTML = `
-        <span class="${firstReady ? "done" : "active"}">1. Película y butacas</span>
-        <span class="${secondReady ? "active" : ""}">2. Consumo opcional</span>
-        <span class="${thirdReady ? "done" : ""}">3. Pago</span>
+        <span class="${state.purchaseStep === "seats" ? "active" : firstReady ? "done" : ""}">1. Butacas</span>
+        <span class="${state.purchaseStep === "consumption" ? "active" : secondReady ? "done" : ""}">2. Consumo opcional</span>
+        <span class="${thirdReady ? "active" : ""}">3. Método de pago</span>
     `;
+}
+
+function renderCheckoutStepVisibility() {
+    $("#seatStep")?.classList.toggle("hidden", state.purchaseStep !== "seats");
+    $("#consumptionStep")?.classList.toggle("hidden", state.purchaseStep !== "consumption");
+    $("#paymentStep")?.classList.toggle("hidden", state.purchaseStep !== "payment");
+    $("#backPurchaseStepButton")?.classList.toggle("hidden", state.purchaseStep === "seats");
+
+    const nextButton = $("#nextPurchaseStepButton");
+
+    if (!nextButton) {
+        return;
+    }
+
+    nextButton.classList.toggle("hidden", state.purchaseStep === "payment");
+    nextButton.textContent = state.purchaseStep === "seats" ? "Continuar a consumo" : "Continuar al pago";
+    nextButton.disabled = state.purchaseStep === "seats" && !selectionIsReady();
+}
+
+function goNextPurchaseStep() {
+    if (state.purchaseStep === "seats") {
+        if (!selectionIsReady()) {
+            setOutput({ error: "Elegí al menos una butaca antes de continuar." }, true);
+            return;
+        }
+
+        state.purchaseStep = "consumption";
+    } else if (state.purchaseStep === "consumption") {
+        state.purchaseStep = "payment";
+    }
+
+    renderCheckout();
+}
+
+function goBackPurchaseStep() {
+    if (state.purchaseStep === "payment") {
+        state.purchaseStep = "consumption";
+    } else if (state.purchaseStep === "consumption") {
+        state.purchaseStep = "seats";
+    }
+
+    renderCheckout();
 }
 
 function renderSelectionSummary() {
@@ -424,16 +962,19 @@ function renderSelectionSummary() {
 
     const cantidad = selectedQuantity();
     const butacas = state.selectedSeats.map(butaca => `${butaca.fila}${butaca.numero}`).join(", ");
+    const entradasTexto = cantidad === 0
+        ? "Sin entradas seleccionadas"
+        : `${cantidad} entrada${cantidad === 1 ? "" : "s"}`;
 
     summary.innerHTML = `
         <h3>Datos de la compra</h3>
-        <p><strong>Fecha y hora de la función:</strong><br>${state.selectedFunction.fecha}, ${shortTime(state.selectedFunction.horario)}.</p>
+        <p><strong>Fecha y hora de la función:</strong><br>${formatDateShort(state.selectedFunction.fecha)}, ${shortTime(state.selectedFunction.horario)}.</p>
         <p><strong>Película:</strong><br>${escapeHtml(state.selectedMovie.titulo)}.</p>
         <p><strong>Sala:</strong><br>${escapeHtml(state.selectedFunction.salaNombre)}.</p>
         <p><strong>Formato e idioma:</strong><br>${formatFunction(state.selectedFunction.formato)} - ${formatLanguage(state.selectedFunction.idioma)}.</p>
-        <p><strong>Butacas:</strong><br>${butacas ? escapeHtml(butacas) : `Elegí ${cantidad} butaca${cantidad === 1 ? "" : "s"}.`}</p>
+        <p><strong>Butacas:</strong><br>${butacas ? escapeHtml(butacas) : "Elegí una o más butacas."}</p>
         <div class="summary-total">
-            <span>${cantidad} entrada${cantidad === 1 ? "" : "s"}</span>
+            <span>${entradasTexto}</span>
             <strong>$${money(state.selectedFunction.precioEntrada * cantidad)}</strong>
         </div>
     `;
@@ -476,12 +1017,11 @@ function renderSeats() {
 }
 
 function selectedQuantity() {
-    const quantity = Number($("#ticketQuantity")?.value || 1);
-    return Math.max(1, quantity);
+    return state.selectedSeats.length;
 }
 
 function selectionIsReady() {
-    return Boolean(state.selectedFunction) && state.selectedSeats.length === selectedQuantity();
+    return Boolean(state.selectedFunction) && state.selectedSeats.length > 0;
 }
 
 function seatIsUnavailableForSelectedFunction(butaca) {
@@ -503,10 +1043,6 @@ function toggleSeatSelection(butaca) {
     if (exists) {
         state.selectedSeats = state.selectedSeats.filter(selectedSeat => selectedSeat.id !== butaca.id);
         return;
-    }
-
-    if (state.selectedSeats.length >= selectedQuantity()) {
-        state.selectedSeats.shift();
     }
 
     state.selectedSeats.push(butaca);
@@ -573,17 +1109,18 @@ function renderSeatLegend() {
 
 function renderConsumption() {
     const container = $("#consumptionList");
-    const filterBox = $("#productTypeFilterBox");
-    const selectedType = $("#productTypeFilter")?.value || "";
+    const tabs = $("#productTypeTabs");
+    const selectedType = state.selectedProductType;
     container.innerHTML = "";
-    filterBox?.classList.toggle("hidden", state.data.productos.length === 0);
+    renderConsumptionTabs();
 
     if (!selectionIsReady()) {
-        filterBox?.classList.add("hidden");
+        tabs?.classList.add("hidden");
         return;
     }
 
     if (state.data.productos.length === 0) {
+        tabs?.classList.add("hidden");
         container.innerHTML = `<div class="info-box">No hay productos de confitería cargados.</div>`;
         return;
     }
@@ -602,15 +1139,110 @@ function renderConsumption() {
         return;
     }
 
+    const grid = document.createElement("div");
+    grid.className = "consumption-grid";
+
     productos.forEach(producto => {
-        const row = document.createElement("label");
-        row.className = "consumption-row";
-        row.innerHTML = `
-            <span>${escapeHtml(producto.nombre)} - ${labelProductType(producto.tipo)} - $${money(producto.precio)}</span>
-            <input type="number" min="0" value="0" data-product-id="${producto.id}">
+        const cantidadActual = Number(state.selectedConsumptions[producto.id] || 0);
+        const card = document.createElement("article");
+        card.className = `consumption-card ${cantidadActual > 0 ? "selected" : ""}`;
+        card.tabIndex = 0;
+        card.innerHTML = `
+            <div class="product-photo ${productPhotoClass(producto.tipo)}" aria-hidden="true">
+                <span>${productPhotoLabel(producto.tipo)}</span>
+            </div>
+            <div>
+                <span class="movie-chip">${labelProductType(producto.tipo)}</span>
+                <h4>${escapeHtml(producto.nombre)}</h4>
+                <p>${escapeHtml(producto.tamano)} - $${money(producto.precio)}</p>
+            </div>
+            <div class="quantity-control">
+                <button class="table-action" type="button" data-quantity-action="minus" aria-label="Quitar">-</button>
+                <strong>${cantidadActual}</strong>
+                <button class="table-action" type="button" data-quantity-action="plus" aria-label="Agregar">+</button>
+            </div>
         `;
-        container.appendChild(row);
+
+        card.addEventListener("click", () => updateConsumptionQuantity(producto.id, cantidadActual + 1));
+        card.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                updateConsumptionQuantity(producto.id, cantidadActual + 1);
+            }
+        });
+        card.querySelectorAll("[data-quantity-action]").forEach(button => {
+            button.addEventListener("click", event => {
+                event.stopPropagation();
+                const nextQuantity = button.dataset.quantityAction === "plus"
+                    ? cantidadActual + 1
+                    : cantidadActual - 1;
+                updateConsumptionQuantity(producto.id, nextQuantity);
+            });
+        });
+
+        grid.appendChild(card);
     });
+
+    container.appendChild(grid);
+}
+
+function renderConsumptionTabs() {
+    const tabs = $("#productTypeTabs");
+
+    if (!tabs) {
+        return;
+    }
+
+    const types = [
+        ["", "Todo"],
+        ["POCHOCLOS", "Pochoclos"],
+        ["BEBIDA", "Bebidas"],
+        ["DULCE", "Dulces"],
+        ["COMBO", "Combos"]
+    ];
+
+    tabs.classList.toggle("hidden", state.data.productos.length === 0);
+    tabs.innerHTML = types.map(([value, label]) => `
+        <button class="consumption-tab ${state.selectedProductType === value ? "active" : ""}"
+                type="button"
+                data-product-type="${value}">
+            ${label}
+        </button>
+    `).join("");
+
+    tabs.querySelectorAll("[data-product-type]").forEach(button => {
+        button.addEventListener("click", () => {
+            state.selectedProductType = button.dataset.productType;
+            renderConsumption();
+        });
+    });
+}
+
+function updateConsumptionQuantity(productId, quantity) {
+    const normalized = Math.max(0, Number(quantity || 0));
+
+    if (normalized > 0) {
+        state.selectedConsumptions[productId] = normalized;
+    } else {
+        delete state.selectedConsumptions[productId];
+    }
+
+    renderConsumption();
+}
+
+function productPhotoClass(tipo) {
+    return `product-photo-${String(tipo || "combo").toLowerCase()}`;
+}
+
+function productPhotoLabel(tipo) {
+    const labels = {
+        POCHOCLOS: "POPCORN",
+        BEBIDA: "DRINK",
+        DULCE: "SWEET",
+        COMBO: "COMBO"
+    };
+
+    return labels[tipo] || "SNACK";
 }
 
 function renderPayment() {
@@ -639,7 +1271,7 @@ function renderPayment() {
                 <option value="new" ${hasValidMethod ? "" : "selected"}>${metodos.length ? "Agregar otra tarjeta" : "Cargar nueva tarjeta"}</option>
             </select>
         </label>
-        <div class="payment-grid">
+        <div id="newPaymentFields" class="payment-grid ${hasValidMethod ? "hidden" : ""}">
             <label>Número <input id="payNumber" type="text" placeholder="16 dígitos"></label>
             <label>Vencimiento <input id="payExpiration" type="month"></label>
             <label>Nombre <input id="payName" type="text"></label>
@@ -647,6 +1279,14 @@ function renderPayment() {
             <label>CVV <input id="payCvv" type="password" placeholder="3 dígitos"></label>
         </div>
     `;
+
+    $("#paymentMethodSelect")?.addEventListener("change", toggleNewPaymentFields);
+    toggleNewPaymentFields();
+}
+
+function toggleNewPaymentFields() {
+    const selected = $("#paymentMethodSelect")?.value;
+    $("#newPaymentFields")?.classList.toggle("hidden", selected !== "new");
 }
 
 function renderBuyButton() {
@@ -660,17 +1300,19 @@ function renderBuyButton() {
     button.textContent = selectionIsReady() && selectedQuantity() > 1 ? "Comprar entradas" : "Comprar entrada";
 
     if (!selectionIsReady()) {
-        button.textContent = "Elegí función y butacas";
+        button.textContent = "Elegí una o más butacas";
     }
 }
 
 async function buyTicket() {
     const cantidad = selectedQuantity();
 
-    if (!state.selectedFunction || state.selectedSeats.length !== cantidad) {
-        setOutput({ error: `Elegí una función y ${cantidad} butaca${cantidad === 1 ? "" : "s"}.` }, true);
+    if (!state.selectedFunction || cantidad === 0) {
+        setOutput({ error: "Elegí una función y al menos una butaca." }, true);
         return;
     }
+
+    setPurchaseLoading(true);
 
     try {
         const metodoDePagoId = await ensurePaymentMethod();
@@ -699,15 +1341,15 @@ async function buyTicket() {
         }
 
         const items = [];
-        for (const input of document.querySelectorAll("[data-product-id]")) {
-            const cantidad = Number(input.value);
+        for (const [productoId, cantidad] of Object.entries(state.selectedConsumptions)) {
+            const cantidadNumerica = Number(cantidad);
 
-            if (cantidad > 0) {
+            if (cantidadNumerica > 0) {
                 const item = await request(api.items, {
                     method: "POST",
                     body: {
-                        productoId: Number(input.dataset.productId),
-                        cantidad,
+                        productoId: Number(productoId),
+                        cantidad: cantidadNumerica,
                         ticketId: ticket.id
                     }
                 });
@@ -721,17 +1363,39 @@ async function buyTicket() {
             entradasPagadas.push(entradaPagada);
         }
 
+        await loadAll();
         const ticketCompleto = await request(`${api.tickets}/${ticket.id}`);
         await request(`${api.tickets}/${ticket.id}/enviar-mail`, { method: "POST" });
         await loadAll();
         state.spectator = await request(`${api.espectadores}/${state.spectator.id}`);
+        const ticketFinal = state.data.tickets.find(item => item.id === ticket.id) || ticketCompleto;
         state.selectedSeats = [];
+        state.selectedConsumptions = {};
+        state.selectedProductType = "";
+        state.selectedFunction = null;
+        state.selectedMovie = null;
+        state.purchaseStep = "seats";
+        state.spectatorPage = "catalog";
+        setPurchaseLoading(false);
         renderSpectatorView();
-        $("#purchasePanel")?.classList.remove("hidden");
-        showTicket(ticketCompleto);
-        setOutput({ ticket: ticketCompleto, entradas: entradasPagadas, items });
+        showTicketModal(ticketFinal);
+        setOutput({ ticket: ticketFinal, entradas: entradasPagadas, items });
     } catch (error) {
+        setPurchaseLoading(false);
+        showNoticeModal("No se pudo completar la compra", errorMessage(error), true);
         setOutput(error, true);
+    }
+}
+
+function setPurchaseLoading(isLoading) {
+    const loading = $("#purchaseLoading");
+    const buyButton = $("#buyButton");
+
+    loading?.classList.toggle("hidden", !isLoading);
+
+    if (buyButton) {
+        buyButton.disabled = isLoading || !selectionIsReady();
+        buyButton.textContent = isLoading ? "Procesando compra..." : selectedQuantity() > 1 ? "Comprar entradas" : "Comprar entrada";
     }
 }
 
@@ -771,6 +1435,17 @@ async function ensurePaymentMethod() {
 async function updateProfile(event) {
     event.preventDefault();
     const form = event.currentTarget;
+    const quiereCambiarContrasenia = form.nuevaContrasenia.value || form.nuevaContraseniaConfirmacion.value;
+
+    if (quiereCambiarContrasenia && form.nuevaContrasenia.value !== form.nuevaContraseniaConfirmacion.value) {
+        showNoticeModal("Contraseñas distintas", "Las contraseñas nuevas no son idénticas.", true);
+        return;
+    }
+
+    if (quiereCambiarContrasenia && !form.contraseniaActual.value) {
+        showNoticeModal("Falta contraseña actual", "Ingresá la contraseña actual para cambiarla.", true);
+        return;
+    }
 
     try {
         state.spectator = await request(`${api.espectadores}/${state.spectator.id}`, {
@@ -779,13 +1454,18 @@ async function updateProfile(event) {
                 nombre: form.nombre.value,
                 apellido: form.apellido.value,
                 email: form.email.value,
-                contrasenia: form.contrasenia.value
+                contraseniaActual: form.contraseniaActual.value,
+                nuevaContrasenia: form.nuevaContrasenia.value,
+                nuevaContraseniaConfirmacion: form.nuevaContraseniaConfirmacion.value
             }
         });
         await loadAll();
         renderSpectatorView();
+        form.classList.add("hidden");
+        showNoticeModal("Perfil actualizado", "Tus datos se guardaron correctamente.");
         setOutput(state.spectator);
     } catch (error) {
+        showNoticeModal("No se pudo actualizar", errorMessage(error), true);
         setOutput(error, true);
     }
 }
@@ -815,8 +1495,11 @@ async function addPaymentFromProfile(event) {
         form.reset();
         await loadAll();
         renderSpectatorView();
+        form.classList.add("hidden");
+        showNoticeModal("Tarjeta agregada", "El método de pago quedó asociado a tu perfil.");
         setOutput(state.spectator);
     } catch (error) {
+        showNoticeModal("No se pudo agregar la tarjeta", errorMessage(error), true);
         setOutput(error, true);
     }
 }
@@ -836,15 +1519,23 @@ function showTicket(ticket) {
         return;
     }
 
+    output.innerHTML = ticketHtml(ticket);
+}
+
+function showTicketModal(ticket) {
+    openMailModal("Ticket con QR", ticketHtml(ticket));
+}
+
+function ticketHtml(ticket) {
     const entradas = ticket.entradas || [];
     const consumos = ticket.itemsConsumo || [];
     const primeraEntrada = entradas[0];
     const butacas = entradas.map(entrada => entrada.butaca).join(", ");
     const consumosTexto = consumos.length
-        ? consumos.map(item => `${escapeHtml(item.producto)} x${item.cantidad}`).join(", ")
+        ? consumos.map(item => `${escapeHtml(item.producto)} x${item.cantidad} ($${money(item.subtotal)})`).join(", ")
         : "Sin consumo";
 
-    output.innerHTML = `
+    return `
         <article class="ticket-card">
             <div>
                 <p class="eyebrow">Ticket generado</p>
@@ -853,7 +1544,7 @@ function showTicket(ticket) {
             </div>
             <div class="qr-box" aria-label="Código QR visual">${renderQrPattern(ticket.codigoQR)}</div>
             <div class="ticket-details">
-                <p><strong>Función:</strong> ${escapeHtml(primeraEntrada?.fecha || state.selectedFunction?.fecha || "-")} ${shortTime(primeraEntrada?.horario || state.selectedFunction?.horario || "")}</p>
+                <p><strong>Función:</strong> ${formatDateShort(primeraEntrada?.fecha || state.selectedFunction?.fecha || "")} ${shortTime(primeraEntrada?.horario || state.selectedFunction?.horario || "")}</p>
                 <p><strong>Sala:</strong> ${escapeHtml(primeraEntrada?.sala || state.selectedFunction?.salaNombre || "-")}</p>
                 <p><strong>Formato:</strong> ${formatFunction(primeraEntrada?.formato || state.selectedFunction?.formato)} - ${formatLanguage(primeraEntrada?.idioma || state.selectedFunction?.idioma)}</p>
                 <p><strong>Butacas:</strong> ${escapeHtml(butacas || "-")}</p>
@@ -1011,10 +1702,16 @@ async function updateRoom(event) {
     event.preventDefault();
     const form = event.currentTarget;
     const id = Number(form.elements.id.value);
+    const butacasActivasIds = collectRoomEditSeats();
 
-    await adminPut(`${api.salas}/${id}`, {
+    if (butacasActivasIds.length === 0) {
+        setOutput({ error: "La sala debe conservar al menos una butaca activa." }, true);
+        return;
+    }
+
+    await adminPut(`${api.salas}/${id}/matriz`, {
         nombre: form.nombre.value,
-        capacidad: Number(form.capacidad.value)
+        butacasActivasIds
     }, "#roomEditForm");
 }
 
@@ -1101,6 +1798,86 @@ function updateRoomSeatCounter() {
     counter.textContent = `${activeSeats} butaca${activeSeats === 1 ? "" : "s"} activa${activeSeats === 1 ? "" : "s"}`;
 }
 
+function renderRoomEditMatrixEditor(salaId) {
+    const editor = $("#roomEditMatrixEditor");
+
+    if (!editor) {
+        return;
+    }
+
+    const seats = state.data.butacas
+        .filter(butaca => butaca.salaId === salaId)
+        .sort(compareSeats);
+
+    editor.innerHTML = "";
+
+    if (seats.length === 0) {
+        editor.innerHTML = `<div class="info-box">La sala no tiene butacas cargadas.</div>`;
+        return;
+    }
+
+    const seatMap = document.createElement("div");
+    seatMap.className = "seat-map room-map-editor";
+    seatMap.appendChild(renderScreen());
+    seatMap.appendChild(renderSeatMatrix(seats, butaca => {
+        const button = document.createElement("button");
+        button.className = "seat-button matrix-seat active";
+        button.type = "button";
+        button.textContent = `${butaca.fila}${butaca.numero}`;
+        button.dataset.id = String(butaca.id);
+        button.dataset.fila = butaca.fila;
+        button.dataset.numero = String(butaca.numero);
+        button.addEventListener("click", () => {
+            button.classList.toggle("active");
+            button.classList.toggle("removed");
+            button.textContent = button.classList.contains("active") ? `${butaca.fila}${butaca.numero}` : "";
+            updateRoomEditSeatCounter();
+        });
+        return button;
+    }));
+    seatMap.appendChild(renderRoomEditHelp());
+    editor.appendChild(seatMap);
+    updateRoomEditSeatCounter();
+}
+
+function collectRoomEditSeats() {
+    return [...document.querySelectorAll("#roomEditMatrixEditor .matrix-seat.active")]
+        .map(button => Number(button.dataset.id));
+}
+
+function renderRoomEditHelp() {
+    const help = document.createElement("div");
+    help.className = "room-editor-help";
+    help.innerHTML = `
+        <strong id="roomEditSeatCounter">0 butacas activas</strong>
+        <span>Tocá una butaca para quitarla de la sala. Si la tocás otra vez, vuelve a quedar activa.</span>
+    `;
+    return help;
+}
+
+function updateRoomEditSeatCounter() {
+    const counter = $("#roomEditSeatCounter");
+    const form = $("#roomEditForm");
+
+    if (!counter || !form) {
+        return;
+    }
+
+    const activeSeats = collectRoomEditSeats().length;
+    counter.textContent = `${activeSeats} butaca${activeSeats === 1 ? "" : "s"} activa${activeSeats === 1 ? "" : "s"}`;
+    form.capacidad.value = activeSeats;
+}
+
+function compareSeats(a, b) {
+    const filaComparison = String(a.fila).localeCompare(String(b.fila), "es", { numeric: true });
+
+    if (filaComparison !== 0) {
+        return filaComparison;
+    }
+
+    return Number(a.numero) - Number(b.numero);
+}
+
 async function createFunction(event) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -1184,7 +1961,7 @@ function renderAdminData() {
         ["Categorías", state.data.categorias, ["id", "nombre"]],
         ["Películas", state.data.peliculas, ["id", "titulo", "descripcion", "categoriaNombre"]],
         ["Salas", state.data.salas, ["id", "nombre", "capacidad"]],
-        ["Butacas", state.data.butacas, ["id", "butacaNombre", "estado", "salaNombre", "bloqueoHasta"]],
+        ["Butacas", state.data.butacas, ["id", "butacaNombre", "estado", "salaNombre"]],
         ["Funciones", state.data.funciones, ["id", "peliculaTitulo", "salaNombre", "fecha", "horario", "formato", "idioma", "precioEntrada"]],
         ["Espectadores", state.data.espectadores, ["id", "nombre", "apellido", "email", "metodosDePago"]],
         ["Métodos de pago", state.data.metodosPago, ["id", "ultimosNumeros", "nombre", "apellido", "espectadorNombre"]],
@@ -1199,7 +1976,10 @@ function renderAdminData() {
     renderDataGroup("#functionData", [allLists[4]]);
     renderDataGroup("#spectatorData", allLists.slice(5, 9));
     renderDataGroup("#productData", allLists.slice(9, 11));
-    renderDataGroup("#adminData", allLists);
+    renderDataGroup("#adminData", [
+        ...allLists.slice(0, 5),
+        ...allLists.slice(9, 11)
+    ]);
 }
 
 function renderDataGroup(selector, lists) {
@@ -1306,6 +2086,7 @@ function startRoomEdit(id) {
     form.elements.id.value = sala.id;
     form.nombre.value = sala.nombre || "";
     form.capacidad.value = sala.capacidad || "";
+    renderRoomEditMatrixEditor(sala.id);
     form.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -1340,6 +2121,14 @@ function cancelEdit(selector) {
 
     form.reset();
     form.classList.add("hidden");
+
+    if (selector === "#roomEditForm") {
+        const editor = $("#roomEditMatrixEditor");
+
+        if (editor) {
+            editor.innerHTML = "";
+        }
+    }
 }
 
 async function request(url, options = {}) {
@@ -1382,6 +2171,128 @@ function dateIsBeforeToday(value) {
 
 function todayValue() {
     return formatDateInputValue(new Date());
+}
+
+function isAdminPath() {
+    return window.location.pathname.replace(/\/$/, "") === "/admin";
+}
+
+function movieMatchesSearch(pelicula, funciones, query) {
+    if (!query) {
+        return true;
+    }
+
+    const searchable = [
+        pelicula.titulo,
+        pelicula.categoriaNombre
+    ].join(" ").toLowerCase();
+
+    return searchable.includes(query);
+}
+
+function renderDateStrip(selector, selectedDate, onSelect) {
+    const container = $(selector);
+
+    if (!container) {
+        return;
+    }
+
+    const activeDate = selectedDate || todayValue();
+    const dates = availableFunctionDates();
+
+    if (dates.length === 0) {
+        container.innerHTML = "";
+        return;
+    }
+
+    container.innerHTML = `
+        <button class="date-nav" type="button" aria-label="Fechas anteriores">‹</button>
+        <div class="date-strip-scroll">
+            ${dates.map(date => {
+                const parts = formatDateCard(date);
+                return `
+                    <button class="date-card ${activeDate === date ? "active" : ""}" type="button" data-date-value="${date}">
+                        <span>${parts.weekday}</span>
+                        <strong>${parts.month}</strong>
+                        <em>${parts.day}</em>
+                    </button>
+                `;
+            }).join("")}
+        </div>
+        <button class="date-nav" type="button" aria-label="Fechas siguientes">›</button>
+    `;
+
+    const scroll = container.querySelector(".date-strip-scroll");
+    const navButtons = container.querySelectorAll(".date-nav");
+
+    navButtons[0]?.addEventListener("click", () => scroll?.scrollBy({ left: -360, behavior: "smooth" }));
+    navButtons[1]?.addEventListener("click", () => scroll?.scrollBy({ left: 360, behavior: "smooth" }));
+
+    container.querySelectorAll("[data-date-value]").forEach(button => {
+        button.addEventListener("click", () => onSelect(button.dataset.dateValue));
+    });
+}
+
+function availableFunctionDates() {
+    return [...new Set([todayValue(), ...state.data.funciones.map(funcion => funcion.fecha)])]
+        .filter(Boolean)
+        .sort();
+}
+
+function formatDateCard(value) {
+    const [year, month, day] = String(value).split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    const today = new Date();
+    const isToday = date.toDateString() === today.toDateString();
+    const weekday = isToday
+        ? "HOY"
+        : new Intl.DateTimeFormat("es-AR", { weekday: "long" }).format(date).toUpperCase();
+    const monthName = new Intl.DateTimeFormat("es-AR", { month: "short" })
+        .format(date)
+        .replace(".", "")
+        .toUpperCase();
+
+    return { weekday, month: monthName, day };
+}
+
+function formatDateShort(value) {
+    if (!value) {
+        return "-";
+    }
+
+    const [year, month, day] = String(value).split("-").map(Number);
+
+    if (!year || !month || !day) {
+        return value;
+    }
+
+    const date = new Date(year, month - 1, day);
+    const weekday = new Intl.DateTimeFormat("es-AR", { weekday: "long" }).format(date);
+    return `${weekday} ${day}/${month}`;
+}
+
+function formatDateRange(functions) {
+    const dates = [...new Set(functions.map(funcion => funcion.fecha))].filter(Boolean).sort();
+
+    if (dates.length === 0) {
+        return "Sin fechas";
+    }
+
+    if (dates.length === 1) {
+        return formatDateShort(dates[0]);
+    }
+
+    return `${formatDateShort(dates[0])} a ${formatDateShort(dates[dates.length - 1])}`;
+}
+
+function shortDescription(value) {
+    const text = String(value || "Sin descripción cargada.").trim();
+
+    if (text.length <= 120) {
+        return text;
+    }
+
+    return `${text.slice(0, 117)}...`;
 }
 
 function nextMonthValue() {
@@ -1562,6 +2473,10 @@ function formatValue(value) {
 
     if (typeof value === "number") {
         return Number.isInteger(value) ? String(value) : value.toFixed(2);
+    }
+
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return formatDateShort(value);
     }
 
     return String(value);

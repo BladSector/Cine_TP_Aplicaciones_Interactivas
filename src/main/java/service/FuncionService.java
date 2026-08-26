@@ -13,6 +13,7 @@ import repository.PeliculaRepository;
 import repository.SalaRepository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -41,6 +42,7 @@ public class FuncionService {
         try {
             Pelicula pelicula = buscarPelicula(peliculaId);
             Sala sala = buscarSala(salaId);
+            validarDisponibilidadSala(fecha, horario, pelicula, sala, null);
             return funcionRepository.save(new Funcion(fecha, horario, pelicula, sala, formato, idioma, precioEntrada));
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
@@ -52,6 +54,7 @@ public class FuncionService {
             Funcion funcion = buscarPorId(id);
             Pelicula pelicula = buscarPelicula(peliculaId);
             Sala sala = buscarSala(salaId);
+            validarDisponibilidadSala(fecha, horario, pelicula, sala, id);
             funcion.actualizarDatos(fecha, horario, pelicula, sala, formato, idioma, precioEntrada);
             return funcionRepository.save(funcion);
         } catch (IllegalArgumentException e) {
@@ -72,5 +75,35 @@ public class FuncionService {
     private Sala buscarSala(int id) {
         return salaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe una sala con ese id."));
+    }
+
+    private void validarDisponibilidadSala(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, Integer funcionIdIgnorada) {
+        if (fecha == null || horario == null || pelicula == null || sala == null) {
+            return;
+        }
+
+        LocalDateTime inicioNuevaFuncion = LocalDateTime.of(fecha, horario);
+        LocalDateTime finNuevaFuncion = inicioNuevaFuncion.plusMinutes(pelicula.getDuracion());
+
+        List<Funcion> funcionesDeLaSala = funcionRepository.findBySalaIdAndFecha(sala.getId(), fecha);
+
+        for (Funcion funcionExistente : funcionesDeLaSala) {
+            if (funcionIdIgnorada != null && funcionExistente.getId() == funcionIdIgnorada) {
+                continue;
+            }
+
+            LocalDateTime inicioFuncionExistente = LocalDateTime.of(funcionExistente.getFecha(), funcionExistente.getHorario());
+            LocalDateTime finFuncionExistente = inicioFuncionExistente.plusMinutes(funcionExistente.getPelicula().getDuracion());
+
+            boolean horariosSuperpuestos = inicioNuevaFuncion.isBefore(finFuncionExistente)
+                    && inicioFuncionExistente.isBefore(finNuevaFuncion);
+
+            if (horariosSuperpuestos) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "La sala ya tiene una funcion cargada en ese rango horario."
+                );
+            }
+        }
     }
 }

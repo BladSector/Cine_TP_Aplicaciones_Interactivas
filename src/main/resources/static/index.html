@@ -3,29 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TP Cine API</title>
-    <link rel="stylesheet" href="styles.css?v=3">
+    <title>Cine API</title>
+    <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 <main id="loginView" class="desktop-shell login-shell">
     <header class="window-bar">
         <div>
-            <p class="eyebrow">Sistema de cine</p>
-            <h1>TP Cine API</h1>
+            <p class="eyebrow">Cartelera online</p>
+            <h1>Cine API</h1>
         </div>
-        <span class="status-pill">Servidor local</span>
+        <span class="status-pill">Estrenos y entradas</span>
     </header>
 
     <section class="login-layout">
-        <section class="module-panel">
+        <section id="publicCatalogPanel" class="module-panel public-catalog-panel">
             <div class="panel-heading">
-                <h2>Espectador</h2>
+                <h2>Películas en cartelera</h2>
+            </div>
+            <section class="module-toolbar public-toolbar">
+                <label>Buscar película <input id="publicMovieSearch" type="search" placeholder="Nombre de película"></label>
+                <label>Categoría <select id="publicCategoryFilter"></select></label>
+                <label>Formato
+                    <select id="publicFormatFilter">
+                        <option value="">Todos</option>
+                        <option value="DOS_D">2D</option>
+                        <option value="TRES_D">3D</option>
+                    </select>
+                </label>
+            </section>
+            <div id="publicDateStrip" class="date-strip"></div>
+            <div id="publicMovieList" class="schedule-list"></div>
+        </section>
+
+        <section id="spectatorLoginPanel" class="module-panel">
+            <div class="panel-heading">
+                <h2>Perfil</h2>
             </div>
 
-            <label>
-                Espectador existente
-                <select id="spectatorSelect"></select>
-            </label>
+            <div class="form-grid">
+                <label>Email <input id="loginSpectatorEmail" type="email" autocomplete="off"></label>
+                <label>Contraseña <input id="loginSpectatorPassword" type="password" autocomplete="new-password"></label>
+            </div>
 
             <div class="button-row">
                 <button id="enterSpectatorButton" class="primary-button" type="button">Ingresar</button>
@@ -33,21 +52,32 @@
 
             <div class="section-line"></div>
 
-            <h3>Nuevo espectador</h3>
-            <div class="form-grid">
-                <label>Nombre <input id="newSpectatorName" type="text"></label>
-                <label>Apellido <input id="newSpectatorLastName" type="text"></label>
-                <label>Email <input id="newSpectatorEmail" type="email"></label>
-                <label>Contraseña <input id="newSpectatorPassword" type="password"></label>
+            <button id="showRegisterButton" class="link-button" type="button">¿No tenés una cuenta?</button>
+            <div id="newAccountBox" class="account-box hidden">
+                <h3>Nueva cuenta</h3>
+                <div class="form-grid">
+                    <label>Nombre <input id="newSpectatorName" type="text" autocomplete="off"></label>
+                    <label>Apellido <input id="newSpectatorLastName" type="text" autocomplete="off"></label>
+                    <label>Email <input id="newSpectatorEmail" type="email" autocomplete="off"></label>
+                    <label>Contraseña <input id="newSpectatorPassword" type="password" autocomplete="new-password"></label>
+                    <label>Repetir contraseña <input id="newSpectatorPasswordConfirm" type="password" autocomplete="new-password"></label>
+                </div>
+                <button id="createSpectatorButton" class="secondary-button" type="button">Crear e ingresar</button>
             </div>
-            <button id="createSpectatorButton" class="secondary-button" type="button">Crear e ingresar</button>
+
+            <div class="section-line"></div>
+            <button id="forgotPasswordButton" class="link-button" type="button">¿Olvidaste la contraseña?</button>
         </section>
 
-        <section class="module-panel admin-entry">
+        <section id="adminLoginPanel" class="module-panel admin-entry hidden">
             <div class="panel-heading">
                 <h2>Administrador</h2>
             </div>
-            <p class="muted">Panel para cargar catálogo, salas, funciones y confitería.</p>
+            <p class="muted">Acceso especial para cargar catálogo, salas, funciones y confitería.</p>
+            <div class="form-grid">
+                <label>Usuario <input id="adminUser" type="text" autocomplete="off"></label>
+                <label>Contraseña <input id="adminPassword" type="password" autocomplete="new-password"></label>
+            </div>
             <button id="enterAdminButton" class="primary-button" type="button">Ingresar al panel</button>
         </section>
     </section>
@@ -60,38 +90,61 @@
             <h1 id="viewTitle">TP Cine API</h1>
         </div>
         <div class="toolbar">
+            <button id="homeButton" class="secondary-button hidden" type="button">Cartelera</button>
+            <button id="profileButton" class="icon-button hidden" type="button" aria-label="Perfil">
+                <span class="user-icon" aria-hidden="true"></span>
+            </button>
             <button id="logoutButton" class="danger-button" type="button">Salir</button>
         </div>
     </header>
 
     <section id="spectatorView" class="screen hidden">
-        <section class="module-toolbar">
+        <section id="movieToolbar" class="module-toolbar">
             <label>Buscar película <input id="movieSearch" type="search" placeholder="Nombre de película"></label>
             <label>Categoría <select id="categoryFilter"></select></label>
+            <label>Formato
+                <select id="movieFormatFilter">
+                    <option value="">Todos</option>
+                    <option value="DOS_D">2D</option>
+                    <option value="TRES_D">3D</option>
+                </select>
+            </label>
         </section>
 
-        <section class="split-layout">
+        <section id="catalogPage" class="spectator-page">
             <section class="module-panel">
                 <div class="panel-heading">
                     <h2>Cartelera</h2>
                 </div>
-                <div id="movieList" class="record-list"></div>
+                <div id="movieDateStrip" class="date-strip"></div>
+                <div id="movieList" class="schedule-list"></div>
             </section>
+        </section>
 
-            <aside id="profilePanel" class="module-panel side-panel">
+        <section id="profilePanel" class="spectator-page hidden">
+            <section class="module-panel profile-layout">
                 <div class="panel-heading">
                     <h2>Perfil</h2>
                 </div>
                 <div id="profileBox" class="profile-box"></div>
-                <form id="profileEditForm" class="payment-grid">
+                <div class="button-row profile-actions">
+                    <button id="showProfileEditButton" class="secondary-button" type="button">Modificar datos</button>
+                    <button id="showProfilePaymentButton" class="secondary-button" type="button">Agregar método de pago</button>
+                </div>
+                <form id="profileEditForm" class="payment-grid hidden">
                     <h3>Modificar datos</h3>
                     <label>Nombre <input name="nombre" type="text"></label>
                     <label>Apellido <input name="apellido" type="text"></label>
                     <label>Email <input name="email" type="email"></label>
-                    <label>Contraseña <input name="contrasenia" type="password"></label>
+                    <button id="showPasswordChangeButton" class="link-button" type="button">Cambiar contraseña</button>
+                    <div id="passwordChangeBox" class="password-change-box hidden">
+                        <label>Contraseña actual <input name="contraseniaActual" type="password"></label>
+                        <label>Nueva contraseña <input name="nuevaContrasenia" type="password"></label>
+                        <label>Repetir nueva contraseña <input name="nuevaContraseniaConfirmacion" type="password"></label>
+                    </div>
                     <button class="secondary-button" type="submit">Guardar perfil</button>
                 </form>
-                <form id="profilePaymentForm" class="payment-grid">
+                <form id="profilePaymentForm" class="payment-grid hidden">
                     <h3>Agregar método de pago</h3>
                     <label>Número <input name="numero" type="text" placeholder="16 dígitos"></label>
                     <label>Vencimiento <input name="fechaVencimiento" type="month"></label>
@@ -100,30 +153,35 @@
                     <label>CVV <input name="cvv" type="password" placeholder="3 dígitos"></label>
                     <button class="secondary-button" type="submit">Agregar tarjeta</button>
                 </form>
-            </aside>
+            </section>
+        </section>
 
-            <aside id="purchasePanel" class="module-panel side-panel hidden">
+        <section id="purchasePanel" class="spectator-page hidden">
+            <section class="module-panel checkout-layout">
                 <div class="panel-heading">
                     <h2>Compra</h2>
                 </div>
                 <div id="purchaseSteps" class="purchase-steps"></div>
-                <label>Cantidad de entradas <input id="ticketQuantity" type="number" min="1" value="1"></label>
-                <div id="selectionSummary" class="info-box">Elegí una función para comenzar.</div>
-                <div id="seatList" class="seat-list"></div>
-                <label id="productTypeFilterBox" class="hidden">Categoría de consumo
-                    <select id="productTypeFilter">
-                        <option value="">Todas</option>
-                        <option value="POCHOCLOS">Pochoclos</option>
-                        <option value="BEBIDA">Bebidas</option>
-                        <option value="DULCE">Dulces</option>
-                        <option value="COMBO">Combos</option>
-                    </select>
-                </label>
-                <div id="consumptionList" class="record-list"></div>
-                <div id="paymentBox" class="payment-box"></div>
-                <button id="buyButton" class="primary-button wide-button" type="button">Comprar entrada</button>
+                <section id="seatStep" class="checkout-step">
+                    <div class="info-box compact-info">Seleccioná una o más butacas. Cada butaca suma una entrada a la compra.</div>
+                    <div id="seatList" class="seat-list"></div>
+                    <div id="selectionSummary" class="info-box">Elegí una función para comenzar.</div>
+                </section>
+                <section id="consumptionStep" class="checkout-step hidden">
+                    <div id="productTypeTabs" class="consumption-tabs hidden"></div>
+                    <div id="consumptionList" class="record-list"></div>
+                </section>
+                <section id="paymentStep" class="checkout-step hidden">
+                    <div id="paymentBox" class="payment-box"></div>
+                    <button id="buyButton" class="primary-button wide-button" type="button">Comprar entrada</button>
+                    <div id="purchaseLoading" class="loading-box hidden">Procesando compra...</div>
+                </section>
+                <div class="checkout-actions">
+                    <button id="backPurchaseStepButton" class="secondary-button" type="button">Volver</button>
+                    <button id="nextPurchaseStepButton" class="primary-button" type="button">Continuar</button>
+                </div>
                 <div id="ticketOutput" class="ticket-output"></div>
-            </aside>
+            </section>
         </section>
     </section>
 
@@ -218,7 +276,8 @@
                         <h3>Modificar sala</h3>
                         <input name="id" type="hidden">
                         <label>Nombre <input name="nombre" type="text"></label>
-                        <label>Capacidad <input name="capacidad" type="number" min="1"></label>
+                        <label>Capacidad <input name="capacidad" type="number" min="1" readonly></label>
+                        <div id="roomEditMatrixEditor" class="room-preview"></div>
                         <div class="button-row">
                             <button class="primary-button" type="submit">Guardar cambios</button>
                             <button id="cancelRoomEditButton" class="secondary-button" type="button">Cancelar</button>
@@ -357,7 +416,7 @@
         </section>
     </section>
 
-    <section class="module-panel response-panel">
+    <section id="responsePanel" class="module-panel response-panel">
         <div class="panel-heading">
             <h2>Estado / respuesta</h2>
         </div>
@@ -365,6 +424,16 @@
     </section>
 </div>
 
-<script src="app.js?v=14"></script>
+<section id="mailModal" class="modal-backdrop hidden" aria-modal="true" role="dialog">
+    <article class="modal-card">
+        <div class="panel-heading">
+            <h2 id="mailModalTitle">Mail</h2>
+            <button id="closeMailModalButton" class="table-action" type="button">Cerrar</button>
+        </div>
+        <div id="mailModalBody"></div>
+    </article>
+</section>
+
+<script src="app.js?v=22"></script>
 </body>
 </html>

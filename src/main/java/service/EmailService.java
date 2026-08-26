@@ -18,6 +18,14 @@ public class EmailService {
         System.out.println(mensaje);
     }
 
+    public void enviarRecuperacionContrasenia(Espectador espectador) {
+        String mensaje = "Recuperacion de contrasenia enviada a " + espectador.getEmail()
+                + ". Link ilustrativo: http://localhost:8080/recuperar-contrasenia?espectadorId="
+                + espectador.getId();
+
+        System.out.println(mensaje);
+    }
+
     public void enviarTicket(Ticket ticket) {
         System.out.println("Ticket enviado a " + ticket.getEspectador().getEmail());
         System.out.println("Codigo QR: " + ticket.getCodigoQR());

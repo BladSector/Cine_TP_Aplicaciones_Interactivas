@@ -1,5 +1,6 @@
 package modelo;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -22,13 +23,13 @@ public class Ticket {
     @ManyToOne
     @JoinColumn(name = "espectador_id")
     private Espectador espectador;
-    @ManyToOne
-    @JoinColumn(name = "metodo_pago_id")
-    private MetodoDePago metodoDePago;
+    @Column(name = "metodo_pago_resumen")
+    private String metodoDePagoResumen;
     @OneToMany(mappedBy = "ticket")
     private List<Entrada> entradas;
     @OneToMany(mappedBy = "ticket")
     private List<ItemConsumo> itemsConsumo;
+    @Column(name = "codigo_qr")
     private String codigoQR;
 
     protected Ticket() {
@@ -40,10 +41,10 @@ public class Ticket {
         this(espectador, null);
     }
 
-    public Ticket(Espectador espectador, MetodoDePago metodoDePago) {
+    public Ticket(Espectador espectador, String metodoDePagoResumen) {
         this.id = 0;
         this.espectador = espectador;
-        this.metodoDePago = metodoDePago;
+        this.metodoDePagoResumen = metodoDePagoResumen;
         this.entradas = new ArrayList<>();
         this.itemsConsumo = new ArrayList<>();
         this.codigoQR = generarCodigoQR();
@@ -111,8 +112,8 @@ public class Ticket {
         return espectador;
     }
 
-    public MetodoDePago getMetodoDePago() {
-        return metodoDePago;
+    public String getMetodoDePagoResumen() {
+        return metodoDePagoResumen;
     }
 
     public List<Entrada> getEntradas() {

@@ -41,12 +41,24 @@ public class EspectadorController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public EspectadorResponse guardar(@RequestBody EspectadorRequest request) {
+        validarConfirmacionContrasenia(request.contrasenia(), request.contraseniaConfirmacion());
+
         return EspectadorResponse.desde(espectadorService.guardar(
                 request.nombre(),
                 request.apellido(),
                 request.email(),
                 request.contrasenia()
         ));
+    }
+
+    @PostMapping("/login")
+    public EspectadorResponse login(@RequestBody LoginRequest request) {
+        return EspectadorResponse.desde(espectadorService.autenticar(request.email(), request.contrasenia()));
+    }
+
+    @PostMapping("/solicitar-recuperacion")
+    public EspectadorResponse solicitarRecuperacion(@RequestBody RecuperacionEmailRequest request) {
+        return EspectadorResponse.desde(espectadorService.solicitarRecuperacionContrasenia(request.email()));
     }
 
     @PutMapping("/{id}")
@@ -56,7 +68,18 @@ public class EspectadorController {
                 request.nombre(),
                 request.apellido(),
                 request.email(),
-                request.contrasenia()
+                request.contraseniaActual(),
+                request.nuevaContrasenia(),
+                request.nuevaContraseniaConfirmacion()
+        ));
+    }
+
+    @PostMapping("/recuperar-contrasenia")
+    public EspectadorResponse recuperarContrasenia(@RequestBody RecuperarContraseniaRequest request) {
+        return EspectadorResponse.desde(espectadorService.recuperarContrasenia(
+                request.email(),
+                request.nuevaContrasenia(),
+                request.nuevaContraseniaConfirmacion()
         ));
     }
 
@@ -76,7 +99,35 @@ public class EspectadorController {
         espectadorService.eliminar(id);
     }
 
-    public record EspectadorRequest(String nombre, String apellido, String email, String contrasenia) {
+    private void validarConfirmacionContrasenia(String contrasenia, String contraseniaConfirmacion) {
+        if (contrasenia == null || contrasenia.isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "La contrasenia no puede estar vacia."
+            );
+        }
+
+        if (!contrasenia.equals(contraseniaConfirmacion)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Las contrasenias no coinciden."
+            );
+        }
+    }
+
+    public record EspectadorRequest(String nombre, String apellido, String email,
+                                    String contrasenia, String contraseniaConfirmacion,
+                                    String contraseniaActual, String nuevaContrasenia,
+                                    String nuevaContraseniaConfirmacion) {
+    }
+
+    public record LoginRequest(String email, String contrasenia) {
+    }
+
+    public record RecuperacionEmailRequest(String email) {
+    }
+
+    public record RecuperarContraseniaRequest(String email, String nuevaContrasenia, String nuevaContraseniaConfirmacion) {
     }
 
     public record EspectadorResponse(int id, String nombre, String apellido, String email,
@@ -91,7 +142,7 @@ public class EspectadorController {
                     espectador.getEmail(),
                     espectador.isEmailVerificado(),
                     metodoDePagoId,
-                    espectador.getMetodosDePago().stream().map(MetodoDePagoResumen::desde).toList(),
+                    espectador.getMetodosDePagoActivos().stream().map(MetodoDePagoResumen::desde).toList(),
                     espectador.getCantidadEntradas()
             );
         }

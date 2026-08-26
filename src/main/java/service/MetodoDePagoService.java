@@ -18,7 +18,9 @@ public class MetodoDePagoService {
     }
 
     public List<MetodoDePago> listar() {
-        return metodoDePagoRepository.findAll();
+        return metodoDePagoRepository.findAll().stream()
+                .filter(MetodoDePago::isActiva)
+                .toList();
     }
 
     public MetodoDePago buscarPorId(int id) {
@@ -46,6 +48,7 @@ public class MetodoDePagoService {
 
     public void eliminar(int id) {
         MetodoDePago metodoDePago = buscarPorId(id);
-        metodoDePagoRepository.delete(metodoDePago);
+        metodoDePago.desactivar();
+        metodoDePagoRepository.save(metodoDePago);
     }
 }

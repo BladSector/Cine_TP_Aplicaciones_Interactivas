@@ -25,6 +25,7 @@ public class MetodoDePago {
     private String nombre;
     private String apellido;
     private String cvv;
+    private Boolean activa = true;
     @ManyToOne
     @JoinColumn(name = "espectador_id")
     private Espectador espectador;
@@ -39,6 +40,7 @@ public class MetodoDePago {
         this.nombre = nombre;
         this.apellido= apellido;
         this.cvv = cvv;
+        this.activa = true;
         this.espectador = null;
         //valida los datos y si no pasa validarDatos() no se crea.
         if (!validarDatos()) {
@@ -87,6 +89,14 @@ public class MetodoDePago {
         }
 
         this.espectador = espectador;
+    }
+
+    public void desactivar() {
+        this.activa = false;
+    }
+
+    public boolean isActiva() {
+        return activa == null || activa;
     }
 
     public int getId() {

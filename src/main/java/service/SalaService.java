@@ -2,13 +2,17 @@ package service;
 
 import modelo.Butaca;
 import modelo.Sala;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import repository.ButacaRepository;
 import repository.SalaRepository;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class SalaService {
@@ -86,6 +90,41 @@ public class SalaService {
             Sala sala = buscarPorId(id);
             sala.actualizarDatos(nombre, capacidad);
             return salaRepository.save(sala);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+    }
+
+    @Transactional
+    public Sala actualizarConMatriz(int id, String nombre, List<Integer> butacasActivasIds) {
+        if (butacasActivasIds == null || butacasActivasIds.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La sala debe conservar al menos una butaca.");
+        }
+
+        try {
+            Sala sala = buscarPorId(id);
+            List<Butaca> butacasActuales = butacaRepository.findBySalaId(id);
+            Set<Integer> idsActivos = butacasActivasIds.stream().collect(Collectors.toSet());
+            boolean idsInvalidos = idsActivos.stream()
+                    .anyMatch(butacaId -> butacasActuales.stream().noneMatch(butaca -> butaca.getId() == butacaId));
+
+            if (idsInvalidos) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Hay butacas que no pertenecen a la sala.");
+            }
+
+            List<Butaca> butacasAEliminar = butacasActuales.stream()
+                    .filter(butaca -> !idsActivos.contains(butaca.getId()))
+                    .toList();
+
+            butacaRepository.deleteAll(butacasAEliminar);
+            butacaRepository.flush();
+            sala.actualizarDatos(nombre, idsActivos.size());
+            return salaRepository.save(sala);
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "No se puede quitar una butaca que ya tiene entradas asociadas."
+            );
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
