@@ -8,8 +8,10 @@ const api = {
     espectadores: "/espectadores",
     entradas: "/entradas",
     tickets: "/tickets",
+    compras: "/compras",
     productos: "/productos-confiteria",
-    items: "/items-consumo"
+    items: "/items-consumo",
+    sesion: "/sesion"
 };
 
 const state = {
@@ -25,6 +27,7 @@ const state = {
     selectedProductType: "",
     selectedPublicDate: "",
     selectedMovieDate: "",
+    loginProfileOpen: false,
     data: emptyData()
 };
 
@@ -57,6 +60,7 @@ async function initApp() {
     bind("#createSpectatorButton", "click", createAndEnterSpectator);
     bind("#showRegisterButton", "click", showRegisterForm);
     bind("#forgotPasswordButton", "click", showRecoverPasswordModal);
+    bind("#openLoginProfileButton", "click", toggleLoginProfilePanel);
     bind("#closeMailModalButton", "click", closeMailModal);
     bind("#enterAdminButton", "click", enterAdmin);
     bind("#publicMovieSearch", "input", renderPublicMovies);
@@ -72,6 +76,7 @@ async function initApp() {
     bind("#backPurchaseStepButton", "click", goBackPurchaseStep);
     bind("#nextPurchaseStepButton", "click", goNextPurchaseStep);
     bind("#buildRoomMatrixButton", "click", renderRoomMatrixEditor);
+    bind("#cancelRoomMatrixButton", "click", cancelRoomMatrixPreview);
 
     bind("#categoryForm", "submit", createCategory);
     bind("#movieForm", "submit", createMovie);
@@ -89,6 +94,9 @@ async function initApp() {
     bind("#cancelMovieEditButton", "click", () => cancelEdit("#movieEditForm"));
     bind("#cancelRoomEditButton", "click", () => cancelEdit("#roomEditForm"));
     bind("#cancelFunctionEditButton", "click", () => cancelEdit("#functionEditForm"));
+    document.querySelectorAll("[data-toggle-create]").forEach(button => {
+        button.addEventListener("click", () => toggleCreateForm(button.dataset.toggleCreate));
+    });
     document.querySelectorAll("[data-admin-tab]").forEach(button => {
         button.addEventListener("click", () => setAdminTab(button.dataset.adminTab));
     });
@@ -153,12 +161,17 @@ async function loadAll() {
 
 function renderLogin() {
     const adminMode = isAdminPath();
+    const loginLayout = $(".login-layout");
+
     $("#publicCatalogPanel")?.classList.toggle("hidden", adminMode);
-    $("#spectatorLoginPanel")?.classList.toggle("hidden", adminMode);
+    $("#spectatorLoginPanel")?.classList.toggle("hidden", adminMode || !state.loginProfileOpen);
     $("#adminLoginPanel")?.classList.toggle("hidden", !adminMode);
+    $("#openLoginProfileButton")?.classList.toggle("hidden", adminMode);
+    loginLayout?.classList.toggle("profile-open", !adminMode && state.loginProfileOpen);
     $("#newAccountBox")?.classList.add("hidden");
 
     if (adminMode) {
+        state.loginProfileOpen = false;
         $("#adminUser").value = "";
         $("#adminPassword").value = "";
         $("#loginView")?.classList.add("admin-login-mode");
@@ -176,6 +189,15 @@ function renderLogin() {
     resetLoginForms();
 }
 
+function toggleLoginProfilePanel() {
+    if (isAdminPath()) {
+        return;
+    }
+
+    state.loginProfileOpen = !state.loginProfileOpen;
+    renderLogin();
+}
+
 function showRegisterForm() {
     const box = $("#newAccountBox");
 
@@ -184,6 +206,23 @@ function showRegisterForm() {
     }
 
     box.classList.toggle("hidden");
+}
+
+function openRegistrationFromPublicMovie() {
+    state.loginProfileOpen = true;
+    renderLogin();
+
+    const panel = $("#spectatorLoginPanel");
+    const accountBox = $("#newAccountBox");
+
+    accountBox?.classList.remove("hidden");
+    panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+    $("#newSpectatorName")?.focus();
+
+    showNoticeModal(
+        "Creá tu cuenta",
+        "Te abrí el panel Perfil. Completá Nueva cuenta para poder elegir butacas y comprar entradas."
+    );
 }
 
 function resetLoginForms() {
@@ -282,7 +321,7 @@ async function requestPasswordRecovery(event) {
     }
 
     try {
-        const espectador = await request(`${api.espectadores}/solicitar-recuperacion`, {
+        const solicitud = await request(`${api.espectadores}/solicitar-recuperacion`, {
             method: "POST",
             body: { email }
         });
@@ -292,9 +331,10 @@ async function requestPasswordRecovery(event) {
                 <div class="fake-mail">
                     <p class="eyebrow">Cine API</p>
                     <h3>Cambiar contraseña</h3>
-                    <p>Recibimos una solicitud para <strong>${escapeHtml(espectador.email)}</strong>.</p>
+                    <p>Recibimos una solicitud para <strong>${escapeHtml(solicitud.email)}</strong>.</p>
                     <form id="recoverPasswordModalForm" class="stack-form">
-                        <input name="email" type="hidden" value="${escapeHtml(espectador.email)}">
+                        <input name="email" type="hidden" value="${escapeHtml(solicitud.email)}">
+                        <input name="token" type="hidden" value="${escapeHtml(solicitud.token)}">
                         <label>Nueva contraseña <input name="nuevaContrasenia" type="password"></label>
                         <label>Repetir nueva contraseña <input name="nuevaContraseniaConfirmacion" type="password"></label>
                         <button class="primary-button" type="submit">Cambiar contraseña</button>
@@ -306,7 +346,7 @@ async function requestPasswordRecovery(event) {
         setOutput({
             estado: "Mail de recuperación enviado",
             detalle: "Como es ilustrativo, se abre una ventana simulando el mail.",
-            espectador
+            solicitud
         });
     } catch (error) {
         showNoticeModal("Email no encontrado", errorMessage(error), true);
@@ -328,6 +368,7 @@ async function recoverPassword(event) {
             method: "POST",
             body: {
                 email: form.email.value,
+                token: form.token.value,
                 nuevaContrasenia: form.nuevaContrasenia.value,
                 nuevaContraseniaConfirmacion: form.nuevaContraseniaConfirmacion.value
             }
@@ -453,7 +494,7 @@ function errorMessage(error) {
     return "Ocurrió un error inesperado.";
 }
 
-function enterAdmin() {
+async function enterAdmin() {
     if (!isAdminPath()) {
         showNoticeModal("Acceso administrador", "Entrá desde http://localhost:8080/admin para usar el panel administrador.", true);
         return;
@@ -462,17 +503,21 @@ function enterAdmin() {
     const usuario = $("#adminUser")?.value.trim();
     const contrasenia = $("#adminPassword")?.value;
 
-    if (usuario !== "admin" || contrasenia !== "admin") {
-        showNoticeModal("Credenciales incorrectas", "El usuario o la contraseña del administrador no son correctos.", true);
-        return;
+    try {
+        await request(`${api.sesion}/admin`, {
+            method: "POST",
+            body: { usuario, contrasenia }
+        });
+        state.adminTab = "catalogo";
+        await enterRole("admin");
+    } catch (error) {
+        showNoticeModal("Credenciales incorrectas", errorMessage(error), true);
     }
-
-    state.adminTab = "catalogo";
-    enterRole("admin");
 }
 
 async function enterRole(role) {
     state.role = role;
+    state.loginProfileOpen = false;
     loginView.classList.add("hidden");
     appView.classList.remove("hidden");
     spectatorView.classList.toggle("hidden", role !== "spectator");
@@ -505,11 +550,17 @@ function logout() {
     performLogout();
 }
 
-function performLogout() {
+async function performLogout() {
+    try {
+        await request(api.sesion, { method: "DELETE" });
+    } catch {
+        // La interfaz igualmente limpia su estado local si la sesión ya había vencido.
+    }
     state.role = null;
     state.spectator = null;
     state.spectatorPage = "catalog";
     state.purchaseStep = "seats";
+    state.loginProfileOpen = false;
     resetPurchase();
     appView.classList.add("hidden");
     loginView.classList.remove("hidden");
@@ -598,6 +649,7 @@ function renderProfile() {
             <li class="payment-method-row">
                 <span>
                     Tarjeta terminada en ${escapeHtml(metodo.ultimosNumeros)}
+                    ${escapeHtml(paymentHolderName(metodo))}
                     - vence ${escapeHtml(metodo.fechaVencimiento)}
                     ${paymentIsExpired(metodo.fechaVencimiento) ? " - vencida" : ""}
                 </span>
@@ -732,7 +784,7 @@ function renderPublicMovies() {
         return;
     }
 
-    const query = $("#publicMovieSearch")?.value.trim().toLowerCase() || "";
+    const query = normalizeText($("#publicMovieSearch")?.value || "");
     const categoryId = Number($("#publicCategoryFilter")?.value || 0);
     const format = $("#publicFormatFilter")?.value || "";
     const movies = filteredMovies(query, categoryId, format, state.selectedPublicDate);
@@ -750,7 +802,7 @@ function renderPublicMovies() {
 
 function renderMovies() {
     const container = $("#movieList");
-    const query = $("#movieSearch").value.trim().toLowerCase();
+    const query = normalizeText($("#movieSearch").value);
     const categoryId = Number($("#categoryFilter").value);
     const format = $("#movieFormatFilter")?.value || "";
     const movies = filteredMovies(query, categoryId, format, state.selectedMovieDate);
@@ -794,6 +846,11 @@ function renderScheduleMovieCard(pelicula, isPublic) {
     card.className = "schedule-movie-card";
     card.classList.toggle("selected", state.selectedMovie?.id === pelicula.id);
 
+    if (isPublic) {
+        card.classList.add("public-selectable");
+        card.tabIndex = 0;
+    }
+
     const poster = pelicula.portadaUrl
         ? `<img class="schedule-poster" src="${pelicula.portadaUrl}" alt="Portada de ${escapeHtml(pelicula.titulo)}">`
         : `<div class="schedule-poster placeholder-poster">Sin portada</div>`;
@@ -833,15 +890,27 @@ function renderScheduleMovieCard(pelicula, isPublic) {
     `;
 
     card.querySelectorAll("[data-function-id]").forEach(button => {
-        button.addEventListener("click", () => {
+        button.addEventListener("click", event => {
+            event.stopPropagation();
+
             if (isPublic) {
-                showNoticeModal("Ingresá para comprar", "Iniciá sesión o creá una cuenta para elegir butacas.", false);
+                openRegistrationFromPublicMovie();
                 return;
             }
 
             selectFunction(Number(button.dataset.functionId));
         });
     });
+
+    if (isPublic) {
+        card.addEventListener("click", openRegistrationFromPublicMovie);
+        card.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openRegistrationFromPublicMovie();
+            }
+        });
+    }
 
     return card;
 }
@@ -1274,8 +1343,7 @@ function renderPayment() {
         <div id="newPaymentFields" class="payment-grid ${hasValidMethod ? "hidden" : ""}">
             <label>Número <input id="payNumber" type="text" placeholder="16 dígitos"></label>
             <label>Vencimiento <input id="payExpiration" type="month"></label>
-            <label>Nombre <input id="payName" type="text"></label>
-            <label>Apellido <input id="payLastName" type="text"></label>
+            <label>Nombre y apellido <input id="payHolder" type="text" placeholder="Titular de la tarjeta"></label>
             <label>CVV <input id="payCvv" type="password" placeholder="3 dígitos"></label>
         </div>
     `;
@@ -1316,59 +1384,23 @@ async function buyTicket() {
 
     try {
         const metodoDePagoId = await ensurePaymentMethod();
-
-        const entradas = [];
-        for (const butaca of state.selectedSeats) {
-            const entrada = await request(api.entradas, {
-                method: "POST",
-                body: {
-                    precio: state.selectedFunction.precioEntrada,
-                    espectadorId: state.spectator.id,
-                    funcionId: state.selectedFunction.id,
-                    butacaId: butaca.id
-                }
-            });
-            entradas.push(entrada);
-        }
-
-        const ticket = await request(api.tickets, {
+        const items = Object.entries(state.selectedConsumptions)
+            .map(([productoId, cantidad]) => ({ productoId: Number(productoId), cantidad: Number(cantidad) }))
+            .filter(item => item.cantidad > 0);
+        const ticket = await request(api.compras, {
             method: "POST",
-            body: { espectadorId: state.spectator.id, metodoDePagoId }
+            body: {
+                espectadorId: state.spectator.id,
+                metodoDePagoId,
+                funcionId: state.selectedFunction.id,
+                butacasIds: state.selectedSeats.map(butaca => butaca.id),
+                items
+            }
         });
 
-        for (const entrada of entradas) {
-            await request(`${api.tickets}/${ticket.id}/entradas/${entrada.id}`, { method: "POST" });
-        }
-
-        const items = [];
-        for (const [productoId, cantidad] of Object.entries(state.selectedConsumptions)) {
-            const cantidadNumerica = Number(cantidad);
-
-            if (cantidadNumerica > 0) {
-                const item = await request(api.items, {
-                    method: "POST",
-                    body: {
-                        productoId: Number(productoId),
-                        cantidad: cantidadNumerica,
-                        ticketId: ticket.id
-                    }
-                });
-                items.push(item);
-            }
-        }
-
-        const entradasPagadas = [];
-        for (const entrada of entradas) {
-            const entradaPagada = await request(`${api.entradas}/${entrada.id}/pagar`, { method: "PUT" });
-            entradasPagadas.push(entradaPagada);
-        }
-
-        await loadAll();
-        const ticketCompleto = await request(`${api.tickets}/${ticket.id}`);
-        await request(`${api.tickets}/${ticket.id}/enviar-mail`, { method: "POST" });
         await loadAll();
         state.spectator = await request(`${api.espectadores}/${state.spectator.id}`);
-        const ticketFinal = state.data.tickets.find(item => item.id === ticket.id) || ticketCompleto;
+        const ticketFinal = state.data.tickets.find(item => item.id === ticket.id) || ticket;
         state.selectedSeats = [];
         state.selectedConsumptions = {};
         state.selectedProductType = "";
@@ -1379,7 +1411,7 @@ async function buyTicket() {
         setPurchaseLoading(false);
         renderSpectatorView();
         showTicketModal(ticketFinal);
-        setOutput({ ticket: ticketFinal, entradas: entradasPagadas, items });
+        setOutput({ ticket: ticketFinal });
     } catch (error) {
         setPurchaseLoading(false);
         showNoticeModal("No se pudo completar la compra", errorMessage(error), true);
@@ -1419,8 +1451,7 @@ async function ensurePaymentMethod() {
         body: {
             numero: $("#payNumber").value,
             fechaVencimiento: $("#payExpiration").value,
-            nombre: $("#payName").value,
-            apellido: $("#payLastName").value,
+            nombreTitular: $("#payHolder").value,
             cvv: $("#payCvv").value
         }
     });
@@ -1482,8 +1513,7 @@ async function addPaymentFromProfile(event) {
             body: {
                 numero: form.numero.value,
                 fechaVencimiento: form.fechaVencimiento.value,
-                nombre: form.nombre.value,
-                apellido: form.apellido.value,
+                nombreTitular: form.titular.value,
                 cvv: form.cvv.value
             }
         });
@@ -1629,11 +1659,34 @@ function fillSelect(selector, items, labelFactory, allowEmpty = false) {
     });
 }
 
+function toggleCreateForm(formId) {
+    const form = $(`#${formId}`);
+
+    if (!form) {
+        return;
+    }
+
+    const shouldOpen = form.classList.contains("hidden");
+    const module = form.closest(".admin-module");
+    const forms = module ? module.querySelectorAll(".create-form") : document.querySelectorAll(".create-form");
+
+    forms.forEach(item => item.classList.add("hidden"));
+
+    if (shouldOpen) {
+        form.classList.remove("hidden");
+        form.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+}
+
 async function createCategory(event) {
     event.preventDefault();
     const form = event.currentTarget;
-    await adminPost(api.categorias, { nombre: form.nombre.value });
-    form.reset();
+    const saved = await adminPost(api.categorias, { nombre: form.nombre.value });
+
+    if (saved) {
+        form.reset();
+        form.classList.add("hidden");
+    }
 }
 
 async function updateMovie(event) {
@@ -1666,19 +1719,30 @@ async function createMovie(event) {
         categoriaId = categoria.id;
     }
 
-    await adminPost(api.peliculas, {
+    const saved = await adminPost(api.peliculas, {
         titulo: form.titulo.value,
         duracion: Number(form.duracion.value),
         descripcion: form.descripcion.value,
         portadaUrl,
         categoriaId
     });
-    form.reset();
+
+    if (saved) {
+        form.reset();
+        form.classList.add("hidden");
+    }
 }
 
 async function createRoomWithSeats(event) {
     event.preventDefault();
     const form = event.currentTarget;
+
+    if (!form.nombre.value.trim()) {
+        setOutput({ error: "Ingresá el nombre de la sala." }, true);
+        form.nombre.focus();
+        return;
+    }
+
     if ($("#roomMatrixEditor").children.length === 0) {
         renderRoomMatrixEditor();
     }
@@ -1690,12 +1754,24 @@ async function createRoomWithSeats(event) {
         return;
     }
 
-    await adminPost(`${api.salas}/con-matriz`, {
+    const saved = await adminPost(`${api.salas}/con-matriz`, {
         nombre: form.nombre.value,
         butacas
     });
-    form.reset();
-    $("#roomMatrixEditor").innerHTML = "";
+
+    if (saved) {
+        form.reset();
+        form.classList.add("hidden");
+        $("#roomMatrixEditor").innerHTML = "";
+    }
+}
+
+function cancelRoomMatrixPreview() {
+    const editor = $("#roomMatrixEditor");
+
+    if (editor) {
+        editor.innerHTML = "";
+    }
 }
 
 async function updateRoom(event) {
@@ -1887,7 +1963,7 @@ async function createFunction(event) {
         return;
     }
 
-    await adminPost(api.funciones, {
+    const saved = await adminPost(api.funciones, {
         fecha: form.fecha.value,
         horario: normalizeTime(form.horario.value),
         peliculaId: Number(form.peliculaId.value),
@@ -1896,7 +1972,11 @@ async function createFunction(event) {
         idioma: form.idioma.value,
         precioEntrada: Number(form.precioEntrada.value)
     });
-    form.reset();
+
+    if (saved) {
+        form.reset();
+        form.classList.add("hidden");
+    }
 }
 
 async function updateFunction(event) {
@@ -1924,13 +2004,17 @@ async function createProduct(event) {
     event.preventDefault();
     const form = event.currentTarget;
 
-    await adminPost(api.productos, {
+    const saved = await adminPost(api.productos, {
         nombre: form.nombre.value,
         precio: Number(form.precio.value),
         tipo: form.tipo.value,
         tamano: form.tamano.value
     });
-    form.reset();
+
+    if (saved) {
+        form.reset();
+        form.classList.add("hidden");
+    }
 }
 
 async function adminPost(url, body) {
@@ -1939,8 +2023,10 @@ async function adminPost(url, body) {
         setOutput(response);
         await loadAll();
         renderAdminView();
+        return true;
     } catch (error) {
         setOutput(error, true);
+        return false;
     }
 }
 
@@ -1977,8 +2063,9 @@ function renderAdminData() {
     renderDataGroup("#spectatorData", allLists.slice(5, 9));
     renderDataGroup("#productData", allLists.slice(9, 11));
     renderDataGroup("#adminData", [
-        ...allLists.slice(0, 5),
-        ...allLists.slice(9, 11)
+        ...allLists.slice(0, 4),
+        ...allLists.slice(9, 11),
+        allLists[4]
     ]);
 }
 
@@ -1990,7 +2077,7 @@ function renderDataGroup(selector, lists) {
     }
 
     container.innerHTML = lists.map(([title, rows, columns]) => `
-        <article class="data-card">
+        <article class="data-card ${title === "Funciones" ? "wide-data-card" : ""}">
             <h3>${title}</h3>
             <label class="table-search">Buscar <input type="search" data-table-filter placeholder="Filtrar ${title.toLowerCase()}"></label>
             <div class="data-list">${renderTable(rows, columns, title)}</div>
@@ -2185,9 +2272,9 @@ function movieMatchesSearch(pelicula, funciones, query) {
     const searchable = [
         pelicula.titulo,
         pelicula.categoriaNombre
-    ].join(" ").toLowerCase();
+    ].join(" ");
 
-    return searchable.includes(query);
+    return normalizeText(searchable).includes(query);
 }
 
 function renderDateStrip(selector, selectedDate, onSelect) {
@@ -2325,6 +2412,11 @@ function paymentIsExpired(value) {
     const currentMonth = today.getMonth() + 1;
 
     return year < currentYear || (year === currentYear && month <= currentMonth);
+}
+
+function paymentHolderName(metodo) {
+    const titular = metodo.titular || metodo.nombreTitular || [metodo.nombre, metodo.apellido].filter(Boolean).join(" ");
+    return titular ? `- ${titular}` : "";
 }
 
 function shortTime(value) {
@@ -2501,13 +2593,21 @@ function escapeHtml(value) {
     return div.innerHTML;
 }
 
+function normalizeText(value) {
+    return String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
 function filterTable(input) {
     const card = input.closest(".data-card");
     const rows = card.querySelectorAll("tbody tr");
-    const query = input.value.trim().toLowerCase();
+    const query = normalizeText(input.value);
 
     rows.forEach(row => {
-        row.hidden = query && !row.textContent.toLowerCase().includes(query);
+        row.hidden = query && !normalizeText(row.textContent).includes(query);
     });
 }
 

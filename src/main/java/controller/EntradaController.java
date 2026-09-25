@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import service.EntradaService;
+import service.SesionService;
+import jakarta.servlet.http.HttpSession;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,21 +23,30 @@ import java.util.List;
 @RequestMapping("/entradas")
 public class EntradaController {
     private final EntradaService entradaService;
+    private final SesionService sesionService;
 
-    public EntradaController(EntradaService entradaService) {
+    public EntradaController(EntradaService entradaService, SesionService sesionService) {
         this.entradaService = entradaService;
+        this.sesionService = sesionService;
     }
 
     @GetMapping
-    public List<EntradaResponse> listar() {
-        return entradaService.listar().stream()
+    public List<EntradaResponse> listar(HttpSession sesion) {
+        List<Entrada> entradas = sesionService.esPersonal(sesion)
+                ? entradaService.listar()
+                : entradaService.listarPorEspectador(requerirEspectador(sesion));
+        return entradas.stream()
                 .map(EntradaResponse::desde)
                 .toList();
     }
 
     @GetMapping("/{id}")
-    public EntradaResponse buscarPorId(@PathVariable int id) {
-        return EntradaResponse.desde(entradaService.buscarPorId(id));
+    public EntradaResponse buscarPorId(@PathVariable int id, HttpSession sesion) {
+        Entrada entrada = entradaService.buscarPorId(id);
+        if (!sesionService.esPersonal(sesion)) {
+            sesionService.validarEspectador(sesion, entrada.getEspectador().getId());
+        }
+        return EntradaResponse.desde(entrada);
     }
 
     @PostMapping
@@ -78,6 +89,14 @@ public class EntradaController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminar(@PathVariable int id) {
         entradaService.eliminar(id);
+    }
+
+    private int requerirEspectador(HttpSession sesion) {
+        Integer espectadorId = sesionService.obtenerEspectadorId(sesion);
+        if (espectadorId == null) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.UNAUTHORIZED, "Debe iniciar sesion.");
+        }
+        return espectadorId;
     }
 
     public record EntradaRequest(double precio, int espectadorId, int funcionId, int butacaId) {

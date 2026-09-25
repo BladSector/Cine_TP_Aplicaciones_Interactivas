@@ -1,7 +1,6 @@
 package modelo;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,21 +54,6 @@ public class Funcion {
         this.idioma = idioma;
         this.precioEntrada = precioEntrada;
         this.entradas = new ArrayList<>();
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos de la función no son válidos.");
-        }
-    }
-
-    private boolean validarDatos() {
-        return fecha != null
-                && !fecha.isBefore(LocalDate.now())
-                && horario != null
-                && pelicula != null
-                && sala != null
-                && formato != null
-                && idioma != null
-                && precioEntrada >= 0;
     }
 
     public void actualizarDatos(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, FormatoFuncion formato) {
@@ -88,41 +72,14 @@ public class Funcion {
         this.formato = formato;
         this.idioma = idioma;
         this.precioEntrada = precioEntrada;
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos de la función no son válidos.");
-        }
-    }
-
-    public Entrada venderEntrada(double precio, Espectador espectador, Butaca butaca) {
-        if (espectador == null) {
-            throw new IllegalArgumentException("El espectador no puede estar vacio.");
-        }
-
-        if (butaca == null) {
-            throw new IllegalArgumentException("La butaca no puede estar vacía.");
-        }
-
-        if (!butaca.estaDisponible()) {
-            throw new IllegalArgumentException("La butaca no está disponible.");
-        }
-
-        LocalDateTime horarioEntrada = LocalDateTime.of(fecha, horario);
-        //this significa "esta misma función"
-        Entrada entrada = new Entrada(precio, espectador, this, butaca, horarioEntrada);
-
-        entradas.add(entrada);
-        espectador.agregarEntrada(entrada);
-
-        return entrada;
     }
 
     public void asignarId(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("El id debe ser mayor a 0.");
-        }
-
         this.id = id;
+    }
+
+    public void agregarEntrada(Entrada entrada) {
+        entradas.add(entrada);
     }
 
     public int getId() {

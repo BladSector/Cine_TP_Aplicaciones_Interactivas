@@ -9,6 +9,7 @@ import repository.ButacaRepository;
 import repository.SalaRepository;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
 public class ButacaService {
@@ -25,50 +26,50 @@ public class ButacaService {
     }
 
     public Butaca buscarPorId(int id) {
-        return butacaRepository.findById(id)
+        Butaca butaca = butacaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe una butaca con ese id."));
+        liberarBloqueoVencido(butaca);
+        return butaca;
     }
 
     public Butaca guardar(String fila, int numero, int salaId) {
-        try {
-            Sala sala = buscarSala(salaId);
-            Butaca butaca = new Butaca(fila, numero, sala);
-            sala.agregarButaca(butaca);
-            return butacaRepository.save(butaca);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        validarDatos(fila, numero);
+        Sala sala = buscarSala(salaId);
+        if (butacaRepository.findBySalaId(salaId).size() >= sala.getCapacidad()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La sala ya alcanzo su capacidad maxima.");
         }
+        Butaca butaca = new Butaca(fila.trim().toUpperCase(), numero, sala);
+        sala.agregarButaca(butaca);
+        return butacaRepository.save(butaca);
     }
 
     public Butaca actualizar(int id, String fila, int numero, int salaId) {
-        try {
-            Butaca butaca = buscarPorId(id);
-            Sala sala = buscarSala(salaId);
-            butaca.actualizarDatos(fila, numero, sala);
-            return butacaRepository.save(butaca);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+        validarDatos(fila, numero);
+        Butaca butaca = buscarPorId(id);
+        Sala sala = buscarSala(salaId);
+        butaca.actualizarDatos(fila.trim().toUpperCase(), numero, sala);
+        return butacaRepository.save(butaca);
     }
 
     public Butaca bloquear(int id, int minutos) {
-        try {
-            Butaca butaca = buscarPorId(id);
-            butaca.bloquear(minutos);
-            return butacaRepository.save(butaca);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        if (minutos <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Los minutos de bloqueo deben ser mayores a 0.");
         }
+        Butaca butaca = buscarPorId(id);
+        if (!butaca.estaDisponible()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La butaca no esta disponible para bloquear.");
+        }
+        butaca.bloquear(minutos);
+        return butacaRepository.save(butaca);
     }
 
     public Butaca ocupar(int id) {
-        try {
-            Butaca butaca = buscarPorId(id);
-            butaca.ocupar();
-            return butacaRepository.save(butaca);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        Butaca butaca = buscarPorId(id);
+        if (!butaca.estaDisponible()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La butaca no esta disponible.");
         }
+        butaca.ocupar();
+        return butacaRepository.save(butaca);
     }
 
     public Butaca liberar(int id) {
@@ -91,5 +92,20 @@ public class ButacaService {
     private Sala buscarSala(int id) {
         return salaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe una sala con ese id."));
+    }
+
+    private void liberarBloqueoVencido(Butaca butaca) {
+        if (butaca.getEstado() == modelo.EstadoButaca.BLOQUEADA
+                && butaca.getBloqueoHasta() != null
+                && LocalDateTime.now().isAfter(butaca.getBloqueoHasta())) {
+            butaca.liberarButaca();
+            butacaRepository.save(butaca);
+        }
+    }
+
+    private void validarDatos(String fila, int numero) {
+        if (fila == null || fila.isBlank() || numero <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fila es obligatoria y el numero debe ser mayor a 0.");
+        }
     }
 }

@@ -1,6 +1,8 @@
 package modelo;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -21,43 +23,26 @@ public class ItemConsumo {
     @JoinColumn(name = "ticket_id")
     private Ticket ticket;
     private int cantidad;
+    @Enumerated(EnumType.STRING)
+    private EstadoConsumo estado;
 
     protected ItemConsumo() {
+        this.estado = EstadoConsumo.PENDIENTE;
     }
 
     public ItemConsumo(ProductoConfiteria producto, int cantidad) {
         this.id = 0;
         this.producto = producto;
         this.cantidad = cantidad;
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos del item de consumo no son validos.");
-        }
-    }
-
-    private boolean validarDatos() {
-        return producto != null
-                && cantidad > 0;
+        this.estado = EstadoConsumo.PENDIENTE;
     }
 
     public void actualizarDatos(ProductoConfiteria producto, int cantidad) {
         this.producto = producto;
         this.cantidad = cantidad;
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos del item de consumo no son validos.");
-        }
-    }
-
-    public double calcularSubtotal() {
-        return producto.getPrecio() * cantidad;
     }
 
     public void asignarId(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("El id debe ser mayor a 0.");
-        }
-
         this.id = id;
     }
 
@@ -66,11 +51,11 @@ public class ItemConsumo {
     }
 
     public void asignarTicket(Ticket ticket) {
-        if (ticket == null) {
-            throw new IllegalArgumentException("El ticket no puede ser null.");
-        }
-
         this.ticket = ticket;
+    }
+
+    public void actualizarEstado(EstadoConsumo estado) {
+        this.estado = estado;
     }
 
     public ProductoConfiteria getProducto() {
@@ -83,5 +68,9 @@ public class ItemConsumo {
 
     public int getCantidad() {
         return cantidad;
+    }
+
+    public EstadoConsumo getEstado() {
+        return estado == null ? EstadoConsumo.PENDIENTE : estado;
     }
 }

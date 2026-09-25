@@ -30,24 +30,18 @@ public class PeliculaService {
     }
 
     public Pelicula guardar(String titulo, int duracion, String descripcion, String portadaUrl, int categoriaId) {
-        try {
-            Categoria categoria = buscarCategoria(categoriaId);
-            Pelicula pelicula = new Pelicula(titulo, duracion, descripcion, portadaUrl, categoria);
-            return peliculaRepository.save(pelicula);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+        validarDatos(titulo, duracion);
+        Categoria categoria = buscarCategoria(categoriaId);
+        Pelicula pelicula = new Pelicula(titulo.trim(), duracion, textoOpcional(descripcion), textoOpcional(portadaUrl), categoria);
+        return peliculaRepository.save(pelicula);
     }
 
     public Pelicula actualizar(int id, String titulo, int duracion, String descripcion, String portadaUrl, int categoriaId) {
-        try {
-            Pelicula pelicula = buscarPorId(id);
-            Categoria categoria = buscarCategoria(categoriaId);
-            pelicula.actualizarDatos(titulo, duracion, descripcion, portadaUrl, categoria);
-            return peliculaRepository.save(pelicula);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+        validarDatos(titulo, duracion);
+        Pelicula pelicula = buscarPorId(id);
+        Categoria categoria = buscarCategoria(categoriaId);
+        pelicula.actualizarDatos(titulo.trim(), duracion, textoOpcional(descripcion), textoOpcional(portadaUrl), categoria);
+        return peliculaRepository.save(pelicula);
     }
 
     public void eliminar(int id) {
@@ -58,5 +52,18 @@ public class PeliculaService {
     private Categoria buscarCategoria(int id) {
         return categoriaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe una categoria con ese id."));
+    }
+
+    private void validarDatos(String titulo, int duracion) {
+        if (titulo == null || titulo.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El titulo de la pelicula es obligatorio.");
+        }
+        if (duracion <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La duracion debe ser mayor a 0.");
+        }
+    }
+
+    private String textoOpcional(String texto) {
+        return texto == null ? "" : texto.trim();
     }
 }

@@ -32,17 +32,6 @@ public class ProductoConfiteria {
         this.precio = precio;
         this.tipo = tipo;
         this.tamano = tamano;
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos del producto de confiteria no son validos.");
-        }
-    }
-
-    private boolean validarDatos() {
-        return nombre != null && !nombre.isBlank()
-                && precio > 0
-                && tipo != null
-                && tamano != null;
     }
 
     public void actualizarDatos(String nombre, double precio, TipoProductoConfiteria tipo, TamanoProductoConfiteria tamano) {
@@ -50,17 +39,9 @@ public class ProductoConfiteria {
         this.precio = precio;
         this.tipo = tipo;
         this.tamano = tamano;
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos del producto de confiteria no son validos.");
-        }
     }
 
     public void asignarId(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("El id debe ser mayor a 0.");
-        }
-
         this.id = id;
     }
 

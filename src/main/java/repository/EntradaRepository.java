@@ -9,6 +9,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface EntradaRepository extends JpaRepository<Entrada, Integer> {
+    List<Entrada> findByEspectadorId(int espectadorId);
+
+    long countByEspectadorIdAndEstadoIn(int espectadorId, List<EstadoEntrada> estados);
+
     @Query("""
             SELECT COUNT(e) > 0
             FROM Entrada e

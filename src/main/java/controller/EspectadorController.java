@@ -12,7 +12,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 import service.EspectadorService;
+import service.SesionService;
+import jakarta.servlet.http.HttpSession;
 
 import java.time.YearMonth;
 import java.util.List;
@@ -21,48 +24,57 @@ import java.util.List;
 @RequestMapping("/espectadores")
 public class EspectadorController {
     private final EspectadorService espectadorService;
+    private final SesionService sesionService;
 
-    public EspectadorController(EspectadorService espectadorService) {
+    public EspectadorController(EspectadorService espectadorService, SesionService sesionService) {
         this.espectadorService = espectadorService;
+        this.sesionService = sesionService;
     }
 
     @GetMapping
-    public List<EspectadorResponse> listar() {
+    public List<EspectadorResponse> listar(HttpSession sesion) {
+        sesionService.validarAdministrador(sesion);
         return espectadorService.listar().stream()
                 .map(EspectadorResponse::desde)
                 .toList();
     }
 
     @GetMapping("/{id}")
-    public EspectadorResponse buscarPorId(@PathVariable int id) {
+    public EspectadorResponse buscarPorId(@PathVariable int id, HttpSession sesion) {
+        validarPropietarioOAdmin(sesion, id);
         return EspectadorResponse.desde(espectadorService.buscarPorId(id));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public EspectadorResponse guardar(@RequestBody EspectadorRequest request) {
-        validarConfirmacionContrasenia(request.contrasenia(), request.contraseniaConfirmacion());
-
-        return EspectadorResponse.desde(espectadorService.guardar(
+    public EspectadorResponse guardar(@RequestBody EspectadorRequest request, HttpSession sesion) {
+        Espectador espectador = espectadorService.guardar(
                 request.nombre(),
                 request.apellido(),
                 request.email(),
-                request.contrasenia()
-        ));
+                request.contrasenia(),
+                request.contraseniaConfirmacion()
+        );
+        sesionService.iniciarEspectador(sesion, espectador.getId());
+        return EspectadorResponse.desde(espectador);
     }
 
     @PostMapping("/login")
-    public EspectadorResponse login(@RequestBody LoginRequest request) {
-        return EspectadorResponse.desde(espectadorService.autenticar(request.email(), request.contrasenia()));
+    public EspectadorResponse login(@RequestBody LoginRequest request, HttpSession sesion) {
+        Espectador espectador = espectadorService.autenticar(request.email(), request.contrasenia());
+        sesionService.iniciarEspectador(sesion, espectador.getId());
+        return EspectadorResponse.desde(espectador);
     }
 
     @PostMapping("/solicitar-recuperacion")
-    public EspectadorResponse solicitarRecuperacion(@RequestBody RecuperacionEmailRequest request) {
-        return EspectadorResponse.desde(espectadorService.solicitarRecuperacionContrasenia(request.email()));
+    public RecuperacionResponse solicitarRecuperacion(@RequestBody RecuperacionEmailRequest request) {
+        EspectadorService.SolicitudRecuperacion solicitud = espectadorService.solicitarRecuperacionContrasenia(request.email());
+        return new RecuperacionResponse(solicitud.espectador().getEmail(), solicitud.token());
     }
 
     @PutMapping("/{id}")
-    public EspectadorResponse actualizar(@PathVariable int id, @RequestBody EspectadorRequest request) {
+    public EspectadorResponse actualizar(@PathVariable int id, @RequestBody EspectadorRequest request, HttpSession sesion) {
+        validarPropietarioOAdmin(sesion, id);
         return EspectadorResponse.desde(espectadorService.actualizar(
                 id,
                 request.nombre(),
@@ -78,13 +90,16 @@ public class EspectadorController {
     public EspectadorResponse recuperarContrasenia(@RequestBody RecuperarContraseniaRequest request) {
         return EspectadorResponse.desde(espectadorService.recuperarContrasenia(
                 request.email(),
+                request.token(),
                 request.nuevaContrasenia(),
                 request.nuevaContraseniaConfirmacion()
         ));
     }
 
     @PutMapping("/{id}/metodo-pago/{metodoDePagoId}")
-    public EspectadorResponse asociarMetodoDePago(@PathVariable int id, @PathVariable int metodoDePagoId) {
+    public EspectadorResponse asociarMetodoDePago(@PathVariable int id, @PathVariable int metodoDePagoId,
+                                                   HttpSession sesion) {
+        sesionService.validarEspectador(sesion, id);
         return EspectadorResponse.desde(espectadorService.asociarMetodoDePago(id, metodoDePagoId));
     }
 
@@ -93,25 +108,21 @@ public class EspectadorController {
         return EspectadorResponse.desde(espectadorService.verificarMail(id));
     }
 
+    @GetMapping("/verificar-mail")
+    public EspectadorResponse verificarMailConToken(@RequestParam String token) {
+        return EspectadorResponse.desde(espectadorService.verificarMail(token));
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void eliminar(@PathVariable int id) {
+    public void eliminar(@PathVariable int id, HttpSession sesion) {
+        validarPropietarioOAdmin(sesion, id);
         espectadorService.eliminar(id);
     }
 
-    private void validarConfirmacionContrasenia(String contrasenia, String contraseniaConfirmacion) {
-        if (contrasenia == null || contrasenia.isBlank()) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "La contrasenia no puede estar vacia."
-            );
-        }
-
-        if (!contrasenia.equals(contraseniaConfirmacion)) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Las contrasenias no coinciden."
-            );
+    private void validarPropietarioOAdmin(HttpSession sesion, int espectadorId) {
+        if (!sesionService.esAdministrador(sesion)) {
+            sesionService.validarEspectador(sesion, espectadorId);
         }
     }
 
@@ -127,7 +138,10 @@ public class EspectadorController {
     public record RecuperacionEmailRequest(String email) {
     }
 
-    public record RecuperarContraseniaRequest(String email, String nuevaContrasenia, String nuevaContraseniaConfirmacion) {
+    public record RecuperarContraseniaRequest(String email, String token, String nuevaContrasenia, String nuevaContraseniaConfirmacion) {
+    }
+
+    public record RecuperacionResponse(String email, String token) {
     }
 
     public record EspectadorResponse(int id, String nombre, String apellido, String email,
@@ -148,12 +162,14 @@ public class EspectadorController {
         }
     }
 
-    public record MetodoDePagoResumen(int id, String ultimosNumeros, YearMonth fechaVencimiento, String nombre, String apellido) {
+    public record MetodoDePagoResumen(int id, String ultimosNumeros, YearMonth fechaVencimiento,
+                                      String titular, String nombre, String apellido) {
         public static MetodoDePagoResumen desde(MetodoDePago metodoDePago) {
             return new MetodoDePagoResumen(
                     metodoDePago.getId(),
                     metodoDePago.getUltimosNumeros(),
                     metodoDePago.getFechaVencimiento(),
+                    metodoDePago.getTitular(),
                     metodoDePago.getNombre(),
                     metodoDePago.getApellido()
             );

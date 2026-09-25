@@ -18,12 +18,12 @@ public class Pelicula {
     private int id;
     private String titulo;
     private int duracion;
-    @Lob
+    @Lob//campos que superan los límites de tamaño habituales de los tipos de datos estándar
     private String descripcion;
     @Lob
     private String portadaUrl;
-    @ManyToOne//Muchas películas pueden pertenecer a una misma categoría
-    @JoinColumn(name = "categoria_id")//En la tabla pelicula, MySQL va a guardar una columna llamada categoria_id, que apunta al id de la tabla categoria.
+    @ManyToOne
+    @JoinColumn(name = "categoria_id")
     private Categoria categoria;
 
     protected Pelicula(){
@@ -40,18 +40,6 @@ public class Pelicula {
         this.descripcion = descripcion;
         this.portadaUrl = portadaUrl;
         this.categoria = categoria;
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos de la pelicula no son validos.");
-        }
-        //Acá agrega la película a la lista de películas de una categoría con metodo agregarPelicula() en categoría
-        this.categoria.agregarPelicula(this);
-    }
-
-    private boolean validarDatos() {
-        return titulo != null
-                && duracion > 0
-                && categoria != null;
     }
 
     public void actualizarDatos(String titulo, int duracion, Categoria categoria) {
@@ -64,17 +52,9 @@ public class Pelicula {
         this.descripcion = descripcion;
         this.portadaUrl = portadaUrl;
         this.categoria = categoria;
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos de la pelicula no son validos.");
-        }
     }
 
     public void asignarId(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("El id debe ser mayor a 0.");
-        }
-
         this.id = id;
     }
 

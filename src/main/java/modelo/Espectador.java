@@ -13,8 +13,6 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name="espectador")
 public class Espectador {
-    private static final int CANTIDAD_ENTRADAS_CLIENTE_FRECUENTE = 5;
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
@@ -27,6 +25,8 @@ public class Espectador {
     @OneToMany(mappedBy = "espectador")
     private List<MetodoDePago> metodosDePago;
     private boolean emailVerificado;
+    private String tokenVerificacionEmail;
+    private String tokenRecuperacionContrasenia;
 
     protected Espectador(){
         this.entradas= new ArrayList<>();
@@ -44,6 +44,8 @@ public class Espectador {
         this.entradas = new ArrayList<>();
         this.metodosDePago = new ArrayList<>();
         this.emailVerificado = false;
+        this.tokenVerificacionEmail = null;
+        this.tokenRecuperacionContrasenia = null;
     }
 
     public void actualizarDatos(String nombre, String apellido, String email, String contrasenia) {
@@ -62,10 +64,6 @@ public class Espectador {
     }
 
     public void agregarMetodoDePago(MetodoDePago metodoDePago) {
-        if (metodoDePago == null) {
-            throw new IllegalArgumentException("El método de pago no puede ser null.");
-        }
-
         if (!metodosDePago.contains(metodoDePago)) {
             metodosDePago.add(metodoDePago);
         }
@@ -73,20 +71,28 @@ public class Espectador {
         metodoDePago.asignarEspectador(this);
     }
 
-    public boolean esClienteFrecuente() {
-        return entradas.size() >= CANTIDAD_ENTRADAS_CLIENTE_FRECUENTE;
-    }
-
     public int getCantidadEntradas() {
         return entradas.size();
     }
 
     public void asignarId(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("El id debe ser mayor a 0.");
-        }
-
         this.id = id;
+    }
+
+    public void asignarTokenVerificacionEmail(String token) {
+        this.tokenVerificacionEmail = token;
+    }
+
+    public void asignarTokenRecuperacionContrasenia(String token) {
+        this.tokenRecuperacionContrasenia = token;
+    }
+
+    public String getTokenVerificacionEmail() {
+        return tokenVerificacionEmail;
+    }
+
+    public String getTokenRecuperacionContrasenia() {
+        return tokenRecuperacionContrasenia;
     }
 
     public int getId() {

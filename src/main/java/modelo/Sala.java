@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -18,11 +20,14 @@ public class Sala {
     private int id;
     private String nombre;
     private int capacidad;
+    @Enumerated(EnumType.STRING)
+    private EstadoSala estado;
     @OneToMany(mappedBy = "sala")
     private List<Butaca> butacas;
 
     protected Sala(){
         this.butacas = new ArrayList<>();
+        this.estado = EstadoSala.DISPONIBLE;
     }
 
     public Sala(String nombre, int capacidad) {
@@ -30,36 +35,20 @@ public class Sala {
         this.nombre = nombre;
         this.capacidad = capacidad;
         this.butacas = new ArrayList<>();
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos de la sala no son validos.");
-        }
-    }
-
-    private boolean validarDatos() {
-        return nombre != null
-                && capacidad > 0;
+        this.estado = EstadoSala.DISPONIBLE;
     }
 
     public void actualizarDatos(String nombre, int capacidad) {
         this.nombre = nombre;
         this.capacidad = capacidad;
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos de la sala no son validos.");
-        }
     }
 
     public void agregarButaca(Butaca butaca) {
-        if (butaca == null) {
-            throw new IllegalArgumentException("La butaca no puede estar vacía.");
-        }
-
-        if (butacas.size() >= capacidad) {
-            throw new IllegalArgumentException("La sala ya alcanzo su capacidad máxima.");
-        }
-
         butacas.add(butaca);
+    }
+
+    public void actualizarEstado(EstadoSala estado) {
+        this.estado = estado;
     }
 
     public List<Butaca> getButacasDisponibles() {
@@ -75,10 +64,6 @@ public class Sala {
     }
 
     public void asignarId(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("El id debe ser mayor a 0.");
-        }
-
         this.id = id;
     }
 
@@ -92,5 +77,9 @@ public class Sala {
 
     public int getCapacidad() {
         return capacidad;
+    }
+
+    public EstadoSala getEstado() {
+        return estado == null ? EstadoSala.DISPONIBLE : estado;
     }
 }

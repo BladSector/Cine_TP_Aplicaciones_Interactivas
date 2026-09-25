@@ -640,7 +640,7 @@ textarea:focus {
 }
 
 .seat-button {
-    width: 40px;
+    width: clamp(24px, 3.2vw, 40px);
     min-height: 38px;
     position: relative;
     padding: 21px 0 3px;
@@ -648,6 +648,17 @@ textarea:focus {
     color: #0f2f83;
     font-size: 10px;
     line-height: 1;
+}
+
+.seat-list .seat-map {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.seat-list .seat-button,
+.seat-list .seat-row-label,
+.seat-list .seat-gap {
+    width: clamp(24px, 3vw, 38px);
 }
 
 .seat-button::before {
@@ -713,8 +724,9 @@ textarea:focus {
 .seat-matrix {
     display: grid;
     gap: 9px;
-    max-width: 100%;
-    overflow-x: auto;
+    width: max-content;
+    min-width: 100%;
+    overflow: visible;
     padding-bottom: 2px;
 }
 
@@ -723,10 +735,13 @@ textarea:focus {
 }
 
 .room-preview {
+    overflow-x: auto;
+    overflow-y: visible;
+    max-height: none;
     border: 1px solid var(--line);
     border-radius: 6px;
     background: #f8fafc;
-    padding: 14px;
+    padding: 10px;
 }
 
 .seat-map {
@@ -736,10 +751,39 @@ textarea:focus {
 }
 
 .room-map-editor {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
     background: #ffffff;
     border: 1px solid var(--line);
     border-radius: 6px;
-    padding: 18px;
+    padding: 12px;
+}
+
+.room-map-editor .seat-map {
+    gap: 10px;
+}
+
+.room-map-editor .seat-row {
+    grid-auto-columns: clamp(28px, 3.2vw, 36px);
+    gap: 4px;
+}
+
+.room-map-editor .seat-button,
+.room-map-editor .seat-row-label,
+.room-map-editor .seat-gap {
+    width: clamp(28px, 3.2vw, 36px);
+    min-height: 32px;
+    font-size: 8px;
+}
+
+.room-map-editor .seat-button {
+    padding-top: 18px;
+}
+
+.room-map-editor .seat-button::before {
+    width: 15px;
+    height: 10px;
 }
 
 .screen-shape {
@@ -760,8 +804,8 @@ textarea:focus {
 .seat-row {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: 40px;
-    gap: 6px;
+    grid-auto-columns: clamp(24px, 3.2vw, 40px);
+    gap: clamp(3px, 0.5vw, 6px);
     align-items: center;
     justify-content: center;
 }
@@ -769,7 +813,7 @@ textarea:focus {
 .seat-row-label,
 .seat-gap {
     display: inline-grid;
-    width: 40px;
+    width: clamp(24px, 3.2vw, 40px);
     min-height: 36px;
     place-items: center;
 }
@@ -969,7 +1013,33 @@ textarea:focus {
 }
 
 .data-lists {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#catalogData,
+#roomData,
+#functionData {
+    grid-template-columns: 1fr;
+}
+
+.wide-data-card {
+    grid-column: 1 / -1;
+}
+
+.edit-form-panel {
+    margin-top: 14px;
+    border: 1px solid rgba(244, 197, 66, 0.32);
+    border-radius: 8px;
+    background: rgba(244, 197, 66, 0.06);
+    padding: 14px;
+}
+
+.create-actions {
+    margin-bottom: 12px;
+}
+
+.create-form {
+    margin-top: 12px;
 }
 
 .data-card {
@@ -1127,9 +1197,18 @@ body {
 }
 
 .login-layout {
-    grid-template-columns: minmax(0, 1.6fr) minmax(340px, 0.65fr);
+    grid-template-columns: 1fr;
     gap: 16px;
     padding: 16px;
+}
+
+.login-layout.profile-open {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    align-items: start;
+}
+
+#spectatorLoginPanel .form-grid {
+    grid-template-columns: 1fr;
 }
 
 .admin-login-mode .login-layout {
@@ -1158,7 +1237,7 @@ body {
 }
 
 .public-catalog-panel {
-    min-height: 680px;
+    min-height: 0;
 }
 
 .public-toolbar {
@@ -1635,7 +1714,7 @@ h4,
 
 .schedule-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 620px));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
     justify-content: start;
     gap: 26px 32px;
@@ -1646,12 +1725,28 @@ h4,
     grid-template-columns: 190px minmax(0, 1fr);
     gap: 20px;
     min-height: 318px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid rgba(244, 197, 66, 0.28);
     border-radius: 8px;
     background: transparent;
 }
 
+.schedule-movie-card:last-child {
+    border-bottom-color: transparent;
+}
+
 .schedule-movie-card.selected {
     outline: 2px solid rgba(244, 197, 66, 0.45);
+    outline-offset: 6px;
+}
+
+.schedule-movie-card.public-selectable {
+    cursor: pointer;
+}
+
+.schedule-movie-card.public-selectable:hover,
+.schedule-movie-card.public-selectable:focus {
+    outline: 2px solid rgba(244, 197, 66, 0.34);
     outline-offset: 6px;
 }
 
@@ -1778,7 +1873,10 @@ pre {
 @media (max-width: 980px) {
     .login-layout,
     .split-layout,
-    .module-toolbar {
+    .module-toolbar,
+    .data-lists,
+    .schedule-list,
+    #spectatorLoginPanel .form-grid {
         grid-template-columns: 1fr;
     }
 

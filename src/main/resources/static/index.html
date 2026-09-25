@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cine API</title>
-    <link rel="stylesheet" href="styles.css?v=7">
+    <link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
 <main id="loginView" class="desktop-shell login-shell">
@@ -13,7 +13,12 @@
             <p class="eyebrow">Cartelera online</p>
             <h1>Cine API</h1>
         </div>
-        <span class="status-pill">Estrenos y entradas</span>
+        <div class="toolbar">
+            <span class="status-pill">Estrenos y entradas</span>
+            <button id="openLoginProfileButton" class="icon-button" type="button" aria-label="Perfil">
+                <span class="user-icon" aria-hidden="true"></span>
+            </button>
+        </div>
     </header>
 
     <section class="login-layout">
@@ -52,6 +57,10 @@
 
             <div class="section-line"></div>
 
+            <button id="forgotPasswordButton" class="link-button" type="button">¿Olvidaste la contraseña?</button>
+
+            <div class="section-line"></div>
+
             <button id="showRegisterButton" class="link-button" type="button">¿No tenés una cuenta?</button>
             <div id="newAccountBox" class="account-box hidden">
                 <h3>Nueva cuenta</h3>
@@ -64,9 +73,6 @@
                 </div>
                 <button id="createSpectatorButton" class="secondary-button" type="button">Crear e ingresar</button>
             </div>
-
-            <div class="section-line"></div>
-            <button id="forgotPasswordButton" class="link-button" type="button">¿Olvidaste la contraseña?</button>
         </section>
 
         <section id="adminLoginPanel" class="module-panel admin-entry hidden">
@@ -148,8 +154,7 @@
                     <h3>Agregar método de pago</h3>
                     <label>Número <input name="numero" type="text" placeholder="16 dígitos"></label>
                     <label>Vencimiento <input name="fechaVencimiento" type="month"></label>
-                    <label>Nombre <input name="nombre" type="text"></label>
-                    <label>Apellido <input name="apellido" type="text"></label>
+                    <label>Nombre y apellido <input name="titular" type="text" placeholder="Titular de la tarjeta"></label>
                     <label>CVV <input name="cvv" type="password" placeholder="3 dígitos"></label>
                     <button class="secondary-button" type="submit">Agregar tarjeta</button>
                 </form>
@@ -210,15 +215,18 @@
                         <h2>Catálogo</h2>
                     </div>
 
-                    <form id="categoryForm" class="stack-form">
+                    <div class="button-row create-actions">
+                        <button class="secondary-button" type="button" data-toggle-create="categoryForm">Nueva categoría</button>
+                        <button class="secondary-button" type="button" data-toggle-create="movieForm">Nueva película</button>
+                    </div>
+
+                    <form id="categoryForm" class="stack-form create-form hidden">
                         <h3>Nueva categoría</h3>
-                        <label>Nombre <input name="nombre" type="text"></label>
+                        <label>Nombre <input name="nombre" type="text" required></label>
                         <button class="primary-button" type="submit">Crear categoría</button>
                     </form>
 
-                    <div class="section-line"></div>
-
-                    <form id="movieForm" class="stack-form">
+                    <form id="movieForm" class="stack-form create-form hidden">
                         <h3>Nueva película</h3>
                         <label>Título <input name="titulo" type="text"></label>
                         <label>Duración <input name="duracion" type="number"></label>
@@ -229,9 +237,14 @@
                         <button class="primary-button" type="submit">Crear película</button>
                     </form>
 
-                    <div class="section-line"></div>
+                </section>
 
-                    <form id="movieEditForm" class="stack-form hidden">
+                <section class="module-panel">
+                    <div class="panel-heading">
+                        <h2>Listado</h2>
+                    </div>
+                    <div id="catalogData" class="data-lists"></div>
+                    <form id="movieEditForm" class="stack-form edit-form-panel hidden">
                         <h3>Modificar película</h3>
                         <input name="id" type="hidden">
                         <label>Título <input name="titulo" type="text"></label>
@@ -245,13 +258,6 @@
                         </div>
                     </form>
                 </section>
-
-                <section class="module-panel">
-                    <div class="panel-heading">
-                        <h2>Listado</h2>
-                    </div>
-                    <div id="catalogData" class="data-lists"></div>
-                </section>
             </section>
         </section>
 
@@ -261,18 +267,28 @@
                     <div class="panel-heading">
                         <h2>Salas y butacas</h2>
                     </div>
-                    <form id="roomForm" class="stack-form">
+                    <button class="secondary-button" type="button" data-toggle-create="roomForm">Nueva sala</button>
+
+                    <form id="roomForm" class="stack-form create-form hidden">
                         <label>Nombre <input name="nombre" type="text"></label>
                         <label>Filas <input name="filas" type="number" min="1"></label>
                         <label>Butacas por fila <input name="butacasPorFila" type="number" min="1"></label>
-                        <button id="buildRoomMatrixButton" class="secondary-button" type="button">Previsualizar sala</button>
+                        <div class="button-row">
+                            <button id="buildRoomMatrixButton" class="secondary-button" type="button">Previsualizar sala</button>
+                            <button id="cancelRoomMatrixButton" class="table-action" type="button">Cerrar previsualización</button>
+                        </div>
                         <div id="roomMatrixEditor" class="room-preview"></div>
                         <button class="primary-button" type="submit">Crear sala</button>
                     </form>
 
-                    <div class="section-line"></div>
+                </section>
 
-                    <form id="roomEditForm" class="stack-form hidden">
+                <section class="module-panel">
+                    <div class="panel-heading">
+                        <h2>Listado</h2>
+                    </div>
+                    <div id="roomData" class="data-lists"></div>
+                    <form id="roomEditForm" class="stack-form edit-form-panel hidden">
                         <h3>Modificar sala</h3>
                         <input name="id" type="hidden">
                         <label>Nombre <input name="nombre" type="text"></label>
@@ -284,13 +300,6 @@
                         </div>
                     </form>
                 </section>
-
-                <section class="module-panel">
-                    <div class="panel-heading">
-                        <h2>Listado</h2>
-                    </div>
-                    <div id="roomData" class="data-lists"></div>
-                </section>
             </section>
         </section>
 
@@ -300,7 +309,9 @@
                     <div class="panel-heading">
                         <h2>Funciones</h2>
                     </div>
-                    <form id="functionForm" class="stack-form">
+                    <button class="secondary-button" type="button" data-toggle-create="functionForm">Nueva función</button>
+
+                    <form id="functionForm" class="stack-form create-form hidden">
                         <label>Película <select name="peliculaId"></select></label>
                         <label>Sala <select name="salaId"></select></label>
                         <label>Fecha <input name="fecha" type="date"></label>
@@ -321,9 +332,14 @@
                         <button class="primary-button" type="submit">Crear función</button>
                     </form>
 
-                    <div class="section-line"></div>
+                </section>
 
-                    <form id="functionEditForm" class="stack-form hidden">
+                <section class="module-panel">
+                    <div class="panel-heading">
+                        <h2>Listado</h2>
+                    </div>
+                    <div id="functionData" class="data-lists"></div>
+                    <form id="functionEditForm" class="stack-form edit-form-panel hidden">
                         <h3>Modificar función</h3>
                         <input name="id" type="hidden">
                         <label>Película <select name="peliculaId"></select></label>
@@ -349,13 +365,6 @@
                         </div>
                     </form>
                 </section>
-
-                <section class="module-panel">
-                    <div class="panel-heading">
-                        <h2>Listado</h2>
-                    </div>
-                    <div id="functionData" class="data-lists"></div>
-                </section>
             </section>
         </section>
 
@@ -374,7 +383,9 @@
                     <div class="panel-heading">
                         <h2>Confitería</h2>
                     </div>
-                    <form id="productForm" class="stack-form">
+                    <button class="secondary-button" type="button" data-toggle-create="productForm">Nuevo producto</button>
+
+                    <form id="productForm" class="stack-form create-form hidden">
                         <label>Nombre <input name="nombre" type="text"></label>
                         <label>Precio <input name="precio" type="number" step="0.01"></label>
                         <label>Tipo
@@ -434,6 +445,6 @@
     </article>
 </section>
 
-<script src="app.js?v=22"></script>
+<script src="app.js?v=28"></script>
 </body>
 </html>

@@ -68,6 +68,11 @@ public class FuncionController {
         ));
     }
 
+    @PutMapping("/{id}/horario")
+    public FuncionResponse actualizarHorario(@PathVariable int id, @RequestBody HorarioRequest request) {
+        return FuncionResponse.desde(funcionService.actualizarHorario(id, request.fecha(), request.horario()));
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminar(@PathVariable int id) {
@@ -75,6 +80,9 @@ public class FuncionController {
     }
 
     public record FuncionRequest(LocalDate fecha, LocalTime horario, int peliculaId, int salaId, FormatoFuncion formato, IdiomaFuncion idioma, double precioEntrada) {
+    }
+
+    public record HorarioRequest(LocalDate fecha, LocalTime horario) {
     }
 
     public record FuncionResponse(int id, LocalDate fecha, LocalTime horario, FormatoFuncion formato, IdiomaFuncion idioma,

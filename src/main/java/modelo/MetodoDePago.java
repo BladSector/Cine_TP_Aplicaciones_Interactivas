@@ -42,25 +42,6 @@ public class MetodoDePago {
         this.cvv = cvv;
         this.activa = true;
         this.espectador = null;
-        //valida los datos y si no pasa validarDatos() no se crea.
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos del metodo de pago no son validos.");
-        }
-    }
-
-    // Verifica si la tarjeta esta vencida o si no tiene fecha cargada.
-    public boolean estaVencido() {
-        return fechaVencimiento == null || !fechaVencimiento.isAfter(YearMonth.now());
-    }
-
-    // isBlank() verifica que el nombre no este vacío ni tenga solo espacios.
-    // matches("\\d{16}") y matches("\\d{3}") verifican que el String tenga solo números (\\d) y la cantidad exacta de dígitos({3} o {16}).
-    private boolean validarDatos() {
-        return numero != null && numero.matches("\\d{16}")
-                && fechaVencimiento != null && !estaVencido()
-                && nombre != null && !nombre.isBlank()
-                && apellido != null && !apellido.isBlank()
-                && cvv != null && cvv.matches("\\d{3}");
     }
 
     public void actualizarDatos(String numero, YearMonth fechaVencimiento, String nombre, String apellido, String cvv) {
@@ -69,25 +50,13 @@ public class MetodoDePago {
         this.nombre = nombre;
         this.apellido = apellido;
         this.cvv = cvv;
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos del metodo de pago no son validos.");
-        }
     }
 
     public void asignarId(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("El id debe ser mayor a 0.");
-        }
-
         this.id = id;
     }
 
     public void asignarEspectador(Espectador espectador) {
-        if (espectador == null) {
-            throw new IllegalArgumentException("El espectador no puede ser null.");
-        }
-
         this.espectador = espectador;
     }
 
@@ -117,6 +86,14 @@ public class MetodoDePago {
 
     public String getApellido() {
         return apellido;
+    }
+
+    public String getTitular() {
+        if (apellido == null || apellido.isBlank()) {
+            return nombre;
+        }
+
+        return nombre + " " + apellido;
     }
 
     public String getCvv() {

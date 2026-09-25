@@ -29,65 +29,24 @@ public class Butaca {
         this.estado = EstadoButaca.DISPONIBLE;
         this.bloqueoHasta = null;
         this.sala = sala;
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos de la butaca no son validos.");
-        }
-    }
-
-    private boolean validarDatos() {
-        return fila != null && !fila.isBlank()
-                && numero > 0
-                && sala != null;
     }
 
     public void actualizarDatos(String fila, int numero, Sala sala) {
         this.fila = fila;
         this.numero = numero;
         this.sala = sala;
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos de la butaca no son validos.");
-        }
     }
 
     public boolean estaDisponible() {
-        liberarBloqueoSiVencio();
         return estado == EstadoButaca.DISPONIBLE;
     }
 
     public void bloquear(int minutos) {
-        if (minutos <= 0) {
-            throw new IllegalArgumentException("Los minutos de bloqueo deben ser mayores a 0.");
-        }
-
-        if (!estaDisponible()) {
-            throw new IllegalArgumentException("La butaca no esta disponible para bloquear.");
-        }
-
         this.estado = EstadoButaca.BLOQUEADA;
         this.bloqueoHasta = LocalDateTime.now().plusMinutes(minutos);
     }
 
-    public void liberarBloqueoSiVencio() {
-        if (estado == EstadoButaca.BLOQUEADA
-                && bloqueoHasta != null
-                && LocalDateTime.now().isAfter(bloqueoHasta)) {
-            liberarButaca();
-        }
-    }
-
     public void ocupar() {
-        liberarBloqueoSiVencio();
-
-        if (estado == EstadoButaca.OCUPADA) {
-            throw new IllegalArgumentException("La butaca ya esta ocupada.");
-        }
-
-        if (estado == EstadoButaca.FUERA_DE_SERVICIO) {
-            throw new IllegalArgumentException("La butaca esta fuera de servicio.");
-        }
-
         this.estado = EstadoButaca.OCUPADA;
         this.bloqueoHasta = null;
     }
@@ -103,10 +62,6 @@ public class Butaca {
     }
 
     public void asignarId(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("El id debe ser mayor a 0.");
-        }
-
         this.id = id;
     }
 
@@ -127,7 +82,6 @@ public class Butaca {
     }
 
     public EstadoButaca getEstado() {
-        liberarBloqueoSiVencio();
         return estado;
     }
 

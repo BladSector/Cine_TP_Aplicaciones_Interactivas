@@ -26,26 +26,25 @@ public class CategoriaService {
     }
 
     public Categoria guardar(String nombre) {
-        try {
-            Categoria categoria = new Categoria(nombre);
-            return categoriaRepository.save(categoria);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+        validarNombre(nombre);
+        return categoriaRepository.save(new Categoria(nombre.trim()));
     }
 
     public Categoria actualizar(int id, String nombre) {
-        try {
-            Categoria categoria = buscarPorId(id);
-            categoria.actualizarNombre(nombre);
-            return categoriaRepository.save(categoria);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+        validarNombre(nombre);
+        Categoria categoria = buscarPorId(id);
+        categoria.actualizarNombre(nombre.trim());
+        return categoriaRepository.save(categoria);
     }
 
     public void eliminar(int id) {
         Categoria categoria = buscarPorId(id);
         categoriaRepository.delete(categoria);
+    }
+
+    private void validarNombre(String nombre) {
+        if (nombre == null || nombre.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de la categoria es obligatorio.");
+        }
     }
 }

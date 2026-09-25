@@ -12,7 +12,6 @@ import jakarta.persistence.Table;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Entity
 @Table(name = "ticket")
@@ -29,7 +28,7 @@ public class Ticket {
     private List<Entrada> entradas;
     @OneToMany(mappedBy = "ticket")
     private List<ItemConsumo> itemsConsumo;
-    @Column(name = "codigo_qr")
+    @Column(name = "codigo_qr", unique = true)
     private String codigoQR;
 
     protected Ticket() {
@@ -38,69 +37,33 @@ public class Ticket {
     }
 
     public Ticket(Espectador espectador) {
-        this(espectador, null);
+        this(espectador, null, null);
     }
 
     public Ticket(Espectador espectador, String metodoDePagoResumen) {
+        this(espectador, metodoDePagoResumen, null);
+    }
+
+    public Ticket(Espectador espectador, String metodoDePagoResumen, String codigoQR) {
         this.id = 0;
         this.espectador = espectador;
         this.metodoDePagoResumen = metodoDePagoResumen;
         this.entradas = new ArrayList<>();
         this.itemsConsumo = new ArrayList<>();
-        this.codigoQR = generarCodigoQR();
-
-        if (!validarDatos()) {
-            throw new IllegalArgumentException("Los datos del ticket no son validos.");
-        }
-    }
-
-    private boolean validarDatos() {
-        return espectador != null
-                && codigoQR != null
-                && !codigoQR.isBlank();
+        this.codigoQR = codigoQR;
     }
 
     public void agregarEntrada(Entrada entrada) {
-        if (entrada == null) {
-            throw new IllegalArgumentException("La entrada no puede ser null.");
-        }
-
         entradas.add(entrada);
         entrada.asignarTicket(this);
     }
 
     public void agregarItem(ItemConsumo itemConsumo) {
-        if (itemConsumo == null) {
-            throw new IllegalArgumentException("El item de consumo no puede ser null.");
-        }
-
         itemsConsumo.add(itemConsumo);
         itemConsumo.asignarTicket(this);
     }
 
-    public double calcularTotal() {
-        double total = 0;
-
-        for (Entrada entrada : entradas) {
-            total += entrada.getPrecio();
-        }
-
-        for (ItemConsumo itemConsumo : itemsConsumo) {
-            total += itemConsumo.calcularSubtotal();
-        }
-
-        return total;
-    }
-
-    private String generarCodigoQR() {
-        return "TCK-" + UUID.randomUUID();
-    }
-
     public void asignarId(int id) {
-        if (id <= 0) {
-            throw new IllegalArgumentException("El id debe ser mayor a 0.");
-        }
-
         this.id = id;
     }
 

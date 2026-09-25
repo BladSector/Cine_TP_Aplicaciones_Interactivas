@@ -1,6 +1,7 @@
 package controller;
 
 import modelo.Sala;
+import modelo.EstadoSala;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -68,6 +69,17 @@ public class SalaController {
         return SalaResponse.desde(salaService.actualizarConMatriz(id, request.nombre(), request.butacasActivasIds()));
     }
 
+    @PutMapping("/{id}/distribucion")
+    public SalaResponse actualizarDistribucion(@PathVariable int id,
+                                                @RequestBody SalaConMatrizRequest request) {
+        return SalaResponse.desde(salaService.actualizarDistribucion(id, request.nombre(), request.butacas()));
+    }
+
+    @PutMapping("/{id}/estado")
+    public SalaResponse cambiarEstado(@PathVariable int id, @RequestBody EstadoSalaRequest request) {
+        return SalaResponse.desde(salaService.cambiarEstado(id, request.estado()));
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminar(@PathVariable int id) {
@@ -86,9 +98,12 @@ public class SalaController {
     public record SalaMatrizUpdateRequest(String nombre, List<Integer> butacasActivasIds) {
     }
 
-    public record SalaResponse(int id, String nombre, int capacidad) {
+    public record EstadoSalaRequest(EstadoSala estado) {
+    }
+
+    public record SalaResponse(int id, String nombre, int capacidad, EstadoSala estado) {
         public static SalaResponse desde(Sala sala) {
-            return new SalaResponse(sala.getId(), sala.getNombre(), sala.getCapacidad());
+            return new SalaResponse(sala.getId(), sala.getNombre(), sala.getCapacidad(), sala.getEstado());
         }
     }
 }

@@ -28,25 +28,31 @@ public class ProductoConfiteriaService {
     }
 
     public ProductoConfiteria guardar(String nombre, double precio, TipoProductoConfiteria tipo, TamanoProductoConfiteria tamano) {
-        try {
-            return productoConfiteriaRepository.save(new ProductoConfiteria(nombre, precio, tipo, tamano));
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+        validarDatos(nombre, precio, tipo, tamano);
+        return productoConfiteriaRepository.save(new ProductoConfiteria(nombre.trim(), precio, tipo, tamano));
     }
 
     public ProductoConfiteria actualizar(int id, String nombre, double precio, TipoProductoConfiteria tipo, TamanoProductoConfiteria tamano) {
-        try {
-            ProductoConfiteria producto = buscarPorId(id);
-            producto.actualizarDatos(nombre, precio, tipo, tamano);
-            return productoConfiteriaRepository.save(producto);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+        validarDatos(nombre, precio, tipo, tamano);
+        ProductoConfiteria producto = buscarPorId(id);
+        producto.actualizarDatos(nombre.trim(), precio, tipo, tamano);
+        return productoConfiteriaRepository.save(producto);
     }
 
     public void eliminar(int id) {
         ProductoConfiteria producto = buscarPorId(id);
         productoConfiteriaRepository.delete(producto);
+    }
+
+    private void validarDatos(String nombre, double precio, TipoProductoConfiteria tipo, TamanoProductoConfiteria tamano) {
+        if (nombre == null || nombre.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre del producto es obligatorio.");
+        }
+        if (precio <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El precio del producto debe ser mayor a 0.");
+        }
+        if (tipo == null || tamano == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El tipo y el tamaño del producto son obligatorios.");
+        }
     }
 }
