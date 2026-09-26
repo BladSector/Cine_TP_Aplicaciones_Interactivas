@@ -32,20 +32,20 @@ public class Empleado {
     protected Empleado() {
     }
 
-    public Empleado(String nombre, String apellido, String usuario, String contrasenia, RolEmpleado rol) {
+    public Empleado(String nombre, String apellido, String usuario, String contrasenia) {
         this.nombre = nombre;
         this.apellido = apellido;
         this.usuario = usuario;
         this.contrasenia = contrasenia;
-        this.rol = rol;
+        this.rol = RolEmpleado.EMPLEADO;
         this.activo = true;
     }
 
-    public void actualizarDatos(String nombre, String apellido, String usuario, RolEmpleado rol) {
+    public void actualizarDatos(String nombre, String apellido, String usuario) {
         this.nombre = nombre;
         this.apellido = apellido;
         this.usuario = usuario;
-        this.rol = rol;
+        this.rol = RolEmpleado.EMPLEADO;
     }
 
     public void cambiarContrasenia(String contrasenia) {

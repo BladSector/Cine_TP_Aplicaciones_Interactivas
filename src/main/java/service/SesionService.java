@@ -49,11 +49,7 @@ public class SesionService {
     }
 
     public boolean esEmpleado(HttpSession sesion) {
-        RolEmpleado rol = obtenerRolEmpleado(sesion);
-        return rol == RolEmpleado.SUPERVISOR
-                || rol == RolEmpleado.STAFF
-                || rol == RolEmpleado.TECNICO
-                || rol == RolEmpleado.EMPLEADO;
+        return obtenerRolEmpleado(sesion) == RolEmpleado.EMPLEADO;
     }
 
     public boolean esPersonal(HttpSession sesion) {

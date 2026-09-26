@@ -48,8 +48,7 @@ public class EmpleadoController {
                 request.nombre(),
                 request.apellido(),
                 request.usuario(),
-                request.contrasenia(),
-                request.rol()
+                request.contrasenia()
         ));
     }
 
@@ -62,8 +61,7 @@ public class EmpleadoController {
                 request.nombre(),
                 request.apellido(),
                 request.usuario(),
-                request.contrasenia(),
-                request.rol()
+                request.contrasenia()
         ));
     }
 
@@ -80,7 +78,7 @@ public class EmpleadoController {
     }
 
     public record EmpleadoRequest(String nombre, String apellido, String usuario,
-                                  String contrasenia, RolEmpleado rol) {
+                                  String contrasenia) {
     }
 
     public record EmpleadoResponse(int id, String nombre, String apellido, String usuario,

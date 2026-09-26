@@ -14,7 +14,7 @@ public class PermisoService {
     private final Map<RolEmpleado, Set<Permiso>> permisosPorRol = new EnumMap<>(RolEmpleado.class);
 
     public PermisoService() {
-        permisosPorRol.put(RolEmpleado.SUPERVISOR, EnumSet.of(
+        permisosPorRol.put(RolEmpleado.EMPLEADO, EnumSet.of(
                 Permiso.VER_REPORTES,
                 Permiso.GESTIONAR_CARTELERA,
                 Permiso.OPERAR_POS,
@@ -23,22 +23,9 @@ public class PermisoService {
                 Permiso.AUTORIZAR_REEMBOLSO,
                 Permiso.CONTROLAR_INVENTARIO,
                 Permiso.GESTIONAR_SALAS,
-                Permiso.VER_CRONOGRAMA
-        ));
-        permisosPorRol.put(RolEmpleado.STAFF, EnumSet.of(
-                Permiso.OPERAR_POS,
-                Permiso.VALIDAR_TICKETS,
-                Permiso.SOLICITAR_REEMBOLSO
-        ));
-        permisosPorRol.put(RolEmpleado.TECNICO, EnumSet.of(
-                Permiso.GESTIONAR_SALAS,
                 Permiso.COMPLETAR_MANTENIMIENTO,
                 Permiso.VER_CRONOGRAMA
         ));
-
-        // Los registros antiguos de EMPLEADO conservan las funciones de Staff.
-        permisosPorRol.put(RolEmpleado.EMPLEADO, permisosPorRol.get(RolEmpleado.STAFF));
-        permisosPorRol.put(RolEmpleado.DUENIO, EnumSet.noneOf(Permiso.class));
     }
 
     public boolean tienePermiso(RolEmpleado rol, Permiso permiso) {

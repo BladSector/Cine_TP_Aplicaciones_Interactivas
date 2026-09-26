@@ -64,7 +64,7 @@ public class PrincipalFrame extends JFrame {
     private final DefaultTableModel consumosModel = modelo(
             "ID", "Producto", "Cantidad", "Ticket", "Estado", "Subtotal"
     );
-    private final DefaultTableModel empleadosModel = modelo("ID", "Nombre", "Apellido", "Usuario", "Rol", "Activo");
+    private final DefaultTableModel empleadosModel = modelo("ID", "Nombre", "Apellido", "Usuario", "Activo");
 
     private final JTable salasTabla = tabla(salasModel);
     private final JTable funcionesTabla = tabla(funcionesModel);
@@ -122,14 +122,12 @@ public class PrincipalFrame extends JFrame {
             administracionPanel = new AdministracionPanel(apiClient, pestanias, estado::setText);
             int indiceSalas = indicePestania("Salas");
             pestanias.insertTab("Butacas", null, crearPanelButacas(), null, indiceSalas + 1);
-        } else if (esSupervisor() || esTecnico()) {
+        } else {
             pestanias.addTab("Salas", crearPanelSalas());
             pestanias.addTab("Butacas", crearPanelButacas());
             pestanias.addTab("Funciones", crearPanelFunciones());
-        } else {
-            pestanias.addTab("Funciones", crearPanelFunciones());
         }
-        if (esDuenio() || esSupervisor() || esStaff()) {
+        if (esDuenio() || esEmpleado()) {
             pestanias.addTab("Tickets y QR", crearPanelTickets());
             pestanias.addTab("Consumos", crearPanelConsumos());
         }
@@ -181,7 +179,7 @@ public class PrincipalFrame extends JFrame {
     private JPanel crearPanelFunciones() {
         JPanel panel = panelConTabla("Funciones programadas", funcionesTabla);
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        if (esSupervisor()) {
+        if (esEmpleado()) {
             JButton modificarHorario = new JButton("Modificar horario");
             modificarHorario.addActionListener(event -> mostrarFormularioHorario());
             acciones.add(modificarHorario);
@@ -350,7 +348,8 @@ public class PrincipalFrame extends JFrame {
         instalarDetalleDobleClick(salasTabla, "Información de la sala", this::descripcionSalaSeleccionada,
                 "Cambiar estado", this::mostrarSelectorEstadoSala);
         instalarDetalleDobleClick(funcionesTabla, "Información de la función",
-                () -> descripcionFila(funcionesTabla));
+                () -> descripcionFila(funcionesTabla),
+                "Modificar horario", this::mostrarFormularioHorario);
         instalarDetalleDobleClick(consumosTabla, "Información del consumo",
                 () -> descripcionFila(consumosTabla), "Marcar entregado", this::entregarConsumoSeleccionado);
         instalarDetalleDobleClick(empleadosTabla, "Información del empleado",
@@ -551,11 +550,11 @@ public class PrincipalFrame extends JFrame {
             administracionPanel.recargar();
         }
         cargarFunciones();
-        if (esDuenio() || esSupervisor() || esTecnico()) {
+        if (esDuenio() || esEmpleado()) {
             cargarSalas();
             cargarButacas();
         }
-        if (esDuenio() || esSupervisor() || esStaff()) {
+        if (esDuenio() || esEmpleado()) {
             cargarConsumos();
         }
         if (esDuenio()) {
@@ -624,7 +623,7 @@ public class PrincipalFrame extends JFrame {
             respuesta.forEach(empleado -> empleadosModel.addRow(new Object[]{
                     empleado.path("id").asInt(), empleado.path("nombre").asText(),
                     empleado.path("apellido").asText(), empleado.path("usuario").asText(),
-                    nombreRol(empleado.path("rol").asText()), empleado.path("activo").asBoolean()
+                    empleado.path("activo").asBoolean()
             }));
         });
     }
@@ -926,9 +925,6 @@ public class PrincipalFrame extends JFrame {
         JTextField usuario = new JTextField();
         JPasswordField contrasenia = new JPasswordField();
         JPasswordField repetirContrasenia = new JPasswordField();
-        JComboBox<String> rolEmpleado = new JComboBox<>(new String[]{
-                "Encargado / Supervisor", "Staff multifunción", "Proyeccionista / Técnico"
-        });
         JPanel formulario = new JPanel(new GridLayout(0, 2, 8, 8));
         formulario.add(new JLabel("Nombre"));
         formulario.add(nombre);
@@ -940,8 +936,6 @@ public class PrincipalFrame extends JFrame {
         formulario.add(contrasenia);
         formulario.add(new JLabel("Repetir contraseña"));
         formulario.add(repetirContrasenia);
-        formulario.add(new JLabel("Rol"));
-        formulario.add(rolEmpleado);
 
         int resultado = JOptionPane.showConfirmDialog(this, formulario, "Nuevo empleado",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
@@ -964,8 +958,7 @@ public class PrincipalFrame extends JFrame {
                 "nombre", nombre.getText().trim(),
                 "apellido", apellido.getText().trim(),
                 "usuario", usuario.getText().trim(),
-                "contrasenia", clave,
-                "rol", codigoRolEmpleado(String.valueOf(rolEmpleado.getSelectedItem()))
+                "contrasenia", clave
         );
         ejecutar("Creando empleado...", () -> apiClient.post("/empleados", cuerpo),
                 respuesta -> cargarEmpleados());
@@ -1156,37 +1149,17 @@ public class PrincipalFrame extends JFrame {
     private static String nombreRol(String rol) {
         return switch (rol) {
             case "DUENIO", "ADMIN" -> "Dueño";
-            case "SUPERVISOR" -> "Encargado / Supervisor";
-            case "TECNICO" -> "Proyeccionista / Técnico";
-            case "STAFF", "EMPLEADO" -> "Staff multifunción";
+            case "EMPLEADO" -> "Empleado";
             default -> "Personal";
         };
-    }
-
-    private static String codigoRolEmpleado(String nombre) {
-        if (nombre.startsWith("Encargado")) {
-            return "SUPERVISOR";
-        }
-        if (nombre.startsWith("Proyeccionista")) {
-            return "TECNICO";
-        }
-        return "STAFF";
     }
 
     private boolean esDuenio() {
         return "DUENIO".equals(rol) || "ADMIN".equals(rol);
     }
 
-    private boolean esSupervisor() {
-        return "SUPERVISOR".equals(rol);
-    }
-
-    private boolean esStaff() {
-        return "STAFF".equals(rol) || "EMPLEADO".equals(rol);
-    }
-
-    private boolean esTecnico() {
-        return "TECNICO".equals(rol);
+    private boolean esEmpleado() {
+        return "EMPLEADO".equals(rol);
     }
 
     private record SalaOpcion(int id, String nombre) {
