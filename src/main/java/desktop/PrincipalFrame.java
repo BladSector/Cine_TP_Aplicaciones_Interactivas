@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JEditorPane;
@@ -29,7 +30,9 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import javax.swing.plaf.basic.BasicButtonUI;
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -43,6 +46,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -54,6 +58,9 @@ public class PrincipalFrame extends JFrame {
     private final String rol;
     private final JLabel estado = new JLabel("Listo");
     private final JTabbedPane pestanias = new JTabbedPane();
+    private final CardLayout navegacionEmpleado = new CardLayout();
+    private final JPanel vistasEmpleado = new JPanel(navegacionEmpleado);
+    private final Map<String, JButton> botonesEmpleado = new LinkedHashMap<>();
     private AdministracionPanel administracionPanel;
 
     private final DefaultTableModel salasModel = modelo("ID", "Nombre", "Capacidad", "Estado");
@@ -100,7 +107,7 @@ public class PrincipalFrame extends JFrame {
 
         JPanel cabecera = new JPanel(new BorderLayout());
         cabecera.setBorder(BorderFactory.createEmptyBorder(10, 14, 10, 14));
-        JLabel titulo = new JLabel("Administración del cine");
+        JLabel titulo = new JLabel(esDuenio() ? "Administración del cine" : "Operación del cine");
         titulo.setFont(titulo.getFont().deriveFont(Font.BOLD, 18f));
 
         JToolBar herramientas = new JToolBar();
@@ -118,21 +125,18 @@ public class PrincipalFrame extends JFrame {
         cabecera.add(titulo, BorderLayout.WEST);
         cabecera.add(herramientas, BorderLayout.EAST);
 
+        Component contenidoCentral;
         if (esDuenio()) {
             administracionPanel = new AdministracionPanel(apiClient, pestanias, estado::setText);
+            pestanias.insertTab("Ventas y tickets", null, crearPanelTickets(), null, 1);
             int indiceSalas = indicePestania("Salas");
             pestanias.insertTab("Butacas", null, crearPanelButacas(), null, indiceSalas + 1);
-        } else {
-            pestanias.addTab("Salas", crearPanelSalas());
-            pestanias.addTab("Butacas", crearPanelButacas());
-            pestanias.addTab("Funciones", crearPanelFunciones());
-        }
-        if (esDuenio() || esEmpleado()) {
-            pestanias.addTab("Tickets y QR", crearPanelTickets());
-            pestanias.addTab("Consumos", crearPanelConsumos());
-        }
-        if (esDuenio()) {
+            int indiceConfiteria = indicePestania("Confitería");
+            pestanias.insertTab("Consumos", null, crearPanelConsumos(), null, indiceConfiteria + 1);
             pestanias.addTab("Empleados", crearPanelEmpleados());
+            contenidoCentral = pestanias;
+        } else {
+            contenidoCentral = crearVistaEmpleado();
         }
         instalarDetallesDobleClick();
         setJMenuBar(crearMenu());
@@ -141,7 +145,7 @@ public class PrincipalFrame extends JFrame {
         estado.setOpaque(true);
         estado.setBackground(new Color(238, 238, 238));
         add(cabecera, BorderLayout.NORTH);
-        add(pestanias, BorderLayout.CENTER);
+        add(contenidoCentral, BorderLayout.CENTER);
         add(estado, BorderLayout.SOUTH);
 
         addWindowListener(new WindowAdapter() {
@@ -149,6 +153,55 @@ public class PrincipalFrame extends JFrame {
             public void windowClosing(WindowEvent e) {
                 salirAplicacion();
             }
+        });
+    }
+
+    private JPanel crearVistaEmpleado() {
+        JPanel contenedor = new JPanel(new BorderLayout());
+        JPanel navegacion = new JPanel();
+        navegacion.setLayout(new BoxLayout(navegacion, BoxLayout.Y_AXIS));
+        navegacion.setBorder(BorderFactory.createEmptyBorder(14, 10, 14, 10));
+        navegacion.setPreferredSize(new Dimension(190, 0));
+
+        JLabel titulo = new JLabel("Tareas");
+        titulo.setFont(titulo.getFont().deriveFont(Font.BOLD, 16f));
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        navegacion.add(titulo);
+        navegacion.add(Box.createVerticalStrut(14));
+
+        agregarVistaEmpleado(navegacion, "Control de acceso", crearPanelTickets());
+        agregarVistaEmpleado(navegacion, "Consumos", crearPanelConsumos());
+        agregarVistaEmpleado(navegacion, "Funciones", crearPanelFunciones());
+        agregarVistaEmpleado(navegacion, "Salas", crearPanelSalas());
+        agregarVistaEmpleado(navegacion, "Butacas", crearPanelButacas());
+        navegacion.add(Box.createVerticalGlue());
+
+        contenedor.add(navegacion, BorderLayout.WEST);
+        contenedor.add(vistasEmpleado, BorderLayout.CENTER);
+        mostrarVistaEmpleado("Control de acceso");
+        return contenedor;
+    }
+
+    private void agregarVistaEmpleado(JPanel navegacion, String nombre, JPanel vista) {
+        JButton boton = new JButton(nombre);
+        boton.setHorizontalAlignment(JButton.LEFT);
+        boton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        boton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        boton.setFocusPainted(false);
+        boton.addActionListener(event -> mostrarVistaEmpleado(nombre));
+        botonesEmpleado.put(nombre, boton);
+        vistasEmpleado.add(vista, nombre);
+        navegacion.add(boton);
+        navegacion.add(Box.createVerticalStrut(6));
+    }
+
+    private void mostrarVistaEmpleado(String nombre) {
+        navegacionEmpleado.show(vistasEmpleado, nombre);
+        botonesEmpleado.forEach((seccion, boton) -> {
+            boolean seleccionada = seccion.equals(nombre);
+            boton.setFont(boton.getFont().deriveFont(seleccionada ? Font.BOLD : Font.PLAIN));
+            boton.setBackground(seleccionada ? new Color(214, 225, 241) : null);
+            boton.setOpaque(seleccionada);
         });
     }
 
@@ -238,13 +291,23 @@ public class PrincipalFrame extends JFrame {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
-        JPanel busqueda = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel superior = new JPanel(new BorderLayout(0, 8));
+        JLabel titulo = new JLabel(esEmpleado() ? "Control de acceso" : "Consulta de ventas y tickets");
+        titulo.setFont(titulo.getFont().deriveFont(Font.BOLD, 17f));
+        JLabel indicacion = new JLabel("Escaneá el QR o pegá el código del ticket y presioná Enter.");
+        JPanel encabezado = new JPanel(new GridLayout(0, 1, 0, 4));
+        encabezado.add(titulo);
+        encabezado.add(indicacion);
+
+        JPanel busqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         JButton buscar = new JButton("Buscar QR");
         buscar.addActionListener(event -> buscarTicket());
         codigoQr.addActionListener(event -> buscarTicket());
         busqueda.add(new JLabel("Código QR:"));
         busqueda.add(codigoQr);
         busqueda.add(buscar);
+        superior.add(encabezado, BorderLayout.NORTH);
+        superior.add(busqueda, BorderLayout.SOUTH);
 
         detalleTicket.setEditable(false);
         detalleTicket.setLineWrap(true);
@@ -252,14 +315,20 @@ public class PrincipalFrame extends JFrame {
         detalleTicket.setFont(new java.awt.Font(java.awt.Font.MONOSPACED, java.awt.Font.PLAIN, 13));
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton procesar = new JButton("Procesar ingreso");
         JButton validar = new JButton("Validar entradas");
         JButton entregar = new JButton("Entregar consumos");
+        JButton limpiar = new JButton("Limpiar");
+        procesar.addActionListener(event -> procesarIngreso());
         validar.addActionListener(event -> operarTicket("validar-entradas"));
         entregar.addActionListener(event -> operarTicket("entregar-consumos"));
+        limpiar.addActionListener(event -> limpiarControlAcceso());
+        acciones.add(procesar);
         acciones.add(validar);
         acciones.add(entregar);
+        acciones.add(limpiar);
 
-        panel.add(busqueda, BorderLayout.NORTH);
+        panel.add(superior, BorderLayout.NORTH);
         panel.add(new JScrollPane(detalleTicket), BorderLayout.CENTER);
         panel.add(acciones, BorderLayout.SOUTH);
         return panel;
@@ -508,8 +577,12 @@ public class PrincipalFrame extends JFrame {
         archivo.add(salir);
 
         JMenu operacion = new JMenu("Operación");
-        for (int i = 0; i < pestanias.getTabCount(); i++) {
-            operacion.add(itemMenu(pestanias.getTitleAt(i)));
+        if (esDuenio()) {
+            for (int i = 0; i < pestanias.getTabCount(); i++) {
+                operacion.add(itemMenu(pestanias.getTitleAt(i)));
+            }
+        } else {
+            botonesEmpleado.keySet().forEach(nombre -> operacion.add(itemMenu(nombre)));
         }
         operacion.addSeparator();
         JMenuItem recargar = new JMenuItem("Recargar datos");
@@ -528,6 +601,10 @@ public class PrincipalFrame extends JFrame {
     }
 
     private void seleccionarPestania(String titulo) {
+        if (esEmpleado()) {
+            mostrarVistaEmpleado(titulo);
+            return;
+        }
         for (int i = 0; i < pestanias.getTabCount(); i++) {
             if (titulo.equals(pestanias.getTitleAt(i))) {
                 pestanias.setSelectedIndex(i);
@@ -848,11 +925,8 @@ public class PrincipalFrame extends JFrame {
             return;
         }
         String codigoCodificado = URLEncoder.encode(codigo, StandardCharsets.UTF_8).replace("+", "%20");
-        ejecutar("Buscando ticket...", () -> apiClient.get("/tickets/qr/" + codigoCodificado), respuesta -> {
-            ticketActualId = respuesta.path("id").asInt();
-            detalleTicket.setText(formatearTicket(respuesta));
-            detalleTicket.setCaretPosition(0);
-        });
+        ejecutar("Buscando ticket...", () -> apiClient.get("/tickets/qr/" + codigoCodificado),
+                this::actualizarDetalleTicket);
     }
 
     private void operarTicket(String operacion) {
@@ -862,7 +936,52 @@ public class PrincipalFrame extends JFrame {
         }
         ejecutar("Procesando ticket...",
                 () -> apiClient.put("/tickets/" + ticketActualId + "/" + operacion, null),
-                respuesta -> detalleTicket.setText(formatearTicket(respuesta)));
+                respuesta -> actualizarDetalleTicket(respuesta));
+    }
+
+    private void procesarIngreso() {
+        if (ticketActualId == null) {
+            mostrarAviso("Primero escaneá o buscá el código QR del Ticket.");
+            return;
+        }
+        int confirmacion = JOptionPane.showConfirmDialog(
+                this,
+                "Se validarán las entradas y se entregarán los consumos pendientes. ¿Continuar?",
+                "Procesar ingreso",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
+        if (confirmacion != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        ejecutar("Procesando ingreso...",
+                () -> apiClient.put("/tickets/" + ticketActualId + "/procesar-ingreso", null),
+                respuesta -> {
+                    actualizarDetalleTicket(respuesta);
+                    cargarConsumos();
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Ingreso procesado correctamente.",
+                            "Ticket validado",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+                    codigoQr.requestFocusInWindow();
+                    codigoQr.selectAll();
+                });
+    }
+
+    private void actualizarDetalleTicket(JsonNode ticket) {
+        ticketActualId = ticket.path("id").asInt();
+        detalleTicket.setText(formatearTicket(ticket));
+        detalleTicket.setCaretPosition(0);
+    }
+
+    private void limpiarControlAcceso() {
+        ticketActualId = null;
+        codigoQr.setText("");
+        detalleTicket.setText("");
+        codigoQr.requestFocusInWindow();
     }
 
     private void operarConsumo(String operacion) {

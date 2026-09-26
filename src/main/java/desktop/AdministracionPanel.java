@@ -105,11 +105,11 @@ public class AdministracionPanel extends JPanel {
     }
 
     private void agregarPestanias(JTabbedPane pestanias) {
-        pestanias.addTab("Categorías", panelCategorias());
+        pestanias.addTab("Funciones", panelFunciones());
         pestanias.addTab("Películas", panelPeliculas());
         pestanias.addTab("Salas", panelSalas());
-        pestanias.addTab("Funciones", panelFunciones());
         pestanias.addTab("Confitería", panelProductos());
+        pestanias.addTab("Categorías", panelCategorias());
     }
 
     private JPanel panelCategorias() {

@@ -44,7 +44,7 @@ public class AdminWriteInterceptor implements HandlerInterceptor {
             return Permiso.GESTIONAR_SALAS;
         }
         if ("PUT".equals(request.getMethod()) && (ruta.matches("/entradas/\\d+/escanear")
-                || ruta.matches("/tickets/\\d+/validar-entradas"))) {
+                || ruta.matches("/tickets/\\d+/(validar-entradas|procesar-ingreso)"))) {
             return Permiso.VALIDAR_TICKETS;
         }
         if ("PUT".equals(request.getMethod()) && (ruta.matches("/items-consumo/\\d+/entregar")

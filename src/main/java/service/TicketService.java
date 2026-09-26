@@ -110,6 +110,40 @@ public class TicketService {
         return ticket;
     }
 
+    @Transactional
+    public Ticket procesarIngreso(int id) {
+        Ticket ticket = buscarPorId(id);
+        if (ticket.getEntradas().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El ticket no contiene entradas.");
+        }
+
+        boolean tieneEntradaInvalida = ticket.getEntradas().stream()
+                .anyMatch(entrada -> entrada.getEstado() != EstadoEntrada.PAGADA
+                        && entrada.getEstado() != EstadoEntrada.ESCANEADA);
+        if (tieneEntradaInvalida) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El ticket contiene entradas que no se pueden validar."
+            );
+        }
+
+        boolean tieneEntradasPendientes = ticket.getEntradas().stream()
+                .anyMatch(entrada -> entrada.getEstado() == EstadoEntrada.PAGADA);
+        boolean tieneConsumosPendientes = ticket.getItemsConsumo().stream()
+                .anyMatch(item -> item.getEstado() == EstadoConsumo.PENDIENTE);
+        if (!tieneEntradasPendientes && !tieneConsumosPendientes) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El ticket ya fue procesado.");
+        }
+
+        ticket.getEntradas().stream()
+                .filter(entrada -> entrada.getEstado() == EstadoEntrada.PAGADA)
+                .forEach(entrada -> entradaService.escanear(entrada.getId()));
+        ticket.getItemsConsumo().stream()
+                .filter(item -> item.getEstado() == EstadoConsumo.PENDIENTE)
+                .forEach(item -> itemConsumoService.entregar(item.getId()));
+        return ticket;
+    }
+
     public Ticket guardar(int espectadorId) {
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe seleccionar un metodo de pago.");
     }

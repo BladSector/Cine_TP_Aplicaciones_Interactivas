@@ -82,6 +82,13 @@ public class TicketController {
         return crearResponse(ticketService.entregarConsumos(id));
     }
 
+    @PutMapping("/{id}/procesar-ingreso")
+    public TicketResponse procesarIngreso(@PathVariable int id, HttpSession sesion) {
+        sesionService.validarPermiso(sesion, Permiso.VALIDAR_TICKETS);
+        sesionService.validarPermiso(sesion, Permiso.OPERAR_POS);
+        return crearResponse(ticketService.procesarIngreso(id));
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public TicketResponse guardar(@RequestBody TicketRequest request) {
