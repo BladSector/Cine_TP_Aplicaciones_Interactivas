@@ -1,3 +1,5 @@
+-- Script de instalación y datos de prueba para MySQL 8.
+-- ATENCIÓN: elimina por completo la base tp_cine_api antes de recrearla.
 DROP DATABASE IF EXISTS tp_cine_api;
 CREATE DATABASE tp_cine_api CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE tp_cine_api;
@@ -20,7 +22,8 @@ CREATE TABLE pelicula (
 CREATE TABLE sala (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    capacidad INT NOT NULL
+    capacidad INT NOT NULL,
+    estado VARCHAR(30) NOT NULL DEFAULT 'DISPONIBLE'
 );
 
 CREATE TABLE butaca (
@@ -51,8 +54,10 @@ CREATE TABLE espectador (
     nombre VARCHAR(100) NOT NULL,
     apellido VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL,
-    contrasenia VARCHAR(100) NOT NULL,
-    email_verificado BOOLEAN NOT NULL DEFAULT FALSE
+    contrasenia VARCHAR(255) NOT NULL,
+    email_verificado BOOLEAN NOT NULL DEFAULT FALSE,
+    token_verificacion_email VARCHAR(255) NULL,
+    token_recuperacion_contrasenia VARCHAR(255) NULL
 );
 
 CREATE TABLE metodo_pago (
@@ -72,6 +77,7 @@ CREATE TABLE ticket (
     espectador_id INT NOT NULL,
     metodo_pago_resumen VARCHAR(120),
     codigo_qr VARCHAR(120) NOT NULL,
+    CONSTRAINT uq_ticket_codigo_qr UNIQUE (codigo_qr),
     CONSTRAINT fk_ticket_espectador FOREIGN KEY (espectador_id) REFERENCES espectador(id)
 );
 
@@ -103,8 +109,20 @@ CREATE TABLE item_consumo (
     producto_id INT NOT NULL,
     ticket_id INT NULL,
     cantidad INT NOT NULL,
+    estado VARCHAR(30) NOT NULL DEFAULT 'PENDIENTE',
     CONSTRAINT fk_item_consumo_producto FOREIGN KEY (producto_id) REFERENCES producto_confiteria(id),
     CONSTRAINT fk_item_consumo_ticket FOREIGN KEY (ticket_id) REFERENCES ticket(id)
+);
+
+CREATE TABLE empleado (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100) NOT NULL,
+    usuario VARCHAR(100) NOT NULL,
+    contrasenia VARCHAR(255) NOT NULL,
+    rol VARCHAR(30) NOT NULL DEFAULT 'EMPLEADO',
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT uq_empleado_usuario UNIQUE (usuario)
 );
 
 INSERT INTO categoria (id, nombre) VALUES
@@ -127,11 +145,11 @@ INSERT INTO pelicula (id, titulo, duracion, descripcion, portada_url, categoria_
 (7, 'El Testigo Silencioso', 108, 'Un fotógrafo presencia un crimen desde su ventana y comienza una investigación que lo pone en peligro.', 'https://picsum.photos/seed/testigo-silencioso/420/620', 7),
 (8, 'Rumbo al Norte', 92, 'Tres amigos viajan por la ruta patagónica buscando un mapa perdido y una aventura que los cambie para siempre.', 'https://picsum.photos/seed/rumbo-norte/420/620', 8);
 
-INSERT INTO sala (id, nombre, capacidad) VALUES
-(1, 'Sala Premium', 60),
-(2, 'Sala Central', 96),
-(3, 'Sala 3D', 70),
-(4, 'Sala Familiar', 40);
+INSERT INTO sala (id, nombre, capacidad, estado) VALUES
+(1, 'Sala Premium', 60, 'DISPONIBLE'),
+(2, 'Sala Central', 96, 'DISPONIBLE'),
+(3, 'Sala 3D', 70, 'DISPONIBLE'),
+(4, 'Sala Familiar', 40, 'DISPONIBLE');
 
 CREATE TEMPORARY TABLE seed_filas (
     fila VARCHAR(2),

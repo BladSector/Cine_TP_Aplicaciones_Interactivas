@@ -26,7 +26,10 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingWorker;
 import javax.swing.JToolBar;
 import javax.swing.RowFilter;
+import javax.swing.RowSorter;
+import javax.swing.SortOrder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableRowSorter;
 import javax.swing.plaf.basic.BasicButtonUI;
 import java.awt.BorderLayout;
@@ -44,10 +47,12 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -1185,18 +1190,29 @@ public class PrincipalFrame extends JFrame {
         tabla.setAutoCreateRowSorter(true);
         tabla.setRowHeight(24);
         tabla.getTableHeader().setReorderingAllowed(false);
+        ordenarColumnas(tabla);
+        configurarAnchos(tabla);
         return tabla;
     }
 
     private static void conectarFiltro(JTable tabla, JTextField campo) {
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>((DefaultTableModel) tabla.getModel());
         tabla.setRowSorter(sorter);
+        configurarOrdenInicial(sorter, (DefaultTableModel) tabla.getModel());
         campo.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             private void actualizar() {
-                String texto = campo.getText().trim();
-                sorter.setRowFilter(texto.isEmpty()
-                        ? null
-                        : RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(texto)));
+                String busqueda = normalizarBusqueda(campo.getText());
+                sorter.setRowFilter(busqueda.isEmpty() ? null : new RowFilter<DefaultTableModel, Integer>() {
+                    @Override
+                    public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                        for (int columna = 0; columna < entry.getValueCount(); columna++) {
+                            if (normalizarBusqueda(String.valueOf(entry.getValue(columna))).contains(busqueda)) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                });
             }
 
             @Override
@@ -1214,6 +1230,74 @@ public class PrincipalFrame extends JFrame {
                 actualizar();
             }
         });
+    }
+
+    private static void ordenarColumnas(JTable tabla) {
+        DefaultTableModel model = (DefaultTableModel) tabla.getModel();
+        if (model.findColumn("Película") >= 0 && model.findColumn("Fecha") >= 0) {
+            moverColumnas(tabla, "ID", "Fecha", "Horario", "Película", "Sala", "Formato", "Idioma", "Precio");
+        } else if (model.findColumn("Producto") >= 0) {
+            moverColumnas(tabla, "ID", "Producto", "Cantidad", "Estado", "Subtotal", "Ticket");
+        } else if (model.findColumn("Butaca") >= 0) {
+            moverColumnas(tabla, "ID", "Sala", "Butaca", "Estado");
+        }
+    }
+
+    private static void moverColumnas(JTable tabla, String... nombres) {
+        DefaultTableModel model = (DefaultTableModel) tabla.getModel();
+        for (int destino = 0; destino < nombres.length; destino++) {
+            int indiceModelo = model.findColumn(nombres[destino]);
+            if (indiceModelo < 0) {
+                continue;
+            }
+            int indiceVista = tabla.convertColumnIndexToView(indiceModelo);
+            if (indiceVista >= 0 && indiceVista != destino) {
+                tabla.moveColumn(indiceVista, destino);
+            }
+        }
+    }
+
+    private static void configurarAnchos(JTable tabla) {
+        for (int columna = 0; columna < tabla.getColumnModel().getColumnCount(); columna++) {
+            TableColumn columnaTabla = tabla.getColumnModel().getColumn(columna);
+            String nombre = String.valueOf(columnaTabla.getHeaderValue());
+            int ancho = switch (nombre) {
+                case "ID" -> 48;
+                case "Fecha" -> 95;
+                case "Horario", "Capacidad", "Cantidad", "Activo" -> 80;
+                case "Película", "Nombre", "Producto" -> 190;
+                case "Sala", "Estado" -> 130;
+                case "Formato", "Butaca", "Ticket" -> 75;
+                case "Idioma" -> 110;
+                case "Precio", "Subtotal" -> 95;
+                case "Apellido", "Usuario" -> 140;
+                default -> 110;
+            };
+            columnaTabla.setPreferredWidth(ancho);
+            columnaTabla.setMinWidth(Math.min(ancho, 55));
+        }
+    }
+
+    private static void configurarOrdenInicial(TableRowSorter<DefaultTableModel> sorter,
+                                                DefaultTableModel model) {
+        int fecha = model.findColumn("Fecha");
+        int horario = model.findColumn("Horario");
+        if (fecha >= 0 && horario >= 0) {
+            sorter.setSortKeys(List.of(
+                    new RowSorter.SortKey(fecha, SortOrder.ASCENDING),
+                    new RowSorter.SortKey(horario, SortOrder.ASCENDING)
+            ));
+            return;
+        }
+        int id = model.findColumn("ID");
+        if (id >= 0) {
+            sorter.setSortKeys(List.of(new RowSorter.SortKey(id, SortOrder.ASCENDING)));
+        }
+    }
+
+    private static String normalizarBusqueda(String texto) {
+        String normalizado = Normalizer.normalize(texto == null ? "" : texto, Normalizer.Form.NFD);
+        return normalizado.replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT).trim();
     }
 
     private static JEditorPane crearVisorDetalle(String mensajeInicial) {

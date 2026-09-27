@@ -21,9 +21,12 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.RowFilter;
+import javax.swing.RowSorter;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SortOrder;
 import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableRowSorter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
@@ -39,6 +42,7 @@ import java.awt.Insets;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.util.Base64;
 import java.util.Comparator;
@@ -46,6 +50,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -658,6 +663,10 @@ public class AdministracionPanel extends JPanel {
 
         JTextField fecha = new JTextField(edicion ? valor(funcionesModel, fila, 1) : LocalDate.now().toString());
         JTextField horario = new JTextField(edicion ? valor(funcionesModel, fila, 2) : "20:30");
+        JTextField buscarPelicula = new JTextField();
+        JTextField buscarSala = new JTextField();
+        buscarPelicula.putClientProperty("JTextField.placeholderText", "Buscar por título...");
+        buscarSala.putClientProperty("JTextField.placeholderText", "Buscar por nombre...");
         JComboBox<Opcion> pelicula = new JComboBox<>(peliculas.toArray(Opcion[]::new));
         JComboBox<Opcion> sala = new JComboBox<>(salas.toArray(Opcion[]::new));
         JComboBox<String> formato = new JComboBox<>(new String[]{"2D", "3D"});
@@ -671,20 +680,30 @@ public class AdministracionPanel extends JPanel {
             formato.setSelectedItem(nombreFormato(valor(funcionesModel, fila, 7)));
             idioma.setSelectedItem(nombreIdioma(valor(funcionesModel, fila, 8)));
         }
+        conectarBusquedaOpciones(buscarPelicula, pelicula, peliculas);
+        conectarBusquedaOpciones(buscarSala, sala, salas);
 
         JPanel panel = formulario(
-                new String[]{"Fecha (AAAA-MM-DD)", "Horario (HH:mm)", "Película", "Sala", "Formato", "Idioma", "Precio"},
-                fecha, horario, pelicula, sala, formato, idioma, precio
+                new String[]{"Fecha (AAAA-MM-DD)", "Horario (HH:mm)", "Buscar película", "Película",
+                        "Buscar sala", "Sala", "Formato", "Idioma", "Precio"},
+                fecha, horario, buscarPelicula, pelicula, buscarSala, sala, formato, idioma, precio
         );
         if (!confirmarFormulario("Función", panel)) {
+            return;
+        }
+
+        Opcion peliculaElegida = (Opcion) pelicula.getSelectedItem();
+        Opcion salaElegida = (Opcion) sala.getSelectedItem();
+        if (peliculaElegida == null || salaElegida == null) {
+            aviso("Seleccioná una Película y una Sala de las opciones encontradas.");
             return;
         }
 
         Map<String, Object> cuerpo = Map.of(
                 "fecha", fecha.getText().trim(),
                 "horario", horario.getText().trim(),
-                "peliculaId", ((Opcion) pelicula.getSelectedItem()).id(),
-                "salaId", ((Opcion) sala.getSelectedItem()).id(),
+                "peliculaId", peliculaElegida.id(),
+                "salaId", salaElegida.id(),
                 "formato", codigoFormato(String.valueOf(formato.getSelectedItem())),
                 "idioma", codigoIdioma(String.valueOf(idioma.getSelectedItem())),
                 "precioEntrada", precio.getValue()
@@ -893,18 +912,29 @@ public class AdministracionPanel extends JPanel {
         tabla.setAutoCreateRowSorter(true);
         tabla.setRowHeight(24);
         tabla.getTableHeader().setReorderingAllowed(false);
+        ordenarColumnas(tabla);
+        configurarAnchos(tabla);
         return tabla;
     }
 
     private static void conectarFiltro(JTable tabla, JTextField campo) {
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>((DefaultTableModel) tabla.getModel());
         tabla.setRowSorter(sorter);
+        configurarOrdenInicial(sorter, (DefaultTableModel) tabla.getModel());
         campo.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             private void actualizar() {
-                String texto = campo.getText().trim();
-                sorter.setRowFilter(texto.isEmpty()
-                        ? null
-                        : RowFilter.regexFilter("(?i)" + java.util.regex.Pattern.quote(texto)));
+                String busqueda = normalizarBusqueda(campo.getText());
+                sorter.setRowFilter(busqueda.isEmpty() ? null : new RowFilter<DefaultTableModel, Integer>() {
+                    @Override
+                    public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                        for (int columna = 0; columna < entry.getValueCount(); columna++) {
+                            if (normalizarBusqueda(String.valueOf(entry.getValue(columna))).contains(busqueda)) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                });
             }
 
             @Override
@@ -922,6 +952,111 @@ public class AdministracionPanel extends JPanel {
                 actualizar();
             }
         });
+    }
+
+    private static void ordenarColumnas(JTable tabla) {
+        DefaultTableModel model = (DefaultTableModel) tabla.getModel();
+        if (model.findColumn("Película ID") >= 0) {
+            moverColumnas(tabla, "ID", "Fecha", "Horario", "Película", "Sala", "Formato", "Idioma",
+                    "Precio", "Película ID", "Sala ID");
+        } else if (model.findColumn("Título") >= 0) {
+            moverColumnas(tabla, "ID", "Título", "Categoría", "Duración", "Descripción", "Portada");
+        } else if (model.findColumn("Tipo") >= 0) {
+            moverColumnas(tabla, "ID", "Nombre", "Tipo", "Tamaño", "Precio");
+        }
+    }
+
+    private static void moverColumnas(JTable tabla, String... nombres) {
+        DefaultTableModel model = (DefaultTableModel) tabla.getModel();
+        for (int destino = 0; destino < nombres.length; destino++) {
+            int indiceModelo = model.findColumn(nombres[destino]);
+            if (indiceModelo < 0) {
+                continue;
+            }
+            int indiceVista = tabla.convertColumnIndexToView(indiceModelo);
+            if (indiceVista >= 0 && indiceVista != destino) {
+                tabla.moveColumn(indiceVista, destino);
+            }
+        }
+    }
+
+    private static void configurarAnchos(JTable tabla) {
+        for (int columna = 0; columna < tabla.getColumnModel().getColumnCount(); columna++) {
+            TableColumn columnaTabla = tabla.getColumnModel().getColumn(columna);
+            String nombre = String.valueOf(columnaTabla.getHeaderValue());
+            int ancho = switch (nombre) {
+                case "ID" -> 48;
+                case "Fecha" -> 95;
+                case "Horario", "Duración", "Capacidad", "Cantidad", "Activo" -> 80;
+                case "Película ID", "Sala ID" -> 82;
+                case "Título", "Película", "Nombre", "Producto" -> 190;
+                case "Sala", "Categoría", "Estado", "Tipo", "Tamaño" -> 125;
+                case "Formato", "Butaca", "Ticket" -> 75;
+                case "Idioma" -> 110;
+                case "Precio", "Subtotal" -> 95;
+                case "Descripción" -> 280;
+                case "Portada" -> 90;
+                default -> 110;
+            };
+            columnaTabla.setPreferredWidth(ancho);
+            columnaTabla.setMinWidth(Math.min(ancho, 55));
+        }
+    }
+
+    private static void configurarOrdenInicial(TableRowSorter<DefaultTableModel> sorter,
+                                                DefaultTableModel model) {
+        int fecha = model.findColumn("Fecha");
+        int horario = model.findColumn("Horario");
+        if (fecha >= 0 && horario >= 0) {
+            sorter.setSortKeys(List.of(
+                    new RowSorter.SortKey(fecha, SortOrder.ASCENDING),
+                    new RowSorter.SortKey(horario, SortOrder.ASCENDING)
+            ));
+            return;
+        }
+        int id = model.findColumn("ID");
+        if (id >= 0) {
+            sorter.setSortKeys(List.of(new RowSorter.SortKey(id, SortOrder.ASCENDING)));
+        }
+    }
+
+    private static void conectarBusquedaOpciones(JTextField campo, JComboBox<Opcion> combo,
+                                                   List<Opcion> opciones) {
+        campo.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            private void actualizar() {
+                Opcion seleccionAnterior = combo.getSelectedItem() instanceof Opcion opcion ? opcion : null;
+                String busqueda = normalizarBusqueda(campo.getText());
+
+                combo.removeAllItems();
+                opciones.stream()
+                        .filter(opcion -> normalizarBusqueda(opcion.nombre()).contains(busqueda))
+                        .forEach(combo::addItem);
+
+                if (seleccionAnterior != null) {
+                    seleccionarPorId(combo, seleccionAnterior.id());
+                }
+            }
+
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                actualizar();
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                actualizar();
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                actualizar();
+            }
+        });
+    }
+
+    private static String normalizarBusqueda(String texto) {
+        String normalizado = Normalizer.normalize(texto == null ? "" : texto, Normalizer.Form.NFD);
+        return normalizado.replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT).trim();
     }
 
     private static DefaultTableModel modelo(String... columnas) {
