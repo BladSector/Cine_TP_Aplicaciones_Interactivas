@@ -1,5 +1,7 @@
 package controller;
 
+import jakarta.servlet.http.HttpSession;
+import modelo.Permiso;
 import modelo.Sala;
 import modelo.EstadoSala;
 import org.springframework.http.HttpStatus;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import service.SalaService;
+import service.SesionService;
 
 import java.util.List;
 
@@ -20,9 +23,11 @@ import java.util.List;
 @RequestMapping("/salas")
 public class SalaController {
     private final SalaService salaService;
+    private final SesionService sesionService;
 
-    public SalaController(SalaService salaService) {
+    public SalaController(SalaService salaService, SesionService sesionService) {
         this.salaService = salaService;
+        this.sesionService = sesionService;
     }
 
     @GetMapping
@@ -76,8 +81,16 @@ public class SalaController {
     }
 
     @PutMapping("/{id}/estado")
-    public SalaResponse cambiarEstado(@PathVariable int id, @RequestBody EstadoSalaRequest request) {
-        return SalaResponse.desde(salaService.cambiarEstado(id, request.estado()));
+    public SalaResponse cambiarEstado(@PathVariable int id, @RequestBody EstadoSalaRequest request,
+                                      HttpSession sesion) {
+        sesionService.validarPermiso(sesion, Permiso.GESTIONAR_SALAS);
+        return SalaResponse.desde(salaService.cambiarEstado(
+                id,
+                request.estado(),
+                request.descripcion(),
+                sesionService.obtenerEmpleadoId(sesion),
+                request.destinatarioEmpleadoId()
+        ));
     }
 
     @DeleteMapping("/{id}")
@@ -98,12 +111,20 @@ public class SalaController {
     public record SalaMatrizUpdateRequest(String nombre, List<Integer> butacasActivasIds) {
     }
 
-    public record EstadoSalaRequest(EstadoSala estado) {
+    public record EstadoSalaRequest(EstadoSala estado, String descripcion,
+                                    Integer destinatarioEmpleadoId) {
     }
 
-    public record SalaResponse(int id, String nombre, int capacidad, EstadoSala estado) {
+    public record SalaResponse(int id, String nombre, int capacidad, EstadoSala estado,
+                               String detalleEstado) {
         public static SalaResponse desde(Sala sala) {
-            return new SalaResponse(sala.getId(), sala.getNombre(), sala.getCapacidad(), sala.getEstado());
+            return new SalaResponse(
+                    sala.getId(),
+                    sala.getNombre(),
+                    sala.getCapacidad(),
+                    sala.getEstado(),
+                    sala.getDetalleEstado()
+            );
         }
     }
 }

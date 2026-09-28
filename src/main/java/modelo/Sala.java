@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
@@ -22,12 +23,15 @@ public class Sala {
     private int capacidad;
     @Enumerated(EnumType.STRING)
     private EstadoSala estado;
+    @Column(name = "detalle_estado", length = 500)
+    private String detalleEstado;
     @OneToMany(mappedBy = "sala")
     private List<Butaca> butacas;
 
     protected Sala(){
         this.butacas = new ArrayList<>();
         this.estado = EstadoSala.DISPONIBLE;
+        this.detalleEstado = null;
     }
 
     public Sala(String nombre, int capacidad) {
@@ -36,6 +40,7 @@ public class Sala {
         this.capacidad = capacidad;
         this.butacas = new ArrayList<>();
         this.estado = EstadoSala.DISPONIBLE;
+        this.detalleEstado = null;
     }
 
     public void actualizarDatos(String nombre, int capacidad) {
@@ -47,8 +52,9 @@ public class Sala {
         butacas.add(butaca);
     }
 
-    public void actualizarEstado(EstadoSala estado) {
+    public void actualizarEstado(EstadoSala estado, String detalleEstado) {
         this.estado = estado;
+        this.detalleEstado = detalleEstado;
     }
 
     public List<Butaca> getButacasDisponibles() {
@@ -81,5 +87,9 @@ public class Sala {
 
     public EstadoSala getEstado() {
         return estado == null ? EstadoSala.DISPONIBLE : estado;
+    }
+
+    public String getDetalleEstado() {
+        return detalleEstado;
     }
 }

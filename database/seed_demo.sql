@@ -23,7 +23,8 @@ CREATE TABLE sala (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     capacidad INT NOT NULL,
-    estado VARCHAR(30) NOT NULL DEFAULT 'DISPONIBLE'
+    estado VARCHAR(40) NOT NULL DEFAULT 'DISPONIBLE',
+    detalle_estado VARCHAR(500) NULL
 );
 
 CREATE TABLE butaca (
@@ -123,6 +124,45 @@ CREATE TABLE empleado (
     rol VARCHAR(30) NOT NULL DEFAULT 'EMPLEADO',
     activo BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT uq_empleado_usuario UNIQUE (usuario)
+);
+
+CREATE TABLE auditoria (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    empleado_id INT NULL,
+    usuario VARCHAR(100) NOT NULL,
+    tipo_actor VARCHAR(30) NOT NULL,
+    accion VARCHAR(100) NOT NULL,
+    entidad VARCHAR(60) NULL,
+    entidad_id INT NULL,
+    detalle VARCHAR(500) NULL,
+    resultado VARCHAR(20) NOT NULL,
+    fecha_hora DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT fk_auditoria_empleado
+        FOREIGN KEY (empleado_id) REFERENCES empleado(id) ON DELETE SET NULL,
+    INDEX idx_auditoria_fecha (fecha_hora),
+    INDEX idx_auditoria_usuario (usuario),
+    INDEX idx_auditoria_accion (accion)
+);
+
+CREATE TABLE aviso_sala (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    sala_id INT NOT NULL,
+    estado VARCHAR(40) NOT NULL,
+    descripcion VARCHAR(500) NOT NULL,
+    creado_por_empleado_id INT NULL,
+    creado_por_usuario VARCHAR(100) NOT NULL,
+    destinatario_empleado_id INT NOT NULL,
+    destinatario_usuario VARCHAR(100) NOT NULL,
+    fecha_hora DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    leido BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT fk_aviso_sala
+        FOREIGN KEY (sala_id) REFERENCES sala(id),
+    CONSTRAINT fk_aviso_creador
+        FOREIGN KEY (creado_por_empleado_id) REFERENCES empleado(id) ON DELETE SET NULL,
+    CONSTRAINT fk_aviso_destinatario
+        FOREIGN KEY (destinatario_empleado_id) REFERENCES empleado(id),
+    INDEX idx_aviso_destinatario_leido (destinatario_empleado_id, leido),
+    INDEX idx_aviso_fecha (fecha_hora)
 );
 
 INSERT INTO categoria (id, nombre) VALUES

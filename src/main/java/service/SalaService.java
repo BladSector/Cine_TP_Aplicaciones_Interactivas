@@ -21,10 +21,13 @@ import java.util.stream.Collectors;
 public class SalaService {
     private final SalaRepository salaRepository;
     private final ButacaRepository butacaRepository;
+    private final AvisoSalaService avisoSalaService;
 
-    public SalaService(SalaRepository salaRepository, ButacaRepository butacaRepository) {
+    public SalaService(SalaRepository salaRepository, ButacaRepository butacaRepository,
+                       AvisoSalaService avisoSalaService) {
         this.salaRepository = salaRepository;
         this.butacaRepository = butacaRepository;
+        this.avisoSalaService = avisoSalaService;
     }
 
     public List<Sala> listar() {
@@ -93,14 +96,31 @@ public class SalaService {
         return salaRepository.save(sala);
     }
 
-    public Sala cambiarEstado(int id, EstadoSala estado) {
+    @Transactional
+    public Sala cambiarEstado(int id, EstadoSala estado, String descripcion,
+                              Integer creadoPorEmpleadoId, Integer destinatarioEmpleadoId) {
         if (estado == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El estado de la sala es obligatorio.");
         }
 
         Sala sala = buscarPorId(id);
-        sala.actualizarEstado(estado);
-        return salaRepository.save(sala);
+        String detalle = descripcion == null || descripcion.isBlank() ? null : descripcion.trim();
+        if (estado == EstadoSala.PROBLEMA_PARTICULAR && detalle == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Debe describir el problema particular de la sala."
+            );
+        }
+        sala.actualizarEstado(estado, detalle);
+        Sala actualizada = salaRepository.save(sala);
+        avisoSalaService.notificarCambio(
+                actualizada,
+                estado,
+                detalle,
+                creadoPorEmpleadoId,
+                destinatarioEmpleadoId
+        );
+        return actualizada;
     }
 
     @Transactional

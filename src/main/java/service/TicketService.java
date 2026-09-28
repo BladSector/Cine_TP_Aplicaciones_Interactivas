@@ -78,16 +78,24 @@ public class TicketService {
         if (ticket.getEntradas().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El ticket no contiene entradas.");
         }
-        boolean tieneEntradaNoPagada = ticket.getEntradas().stream()
-                .anyMatch(entrada -> entrada.getEstado() != EstadoEntrada.PAGADA);
-        if (tieneEntradaNoPagada) {
+        boolean tieneEntradaInvalida = ticket.getEntradas().stream()
+                .anyMatch(entrada -> entrada.getEstado() != EstadoEntrada.PAGADA
+                        && entrada.getEstado() != EstadoEntrada.ESCANEADA);
+        if (tieneEntradaInvalida) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Todas las entradas deben estar pagadas y sin escanear."
+                    "El ticket contiene entradas que no se pueden validar."
             );
         }
+        boolean tieneEntradasPendientes = ticket.getEntradas().stream()
+                .anyMatch(entrada -> entrada.getEstado() == EstadoEntrada.PAGADA);
+        if (!tieneEntradasPendientes) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Las entradas del ticket ya fueron validadas.");
+        }
 
-        ticket.getEntradas().forEach(entrada -> entradaService.escanear(entrada.getId()));
+        ticket.getEntradas().stream()
+                .filter(entrada -> entrada.getEstado() == EstadoEntrada.PAGADA)
+                .forEach(entrada -> entradaService.escanear(entrada.getId()));
         return ticket;
     }
 
@@ -97,16 +105,23 @@ public class TicketService {
         if (ticket.getItemsConsumo().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El ticket no contiene consumos.");
         }
-        boolean tieneConsumoNoPendiente = ticket.getItemsConsumo().stream()
-                .anyMatch(item -> item.getEstado() != EstadoConsumo.PENDIENTE);
-        if (tieneConsumoNoPendiente) {
+        boolean tieneConsumoCancelado = ticket.getItemsConsumo().stream()
+                .anyMatch(item -> item.getEstado() == EstadoConsumo.CANCELADO);
+        if (tieneConsumoCancelado) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Todos los consumos deben estar pendientes para realizar la entrega."
+                    "El ticket contiene consumos cancelados."
             );
         }
+        boolean tieneConsumosPendientes = ticket.getItemsConsumo().stream()
+                .anyMatch(item -> item.getEstado() == EstadoConsumo.PENDIENTE);
+        if (!tieneConsumosPendientes) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Los consumos del ticket ya fueron entregados.");
+        }
 
-        ticket.getItemsConsumo().forEach(item -> itemConsumoService.entregar(item.getId()));
+        ticket.getItemsConsumo().stream()
+                .filter(item -> item.getEstado() == EstadoConsumo.PENDIENTE)
+                .forEach(item -> itemConsumoService.entregar(item.getId()));
         return ticket;
     }
 

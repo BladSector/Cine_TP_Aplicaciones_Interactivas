@@ -34,6 +34,16 @@ public class EmpleadoController {
         return empleadoService.listar().stream().map(EmpleadoResponse::desde).toList();
     }
 
+    @GetMapping("/activos")
+    public List<EmpleadoOpcionResponse> listarActivos(HttpSession sesion) {
+        sesionService.validarPersonal(sesion);
+        Integer empleadoActualId = sesionService.obtenerEmpleadoId(sesion);
+        return empleadoService.listarActivos().stream()
+                .filter(empleado -> empleadoActualId == null || empleado.getId() != empleadoActualId)
+                .map(EmpleadoOpcionResponse::desde)
+                .toList();
+    }
+
     @GetMapping("/{id}")
     public EmpleadoResponse buscarPorId(@PathVariable int id, HttpSession sesion) {
         sesionService.validarDuenio(sesion);
@@ -77,8 +87,33 @@ public class EmpleadoController {
         return EmpleadoResponse.desde(empleadoService.desactivar(id));
     }
 
+    @PutMapping("/{id}/contrasenia")
+    public EmpleadoResponse restablecerContrasenia(@PathVariable int id,
+                                                    @RequestBody ContraseniaRequest request,
+                                                    HttpSession sesion) {
+        sesionService.validarDuenio(sesion);
+        return EmpleadoResponse.desde(empleadoService.restablecerContrasenia(
+                id,
+                request.nuevaContrasenia(),
+                request.contraseniaConfirmacion()
+        ));
+    }
+
     public record EmpleadoRequest(String nombre, String apellido, String usuario,
                                   String contrasenia) {
+    }
+
+    public record ContraseniaRequest(String nuevaContrasenia, String contraseniaConfirmacion) {
+    }
+
+    public record EmpleadoOpcionResponse(int id, String nombre, String usuario) {
+        public static EmpleadoOpcionResponse desde(Empleado empleado) {
+            return new EmpleadoOpcionResponse(
+                    empleado.getId(),
+                    empleado.getNombre() + " " + empleado.getApellido(),
+                    empleado.getUsuario()
+            );
+        }
     }
 
     public record EmpleadoResponse(int id, String nombre, String apellido, String usuario,

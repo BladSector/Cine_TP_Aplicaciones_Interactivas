@@ -62,7 +62,7 @@ public class AdministracionPanel extends JPanel {
 
     private final DefaultTableModel categoriasModel = modelo("ID", "Nombre");
     private final DefaultTableModel peliculasModel = modelo("ID", "Título", "Duración", "Categoría", "Descripción", "Portada");
-    private final DefaultTableModel salasModel = modelo("ID", "Nombre", "Capacidad", "Estado");
+    private final DefaultTableModel salasModel = modelo("ID", "Nombre", "Capacidad", "Estado", "Detalle");
     private final DefaultTableModel funcionesModel = modelo(
             "ID", "Fecha", "Horario", "Película ID", "Película", "Sala ID", "Sala", "Formato", "Idioma", "Precio"
     );
@@ -330,6 +330,7 @@ public class AdministracionPanel extends JPanel {
                 .append(campoHtml("Nombre", nombreSala))
                 .append(campoHtml("Capacidad", valor(salasModel, fila, 2)))
                 .append(campoHtml("Estado", valor(salasModel, fila, 3)))
+                .append(campoHtml("Detalle", valor(salasModel, fila, 4)))
                 .append(seccionHtml("FUNCIONES PROGRAMADAS"));
 
         int cantidadFunciones = 0;
@@ -636,17 +637,53 @@ public class AdministracionPanel extends JPanel {
         if (fila < 0) {
             return;
         }
+        ejecutar(
+                "Cargando empleados...",
+                () -> apiClient.get("/empleados/activos"),
+                empleadosActivos -> mostrarFormularioEstadoSala(fila, empleadosActivos)
+        );
+    }
+
+    private void mostrarFormularioEstadoSala(int fila, JsonNode empleadosActivos) {
         JComboBox<String> estadoSala = new JComboBox<>(new String[]{
-                "DISPONIBLE", "LIMPIEZA", "CERRADA", "FUERA_DE_SERVICIO"
+                "Disponible", "Limpieza", "Cerrada", "Problema particular"
         });
         estadoSala.setSelectedItem(valor(salasModel, fila, 3));
-        if (JOptionPane.showConfirmDialog(this, estadoSala, "Nuevo estado de la sala",
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) {
+
+        JTextArea descripcion = new JTextArea(4, 24);
+        descripcion.setLineWrap(true);
+        descripcion.setWrapStyleWord(true);
+
+        JComboBox<Opcion> destinatario = new JComboBox<>();
+        destinatario.addItem(new Opcion(0, "Todos los empleados"));
+        empleadosActivos.forEach(empleado -> destinatario.addItem(new Opcion(
+                empleado.path("id").asInt(),
+                empleado.path("nombre").asText() + " (" + empleado.path("usuario").asText() + ")"
+        )));
+
+        JPanel panel = formulario(
+                new String[]{"Estado", "Descripción", "Avisar a"},
+                estadoSala, new JScrollPane(descripcion), destinatario
+        );
+        if (!confirmarFormulario("Nuevo estado de la sala", panel)) {
+            return;
+        }
+        String estado = codigoEstadoSala(String.valueOf(estadoSala.getSelectedItem()));
+        String detalle = descripcion.getText().trim();
+        if ("PROBLEMA_PARTICULAR".equals(estado) && detalle.isBlank()) {
+            aviso("Describí el problema particular de la Sala.");
             return;
         }
 
+        Opcion destino = (Opcion) destinatario.getSelectedItem();
+        Map<String, Object> cuerpo = new HashMap<>();
+        cuerpo.put("estado", estado);
+        cuerpo.put("descripcion", detalle);
+        if (destino != null && destino.id() != 0) {
+            cuerpo.put("destinatarioEmpleadoId", destino.id());
+        }
+
         int salaId = id(salasModel, fila);
-        Map<String, Object> cuerpo = Map.of("estado", estadoSala.getSelectedItem());
         ejecutar("Actualizando estado de la sala...",
                 () -> apiClient.put("/salas/" + salaId + "/estado", cuerpo), respuesta -> cargarTodo());
     }
@@ -804,7 +841,11 @@ public class AdministracionPanel extends JPanel {
         datos.salas().forEach(item -> {
             salasModel.addRow(new Object[]{
                     item.path("id").asInt(), item.path("nombre").asText(),
-                    item.path("capacidad").asInt(), item.path("estado").asText("DISPONIBLE")
+                    item.path("capacidad").asInt(),
+                    nombreEstadoSala(item.path("estado").asText("DISPONIBLE")),
+                    item.path("detalleEstado").isNull() || item.path("detalleEstado").asText().isBlank()
+                            ? "-"
+                            : item.path("detalleEstado").asText()
             });
             salas.add(new Opcion(item.path("id").asInt(), item.path("nombre").asText()));
         });
@@ -984,23 +1025,37 @@ public class AdministracionPanel extends JPanel {
         for (int columna = 0; columna < tabla.getColumnModel().getColumnCount(); columna++) {
             TableColumn columnaTabla = tabla.getColumnModel().getColumn(columna);
             String nombre = String.valueOf(columnaTabla.getHeaderValue());
-            int ancho = switch (nombre) {
-                case "ID" -> 48;
-                case "Fecha" -> 95;
-                case "Horario", "Duración", "Capacidad", "Cantidad", "Activo" -> 80;
-                case "Película ID", "Sala ID" -> 82;
-                case "Título", "Película", "Nombre", "Producto" -> 190;
-                case "Sala", "Categoría", "Estado", "Tipo", "Tamaño" -> 125;
-                case "Formato", "Butaca", "Ticket" -> 75;
-                case "Idioma" -> 110;
-                case "Precio", "Subtotal" -> 95;
-                case "Descripción" -> 280;
-                case "Portada" -> 90;
-                default -> 110;
-            };
-            columnaTabla.setPreferredWidth(ancho);
-            columnaTabla.setMinWidth(Math.min(ancho, 55));
+            switch (nombre) {
+                case "ID" -> configurarColumna(columnaTabla, 42, 50, 65);
+                case "Fecha" -> configurarColumna(columnaTabla, 85, 100, 115);
+                case "Horario" -> configurarColumna(columnaTabla, 70, 82, 95);
+                case "Duración", "Capacidad", "Cantidad", "Activo" ->
+                        configurarColumna(columnaTabla, 68, 82, 100);
+                case "Película ID", "Sala ID" -> configurarColumna(columnaTabla, 72, 82, 95);
+                case "Formato", "Butaca", "Ticket" -> configurarColumna(columnaTabla, 65, 78, 92);
+                case "Idioma" -> configurarColumna(columnaTabla, 90, 110, 130);
+                case "Precio", "Subtotal" -> configurarColumna(columnaTabla, 82, 98, 115);
+                case "Estado", "Tipo", "Tamaño" -> configurarColumna(columnaTabla, 95, 125, 165);
+                case "Portada" -> configurarColumna(columnaTabla, 75, 90, 115);
+                case "Título", "Película", "Nombre", "Producto" ->
+                        configurarColumnaFlexible(columnaTabla, 120, 190);
+                case "Sala", "Categoría" -> configurarColumnaFlexible(columnaTabla, 95, 135);
+                case "Descripción", "Detalle" -> configurarColumnaFlexible(columnaTabla, 180, 300);
+                default -> configurarColumnaFlexible(columnaTabla, 80, 120);
+            }
         }
+    }
+
+    private static void configurarColumna(TableColumn columna, int minimo, int preferido, int maximo) {
+        columna.setMinWidth(minimo);
+        columna.setPreferredWidth(preferido);
+        columna.setMaxWidth(maximo);
+    }
+
+    private static void configurarColumnaFlexible(TableColumn columna, int minimo, int preferido) {
+        columna.setMinWidth(minimo);
+        columna.setPreferredWidth(preferido);
+        columna.setMaxWidth(Integer.MAX_VALUE);
     }
 
     private static void configurarOrdenInicial(TableRowSorter<DefaultTableModel> sorter,
@@ -1057,6 +1112,24 @@ public class AdministracionPanel extends JPanel {
     private static String normalizarBusqueda(String texto) {
         String normalizado = Normalizer.normalize(texto == null ? "" : texto, Normalizer.Form.NFD);
         return normalizado.replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT).trim();
+    }
+
+    private static String nombreEstadoSala(String estado) {
+        return switch (estado) {
+            case "LIMPIEZA" -> "Limpieza";
+            case "CERRADA" -> "Cerrada";
+            case "PROBLEMA_PARTICULAR", "FUERA_DE_SERVICIO" -> "Problema particular";
+            default -> "Disponible";
+        };
+    }
+
+    private static String codigoEstadoSala(String estado) {
+        return switch (estado) {
+            case "Limpieza" -> "LIMPIEZA";
+            case "Cerrada" -> "CERRADA";
+            case "Problema particular" -> "PROBLEMA_PARTICULAR";
+            default -> "DISPONIBLE";
+        };
     }
 
     private static DefaultTableModel modelo(String... columnas) {

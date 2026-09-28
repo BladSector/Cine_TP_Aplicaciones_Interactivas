@@ -24,11 +24,13 @@ import javax.swing.JTextField;
 import javax.swing.JPasswordField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.JToolBar;
 import javax.swing.RowFilter;
 import javax.swing.RowSorter;
 import javax.swing.SortOrder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableRowSorter;
 import javax.swing.plaf.basic.BasicButtonUI;
@@ -62,13 +64,15 @@ public class PrincipalFrame extends JFrame {
     private final ApiClient apiClient;
     private final String rol;
     private final JLabel estado = new JLabel("Listo");
-    private final JTabbedPane pestanias = new JTabbedPane();
+    private final CardLayout navegacionDuenio = new CardLayout();
+    private final JPanel vistasDuenio = new JPanel(navegacionDuenio);
+    private final Map<String, JButton> botonesDuenio = new LinkedHashMap<>();
     private final CardLayout navegacionEmpleado = new CardLayout();
     private final JPanel vistasEmpleado = new JPanel(navegacionEmpleado);
     private final Map<String, JButton> botonesEmpleado = new LinkedHashMap<>();
     private AdministracionPanel administracionPanel;
 
-    private final DefaultTableModel salasModel = modelo("ID", "Nombre", "Capacidad", "Estado");
+    private final DefaultTableModel salasModel = modelo("ID", "Nombre", "Capacidad", "Estado", "Detalle");
     private final DefaultTableModel funcionesModel = modelo(
             "ID", "Fecha", "Horario", "Película", "Sala", "Formato", "Idioma", "Precio"
     );
@@ -77,12 +81,17 @@ public class PrincipalFrame extends JFrame {
             "ID", "Producto", "Cantidad", "Ticket", "Estado", "Subtotal"
     );
     private final DefaultTableModel empleadosModel = modelo("ID", "Nombre", "Apellido", "Usuario", "Activo");
+    private final DefaultTableModel auditoriasModel = modelo(
+            "ID", "Fecha y hora", "Usuario", "Perfil", "Acción", "Entidad",
+            "Entidad ID", "Resultado", "Detalle"
+    );
 
     private final JTable salasTabla = tabla(salasModel);
     private final JTable funcionesTabla = tabla(funcionesModel);
     private final JTable butacasTabla = tabla(butacasModel);
     private final JTable consumosTabla = tabla(consumosModel);
     private final JTable empleadosTabla = tabla(empleadosModel);
+    private final JTable auditoriasTabla = tabla(auditoriasModel);
     private final JEditorPane detalleSala = crearVisorDetalle("Seleccioná una sala para ver su información.");
     private final JEditorPane detalleConsumo = crearVisorDetalle("Seleccioná un consumo para ver su información.");
 
@@ -93,15 +102,24 @@ public class PrincipalFrame extends JFrame {
     private Integer butacaSeleccionadaId;
 
     private final JTextField codigoQr = new JTextField(32);
+    private final JTextField codigoQrConsumo = new JTextField(28);
     private final JTextArea detalleTicket = new JTextArea();
+    private final JButton avisosPendientes = new JButton("Avisos");
     private Integer ticketActualId;
+    private Timer temporizadorAvisos;
+    private boolean consultandoAvisos;
+    private boolean mostrandoAvisos;
 
     public PrincipalFrame(ApiClient apiClient, String rol, String usuario) {
         super("Cine API - " + nombreRol(rol));
         this.apiClient = apiClient;
         this.rol = rol;
+        configurarColoresActividad();
         construirVista(usuario);
         cargarTodo();
+        if (esEmpleado()) {
+            iniciarMonitoreoAvisos();
+        }
     }
 
     private void construirVista(String usuario) {
@@ -125,6 +143,10 @@ public class PrincipalFrame extends JFrame {
         cerrarSesion.addActionListener(event -> cerrarSesion());
         herramientas.add(sesion);
         herramientas.addSeparator();
+        if (esEmpleado()) {
+            avisosPendientes.addActionListener(event -> consultarAvisos(true));
+            herramientas.add(avisosPendientes);
+        }
         herramientas.add(recargar);
         herramientas.add(cerrarSesion);
         cabecera.add(titulo, BorderLayout.WEST);
@@ -132,14 +154,7 @@ public class PrincipalFrame extends JFrame {
 
         Component contenidoCentral;
         if (esDuenio()) {
-            administracionPanel = new AdministracionPanel(apiClient, pestanias, estado::setText);
-            pestanias.insertTab("Ventas y tickets", null, crearPanelTickets(), null, 1);
-            int indiceSalas = indicePestania("Salas");
-            pestanias.insertTab("Butacas", null, crearPanelButacas(), null, indiceSalas + 1);
-            int indiceConfiteria = indicePestania("Confitería");
-            pestanias.insertTab("Consumos", null, crearPanelConsumos(), null, indiceConfiteria + 1);
-            pestanias.addTab("Empleados", crearPanelEmpleados());
-            contenidoCentral = pestanias;
+            contenidoCentral = crearVistaDuenio();
         } else {
             contenidoCentral = crearVistaEmpleado();
         }
@@ -158,6 +173,108 @@ public class PrincipalFrame extends JFrame {
             public void windowClosing(WindowEvent e) {
                 salirAplicacion();
             }
+        });
+    }
+
+    private JPanel crearVistaDuenio() {
+        JTabbedPane modulosAdministrativos = new JTabbedPane();
+        administracionPanel = new AdministracionPanel(
+                apiClient, modulosAdministrativos, estado::setText
+        );
+
+        JPanel funciones = extraerPestania(modulosAdministrativos, "Funciones");
+        JPanel peliculas = extraerPestania(modulosAdministrativos, "Películas");
+        JPanel salas = extraerPestania(modulosAdministrativos, "Salas");
+        JPanel productos = extraerPestania(modulosAdministrativos, "Confitería");
+        JPanel categorias = extraerPestania(modulosAdministrativos, "Categorías");
+
+        JPanel contenedor = new JPanel(new BorderLayout());
+        JPanel navegacion = new JPanel();
+        navegacion.setLayout(new BoxLayout(navegacion, BoxLayout.Y_AXIS));
+        navegacion.setBorder(BorderFactory.createEmptyBorder(12, 10, 12, 10));
+        navegacion.setPreferredSize(new Dimension(215, 0));
+
+        JLabel titulo = new JLabel("Gestión del cine");
+        titulo.setFont(titulo.getFont().deriveFont(Font.BOLD, 16f));
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        navegacion.add(titulo);
+        navegacion.add(Box.createVerticalStrut(12));
+
+        agregarGrupoDuenio(navegacion, "OPERACIÓN");
+        agregarVistaDuenio(navegacion, "Ventas y tickets", crearPanelTickets());
+        agregarVistaDuenio(navegacion, "Consumos", crearPanelConsumos());
+
+        agregarGrupoDuenio(navegacion, "CARTELERA");
+        agregarVistaDuenio(navegacion, "Funciones", funciones);
+        agregarVistaDuenio(navegacion, "Películas", peliculas);
+        agregarVistaDuenio(navegacion, "Categorías", categorias);
+
+        agregarGrupoDuenio(navegacion, "INSTALACIONES");
+        agregarVistaDuenio(navegacion, "Salas", salas);
+        agregarVistaDuenio(navegacion, "Butacas", crearPanelButacas());
+
+        agregarGrupoDuenio(navegacion, "CONFITERÍA");
+        agregarVistaDuenio(navegacion, "Productos", productos);
+
+        agregarGrupoDuenio(navegacion, "ADMINISTRACIÓN");
+        agregarVistaDuenio(navegacion, "Empleados", crearPanelEmpleados());
+        agregarVistaDuenio(navegacion, "Actividad", crearPanelAuditoria());
+        navegacion.add(Box.createVerticalGlue());
+
+        JScrollPane desplazamiento = new JScrollPane(navegacion);
+        desplazamiento.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(205, 205, 205)));
+        desplazamiento.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        desplazamiento.getVerticalScrollBar().setUnitIncrement(14);
+
+        contenedor.add(desplazamiento, BorderLayout.WEST);
+        contenedor.add(vistasDuenio, BorderLayout.CENTER);
+        mostrarVistaDuenio("Funciones");
+        return contenedor;
+    }
+
+    private JPanel extraerPestania(JTabbedPane origen, String titulo) {
+        for (int indice = 0; indice < origen.getTabCount(); indice++) {
+            if (titulo.equals(origen.getTitleAt(indice))) {
+                Component contenido = origen.getComponentAt(indice);
+                origen.removeTabAt(indice);
+                return (JPanel) contenido;
+            }
+        }
+        throw new IllegalStateException("No se encontró el módulo " + titulo + ".");
+    }
+
+    private void agregarGrupoDuenio(JPanel navegacion, String nombre) {
+        if (navegacion.getComponentCount() > 2) {
+            navegacion.add(Box.createVerticalStrut(9));
+        }
+        JLabel grupo = new JLabel(nombre);
+        grupo.setFont(grupo.getFont().deriveFont(Font.BOLD, 11f));
+        grupo.setForeground(new Color(95, 95, 95));
+        grupo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        grupo.setBorder(BorderFactory.createEmptyBorder(0, 7, 4, 0));
+        navegacion.add(grupo);
+    }
+
+    private void agregarVistaDuenio(JPanel navegacion, String nombre, JPanel vista) {
+        JButton boton = new JButton(nombre);
+        boton.setHorizontalAlignment(JButton.LEFT);
+        boton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        boton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        boton.setFocusPainted(false);
+        boton.addActionListener(event -> mostrarVistaDuenio(nombre));
+        botonesDuenio.put(nombre, boton);
+        vistasDuenio.add(vista, nombre);
+        navegacion.add(boton);
+        navegacion.add(Box.createVerticalStrut(4));
+    }
+
+    private void mostrarVistaDuenio(String nombre) {
+        navegacionDuenio.show(vistasDuenio, nombre);
+        botonesDuenio.forEach((seccion, boton) -> {
+            boolean seleccionada = seccion.equals(nombre);
+            boton.setFont(boton.getFont().deriveFont(seleccionada ? Font.BOLD : Font.PLAIN));
+            boton.setBackground(seleccionada ? new Color(214, 225, 241) : null);
+            boton.setOpaque(seleccionada);
         });
     }
 
@@ -219,15 +336,10 @@ public class PrincipalFrame extends JFrame {
             }
         });
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JComboBox<String> estadoSala = new JComboBox<>(new String[]{
-                "DISPONIBLE", "LIMPIEZA", "CERRADA", "FUERA_DE_SERVICIO"
-        });
         JButton cambiar = new JButton("Cambiar estado");
         JButton actualizar = new JButton("Recargar");
-        cambiar.addActionListener(event -> cambiarEstadoSala(String.valueOf(estadoSala.getSelectedItem())));
+        cambiar.addActionListener(event -> mostrarSelectorEstadoSala());
         actualizar.addActionListener(event -> cargarSalas());
-        acciones.add(new JLabel("Nuevo estado:"));
-        acciones.add(estadoSala);
         acciones.add(cambiar);
         acciones.add(actualizar);
         panel.add(acciones, BorderLayout.SOUTH);
@@ -305,9 +417,9 @@ public class PrincipalFrame extends JFrame {
         encabezado.add(indicacion);
 
         JPanel busqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        JButton buscar = new JButton("Buscar QR");
-        buscar.addActionListener(event -> buscarTicket());
-        codigoQr.addActionListener(event -> buscarTicket());
+        JButton buscar = new JButton(esEmpleado() ? "Validar QR" : "Buscar QR");
+        buscar.addActionListener(event -> leerQrAcceso());
+        codigoQr.addActionListener(event -> leerQrAcceso());
         busqueda.add(new JLabel("Código QR:"));
         busqueda.add(codigoQr);
         busqueda.add(buscar);
@@ -328,9 +440,11 @@ public class PrincipalFrame extends JFrame {
         validar.addActionListener(event -> operarTicket("validar-entradas"));
         entregar.addActionListener(event -> operarTicket("entregar-consumos"));
         limpiar.addActionListener(event -> limpiarControlAcceso());
-        acciones.add(procesar);
-        acciones.add(validar);
-        acciones.add(entregar);
+        if (!esEmpleado()) {
+            acciones.add(procesar);
+            acciones.add(validar);
+            acciones.add(entregar);
+        }
         acciones.add(limpiar);
 
         panel.add(superior, BorderLayout.NORTH);
@@ -354,6 +468,17 @@ public class PrincipalFrame extends JFrame {
         actualizar.addActionListener(event -> cargarConsumos());
         acciones.add(entregar);
         acciones.add(actualizar);
+
+        JPanel lectorQr = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        lectorQr.setBorder(BorderFactory.createTitledBorder("Entrega por QR"));
+        JButton entregarQr = new JButton("Entregar consumos");
+        entregarQr.addActionListener(event -> entregarConsumosPorQr());
+        codigoQrConsumo.addActionListener(event -> entregarConsumosPorQr());
+        lectorQr.add(new JLabel("Código QR:"));
+        lectorQr.add(codigoQrConsumo);
+        lectorQr.add(entregarQr);
+
+        panel.add(lectorQr, BorderLayout.NORTH);
         panel.add(acciones, BorderLayout.SOUTH);
         return panel;
     }
@@ -362,19 +487,43 @@ public class PrincipalFrame extends JFrame {
         JPanel panel = panelConTabla("Personal del cine", empleadosTabla);
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton crear = new JButton("Nuevo empleado");
+        JButton restablecerContrasenia = new JButton("Restablecer contraseña");
         JButton activar = new JButton("Activar");
         JButton desactivar = new JButton("Desactivar");
         JButton actualizar = new JButton("Recargar");
         crear.addActionListener(event -> mostrarFormularioEmpleado());
+        restablecerContrasenia.addActionListener(event -> mostrarRestablecimientoContrasenia());
         activar.addActionListener(event -> cambiarEstadoEmpleado("activar"));
         desactivar.addActionListener(event -> cambiarEstadoEmpleado("desactivar"));
         actualizar.addActionListener(event -> cargarEmpleados());
         acciones.add(crear);
+        acciones.add(restablecerContrasenia);
         acciones.add(activar);
         acciones.add(desactivar);
         acciones.add(actualizar);
         panel.add(acciones, BorderLayout.SOUTH);
         return panel;
+    }
+
+    private JPanel crearPanelAuditoria() {
+        JPanel panel = panelConTabla("Actividad del sistema", auditoriasTabla);
+        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton actualizar = new JButton("Recargar actividad");
+        actualizar.addActionListener(event -> cargarAuditorias());
+        acciones.add(actualizar);
+        acciones.add(Box.createHorizontalStrut(18));
+        acciones.add(etiquetaPerfilActividad("Dueño", new Color(255, 244, 196)));
+        acciones.add(etiquetaPerfilActividad("Empleado", new Color(218, 234, 252)));
+        panel.add(acciones, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JLabel etiquetaPerfilActividad(String texto, Color color) {
+        JLabel etiqueta = new JLabel("  " + texto + "  ");
+        etiqueta.setOpaque(true);
+        etiqueta.setBackground(color);
+        etiqueta.setBorder(BorderFactory.createLineBorder(color.darker()));
+        return etiqueta;
     }
 
     private JPanel panelConTabla(String titulo, JTable tabla) {
@@ -428,6 +577,8 @@ public class PrincipalFrame extends JFrame {
                 () -> descripcionFila(consumosTabla), "Marcar entregado", this::entregarConsumoSeleccionado);
         instalarDetalleDobleClick(empleadosTabla, "Información del empleado",
                 () -> descripcionFila(empleadosTabla));
+        instalarDetalleDobleClick(auditoriasTabla, "Detalle de la actividad",
+                () -> descripcionFila(auditoriasTabla));
     }
 
     private void instalarDetalleDobleClick(JTable tabla, String titulo, Supplier<String> descripcion) {
@@ -468,6 +619,7 @@ public class PrincipalFrame extends JFrame {
                 .append(campoHtml("Nombre", nombreSala))
                 .append(campoHtml("Capacidad", salasModel.getValueAt(fila, 2)))
                 .append(campoHtml("Estado", salasModel.getValueAt(fila, 3)))
+                .append(campoHtml("Detalle", salasModel.getValueAt(fila, 4)))
                 .append(seccionHtml("FUNCIONES PROGRAMADAS"));
 
         int cantidadFunciones = 0;
@@ -533,25 +685,73 @@ public class PrincipalFrame extends JFrame {
     }
 
     private void mostrarSelectorEstadoSala() {
-        JComboBox<String> estados = new JComboBox<>(new String[]{
-                "DISPONIBLE", "LIMPIEZA", "CERRADA", "FUERA_DE_SERVICIO"
-        });
-        int opcion = JOptionPane.showConfirmDialog(
-                this, estados, "Nuevo estado de la sala",
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
-        );
-        if (opcion == JOptionPane.OK_OPTION) {
-            cambiarEstadoSala(String.valueOf(estados.getSelectedItem()));
-        }
-    }
-
-    private void cambiarEstadoSala(String nuevoEstado) {
-        Integer id = idSeleccionado(salasTabla);
-        if (id == null) {
+        int filaVista = salasTabla.getSelectedRow();
+        if (filaVista < 0) {
+            mostrarAviso("Seleccioná primero una sala.");
             return;
         }
+        int fila = salasTabla.convertRowIndexToModel(filaVista);
+        int salaId = ((Number) salasModel.getValueAt(fila, 0)).intValue();
+        String estadoActual = String.valueOf(salasModel.getValueAt(fila, 3));
+        ejecutar(
+                "Cargando empleados...",
+                () -> apiClient.get("/empleados/activos"),
+                empleados -> mostrarFormularioEstadoSala(
+                        salaId, estadoActual, empleados
+                )
+        );
+    }
+
+    private void mostrarFormularioEstadoSala(int salaId, String estadoActual,
+                                             JsonNode empleados) {
+        JComboBox<String> estados = new JComboBox<>(new String[]{
+                "Disponible", "Limpieza", "Cerrada", "Problema particular"
+        });
+        estados.setSelectedItem(estadoActual);
+
+        JTextArea descripcion = new JTextArea(4, 24);
+        descripcion.setLineWrap(true);
+        descripcion.setWrapStyleWord(true);
+
+        JComboBox<EmpleadoOpcion> destinatario = new JComboBox<>();
+        destinatario.addItem(new EmpleadoOpcion(0, "Todos los empleados"));
+        empleados.forEach(empleado -> destinatario.addItem(new EmpleadoOpcion(
+                empleado.path("id").asInt(),
+                empleado.path("nombre").asText() + " (" + empleado.path("usuario").asText() + ")"
+        )));
+
+        JPanel formulario = new JPanel(new GridLayout(0, 2, 8, 8));
+        formulario.add(new JLabel("Estado"));
+        formulario.add(estados);
+        formulario.add(new JLabel("Descripción"));
+        formulario.add(new JScrollPane(descripcion));
+        formulario.add(new JLabel("Avisar a"));
+        formulario.add(destinatario);
+
+        int opcion = JOptionPane.showConfirmDialog(
+                this, formulario, "Nuevo estado de la sala",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
+        );
+        if (opcion != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        String nuevoEstado = codigoEstadoSala(String.valueOf(estados.getSelectedItem()));
+        String detalle = descripcion.getText().trim();
+        if ("PROBLEMA_PARTICULAR".equals(nuevoEstado) && detalle.isBlank()) {
+            mostrarAviso("Describí el problema particular de la sala.");
+            return;
+        }
+        EmpleadoOpcion destino = (EmpleadoOpcion) destinatario.getSelectedItem();
+        Map<String, Object> cuerpo = new LinkedHashMap<>();
+        cuerpo.put("estado", nuevoEstado);
+        cuerpo.put("descripcion", detalle);
+        if (destino != null && destino.id() != 0) {
+            cuerpo.put("destinatarioEmpleadoId", destino.id());
+        }
+
         ejecutar("Actualizando sala...",
-                () -> apiClient.put("/salas/" + id + "/estado", Map.of("estado", nuevoEstado)),
+                () -> apiClient.put("/salas/" + salaId + "/estado", cuerpo),
                 respuesta -> cargarSalas());
     }
 
@@ -583,9 +783,7 @@ public class PrincipalFrame extends JFrame {
 
         JMenu operacion = new JMenu("Operación");
         if (esDuenio()) {
-            for (int i = 0; i < pestanias.getTabCount(); i++) {
-                operacion.add(itemMenu(pestanias.getTitleAt(i)));
-            }
+            botonesDuenio.keySet().forEach(nombre -> operacion.add(itemMenu(nombre)));
         } else {
             botonesEmpleado.keySet().forEach(nombre -> operacion.add(itemMenu(nombre)));
         }
@@ -610,21 +808,7 @@ public class PrincipalFrame extends JFrame {
             mostrarVistaEmpleado(titulo);
             return;
         }
-        for (int i = 0; i < pestanias.getTabCount(); i++) {
-            if (titulo.equals(pestanias.getTitleAt(i))) {
-                pestanias.setSelectedIndex(i);
-                return;
-            }
-        }
-    }
-
-    private int indicePestania(String titulo) {
-        for (int i = 0; i < pestanias.getTabCount(); i++) {
-            if (titulo.equals(pestanias.getTitleAt(i))) {
-                return i;
-            }
-        }
-        return pestanias.getTabCount() - 1;
+        mostrarVistaDuenio(titulo);
     }
 
     private void cargarTodo() {
@@ -641,6 +825,7 @@ public class PrincipalFrame extends JFrame {
         }
         if (esDuenio()) {
             cargarEmpleados();
+            cargarAuditorias();
         }
     }
 
@@ -651,7 +836,11 @@ public class PrincipalFrame extends JFrame {
             salaButacas.removeAllItems();
             respuesta.forEach(sala -> salasModel.addRow(new Object[]{
                     sala.path("id").asInt(), sala.path("nombre").asText(),
-                    sala.path("capacidad").asInt(), sala.path("estado").asText("DISPONIBLE")
+                    sala.path("capacidad").asInt(),
+                    nombreEstadoSala(sala.path("estado").asText("DISPONIBLE")),
+                    sala.path("detalleEstado").isNull() || sala.path("detalleEstado").asText().isBlank()
+                            ? "-"
+                            : sala.path("detalleEstado").asText()
             }));
             respuesta.forEach(sala -> salaButacas.addItem(new SalaOpcion(
                     sala.path("id").asInt(), sala.path("nombre").asText()
@@ -708,6 +897,239 @@ public class PrincipalFrame extends JFrame {
                     empleado.path("activo").asBoolean()
             }));
         });
+    }
+
+    private void cargarAuditorias() {
+        ejecutar("Cargando actividad...", () -> apiClient.get("/auditorias"), respuesta -> {
+            limpiar(auditoriasModel);
+            respuesta.forEach(auditoria -> {
+                String usuario = auditoria.path("usuario").asText();
+                String perfil = nombrePerfilAuditoria(auditoria.path("tipoActor").asText());
+                String entidad = nombreEntidadAuditoria(auditoria.path("entidad").asText());
+                String entidadId = textoNullable(auditoria.get("entidadId"));
+                boolean exitosa = "EXITOSA".equals(auditoria.path("resultado").asText());
+                String accion = nombreAccionAuditoria(
+                        auditoria.path("accion").asText(),
+                        auditoria.path("entidad").asText()
+                );
+
+                auditoriasModel.addRow(new Object[]{
+                        auditoria.path("id").asLong(),
+                        auditoria.path("fechaHora").asText().replace('T', ' '),
+                        usuario,
+                        perfil,
+                        accion,
+                        entidad,
+                        entidadId,
+                        exitosa ? "Completada" : "Fallida",
+                        detalleActividad(usuario, perfil, accion, entidadId, exitosa)
+                });
+            });
+        });
+    }
+
+    private void configurarColoresActividad() {
+        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                            boolean isSelected, boolean hasFocus,
+                                                            int row, int column) {
+                Component componente = super.getTableCellRendererComponent(
+                        table, value, isSelected, hasFocus, row, column
+                );
+                if (!isSelected) {
+                    int filaModelo = table.convertRowIndexToModel(row);
+                    int columnaPerfil = auditoriasModel.findColumn("Perfil");
+                    String perfil = String.valueOf(auditoriasModel.getValueAt(filaModelo, columnaPerfil));
+                    componente.setBackground("Dueño".equals(perfil)
+                            ? new Color(255, 248, 218)
+                            : new Color(232, 242, 254));
+                    componente.setForeground(table.getForeground());
+                }
+                setHorizontalAlignment(column == 0 ? JLabel.RIGHT : JLabel.LEFT);
+                return componente;
+            }
+        };
+        for (int columna = 0; columna < auditoriasTabla.getColumnCount(); columna++) {
+            auditoriasTabla.getColumnModel().getColumn(columna).setCellRenderer(renderer);
+        }
+    }
+
+    private static String nombrePerfilAuditoria(String tipoActor) {
+        return "DUEÑO".equals(tipoActor) || "DUENIO".equals(tipoActor) ? "Dueño" : "Empleado";
+    }
+
+    private static String nombreEntidadAuditoria(String entidad) {
+        return switch (entidad) {
+            case "CATEGORIA" -> "Categoría";
+            case "PELICULA" -> "Película";
+            case "SALA" -> "Sala";
+            case "FUNCION" -> "Función";
+            case "BUTACA" -> "Butaca";
+            case "PRODUCTO_CONFITERIA" -> "Producto de confitería";
+            case "ENTRADA" -> "Entrada";
+            case "TICKET" -> "Ticket";
+            case "CONSUMO" -> "Consumo";
+            case "EMPLEADO" -> "Empleado";
+            case "SESION" -> "Sesión";
+            case "COMPRA" -> "Compra";
+            default -> "Sistema";
+        };
+    }
+
+    private static String nombreAccionAuditoria(String accion, String entidad) {
+        return switch (accion) {
+            case "INICIAR_SESION" -> "Inició sesión";
+            case "CERRAR_SESION" -> "Cerró sesión";
+            case "RESTABLECER_CONTRASENA" -> "Restableció una contraseña";
+            case "ACTIVAR_EMPLEADO" -> "Activó un empleado";
+            case "DESACTIVAR_EMPLEADO" -> "Desactivó un empleado";
+            case "MODIFICAR_HORARIO" -> "Modificó el horario de una función";
+            case "CAMBIAR_ESTADO_SALA" -> "Cambió el estado de una sala";
+            case "MODIFICAR_DISTRIBUCION_SALA" -> "Modificó la distribución de una sala";
+            case "OCUPAR_BUTACA" -> "Marcó una butaca como ocupada";
+            case "LIBERAR_BUTACA" -> "Liberó una butaca";
+            case "MARCAR_BUTACA_FUERA_DE_SERVICIO" -> "Marcó una butaca fuera de servicio";
+            case "VALIDAR_ENTRADAS" -> "Validó las entradas de un ticket";
+            case "ENTREGAR_CONSUMOS" -> "Entregó los consumos de un ticket";
+            case "PROCESAR_INGRESO" -> "Procesó el ingreso de un ticket";
+            case "REEMBOLSAR_ENTRADA" -> "Reembolsó una entrada";
+            case "CREAR" -> "Creó " + entidadConArticulo(entidad);
+            case "ACTUALIZAR" -> "Actualizó " + entidadConArticulo(entidad);
+            case "ELIMINAR" -> "Eliminó " + entidadConArticulo(entidad);
+            default -> "Realizó una operación";
+        };
+    }
+
+    private static String entidadConArticulo(String entidad) {
+        return switch (entidad) {
+            case "CATEGORIA" -> "una categoría";
+            case "PELICULA" -> "una película";
+            case "SALA" -> "una sala";
+            case "FUNCION" -> "una función";
+            case "BUTACA" -> "una butaca";
+            case "PRODUCTO_CONFITERIA" -> "un producto de confitería";
+            case "ENTRADA" -> "una entrada";
+            case "TICKET" -> "un ticket";
+            case "CONSUMO" -> "un consumo";
+            case "EMPLEADO" -> "un empleado";
+            case "COMPRA" -> "una compra";
+            default -> "un registro";
+        };
+    }
+
+    private static String detalleActividad(String usuario, String perfil, String accion,
+                                           String entidadId, boolean exitosa) {
+        String accionEnFrase = accion.isEmpty()
+                ? "realizó una operación"
+                : Character.toLowerCase(accion.charAt(0)) + accion.substring(1);
+        String referencia = "-".equals(entidadId) ? "" : " (registro #" + entidadId + ")";
+        return usuario + " (" + perfil + ") " + accionEnFrase + referencia
+                + (exitosa ? " correctamente." : ", pero no pudo completarse.");
+    }
+
+    private void iniciarMonitoreoAvisos() {
+        temporizadorAvisos = new Timer(15000, event -> consultarAvisos(false));
+        temporizadorAvisos.setInitialDelay(1200);
+        temporizadorAvisos.start();
+    }
+
+    private void consultarAvisos(boolean informarSiNoHay) {
+        if (consultandoAvisos || mostrandoAvisos || !esEmpleado()) {
+            return;
+        }
+        consultandoAvisos = true;
+        new SwingWorker<JsonNode, Void>() {
+            @Override
+            protected JsonNode doInBackground() throws Exception {
+                return apiClient.get("/avisos-sala/pendientes");
+            }
+
+            @Override
+            protected void done() {
+                consultandoAvisos = false;
+                try {
+                    JsonNode avisos = get();
+                    int cantidad = avisos.size();
+                    avisosPendientes.setText(cantidad == 0 ? "Avisos" : "Avisos (" + cantidad + ")");
+                    avisosPendientes.setForeground(cantidad == 0 ? null : new Color(178, 45, 45));
+                    if (cantidad > 0) {
+                        mostrarAvisos(avisos);
+                    } else if (informarSiNoHay) {
+                        JOptionPane.showMessageDialog(
+                                PrincipalFrame.this,
+                                "No tenés avisos pendientes.",
+                                "Avisos",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException e) {
+                    if (informarSiNoHay) {
+                        JOptionPane.showMessageDialog(
+                                PrincipalFrame.this,
+                                e.getCause().getMessage(),
+                                "No se pudieron cargar los avisos",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+                    }
+                }
+            }
+        }.execute();
+    }
+
+    private void mostrarAvisos(JsonNode avisos) {
+        mostrandoAvisos = true;
+        StringBuilder mensaje = new StringBuilder();
+        avisos.forEach(aviso -> mensaje
+                .append("Sala: ").append(aviso.path("salaNombre").asText()).append('\n')
+                .append("Estado: ").append(nombreEstadoSala(aviso.path("estado").asText())).append('\n')
+                .append("Descripción: ").append(aviso.path("descripcion").asText()).append('\n')
+                .append("Informado por: ").append(aviso.path("creadoPorUsuario").asText()).append('\n')
+                .append("Fecha: ").append(aviso.path("fechaHora").asText().replace('T', ' '))
+                .append("\n\n"));
+
+        JTextArea detalle = new JTextArea(mensaje.toString(), 14, 48);
+        detalle.setEditable(false);
+        detalle.setLineWrap(true);
+        detalle.setWrapStyleWord(true);
+        JOptionPane.showMessageDialog(
+                this,
+                new JScrollPane(detalle),
+                avisos.size() == 1 ? "Nuevo aviso de sala" : "Nuevos avisos de sala",
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                for (JsonNode aviso : avisos) {
+                    apiClient.put("/avisos-sala/" + aviso.path("id").asLong() + "/leer", null);
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                mostrandoAvisos = false;
+                try {
+                    get();
+                    avisosPendientes.setText("Avisos");
+                    avisosPendientes.setForeground(null);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (ExecutionException ignored) {
+                    avisosPendientes.setText("Avisos pendientes");
+                }
+            }
+        }.execute();
+    }
+
+    private void detenerMonitoreoAvisos() {
+        if (temporizadorAvisos != null) {
+            temporizadorAvisos.stop();
+        }
     }
 
     private void cambiarEstadoButaca(String operacion) {
@@ -911,6 +1333,24 @@ public class PrincipalFrame extends JFrame {
         };
     }
 
+    private static String nombreEstadoSala(String estado) {
+        return switch (estado) {
+            case "LIMPIEZA" -> "Limpieza";
+            case "CERRADA" -> "Cerrada";
+            case "PROBLEMA_PARTICULAR", "FUERA_DE_SERVICIO" -> "Problema particular";
+            default -> "Disponible";
+        };
+    }
+
+    private static String codigoEstadoSala(String estado) {
+        return switch (estado) {
+            case "Limpieza" -> "LIMPIEZA";
+            case "Cerrada" -> "CERRADA";
+            case "Problema particular" -> "PROBLEMA_PARTICULAR";
+            default -> "DISPONIBLE";
+        };
+    }
+
     private static String nombreFormato(String formato) {
         return switch (formato) {
             case "DOS_D" -> "2D";
@@ -921,6 +1361,65 @@ public class PrincipalFrame extends JFrame {
 
     private static String nombreIdioma(String idioma) {
         return "ESPANIOL".equals(idioma) ? "ESPAÑOL" : idioma;
+    }
+
+    private void leerQrAcceso() {
+        if (!esEmpleado()) {
+            buscarTicket();
+            return;
+        }
+
+        String codigo = codigoQr.getText().trim();
+        if (codigo.isBlank()) {
+            mostrarAviso("Ingresá el código del Ticket.");
+            return;
+        }
+        String codigoCodificado = URLEncoder.encode(codigo, StandardCharsets.UTF_8).replace("+", "%20");
+        ejecutar("Validando acceso...", () -> {
+            JsonNode ticket = apiClient.get("/tickets/qr/" + codigoCodificado);
+            return apiClient.put(
+                    "/tickets/" + ticket.path("id").asInt() + "/validar-entradas",
+                    null
+            );
+        }, ticket -> {
+            actualizarDetalleTicket(ticket);
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Las entradas del Ticket #" + ticket.path("id").asInt()
+                            + " fueron validadas. Los consumos no se modificaron.",
+                    "Acceso validado",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            codigoQr.requestFocusInWindow();
+            codigoQr.selectAll();
+        });
+    }
+
+    private void entregarConsumosPorQr() {
+        String codigo = codigoQrConsumo.getText().trim();
+        if (codigo.isBlank()) {
+            mostrarAviso("Ingresá el código QR del Ticket.");
+            return;
+        }
+        String codigoCodificado = URLEncoder.encode(codigo, StandardCharsets.UTF_8).replace("+", "%20");
+        ejecutar("Entregando consumos...", () -> {
+            JsonNode ticket = apiClient.get("/tickets/qr/" + codigoCodificado);
+            return apiClient.put(
+                    "/tickets/" + ticket.path("id").asInt() + "/entregar-consumos",
+                    null
+            );
+        }, ticket -> {
+            cargarConsumos();
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Los consumos del Ticket #" + ticket.path("id").asInt()
+                            + " fueron marcados como entregados.",
+                    "Consumos entregados",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            codigoQrConsumo.requestFocusInWindow();
+            codigoQrConsumo.selectAll();
+        });
     }
 
     private void buscarTicket() {
@@ -1009,6 +1508,63 @@ public class PrincipalFrame extends JFrame {
                 respuesta -> cargarEmpleados());
     }
 
+    private void mostrarRestablecimientoContrasenia() {
+        Integer empleadoId = idSeleccionado(empleadosTabla);
+        if (empleadoId == null) {
+            return;
+        }
+
+        int filaVista = empleadosTabla.getSelectedRow();
+        int fila = empleadosTabla.convertRowIndexToModel(filaVista);
+        String usuario = String.valueOf(empleadosModel.getValueAt(fila, 3));
+        JPasswordField nuevaContrasenia = new JPasswordField();
+        JPasswordField repetirContrasenia = new JPasswordField();
+        JPanel formulario = new JPanel(new GridLayout(0, 2, 8, 8));
+        formulario.add(new JLabel("Empleado"));
+        formulario.add(new JLabel(usuario));
+        formulario.add(new JLabel("Nueva contraseña"));
+        formulario.add(nuevaContrasenia);
+        formulario.add(new JLabel("Repetir contraseña"));
+        formulario.add(repetirContrasenia);
+
+        int resultado = JOptionPane.showConfirmDialog(
+                this,
+                formulario,
+                "Restablecer contraseña",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+        );
+        if (resultado != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        String clave = new String(nuevaContrasenia.getPassword());
+        String confirmacion = new String(repetirContrasenia.getPassword());
+        if (!clave.equals(confirmacion)) {
+            mostrarAviso("Las contraseñas no coinciden.");
+            return;
+        }
+        if (clave.length() < 4) {
+            mostrarAviso("La contraseña debe tener al menos 4 caracteres.");
+            return;
+        }
+
+        Map<String, Object> cuerpo = Map.of(
+                "nuevaContrasenia", clave,
+                "contraseniaConfirmacion", confirmacion
+        );
+        ejecutar(
+                "Restableciendo contraseña...",
+                () -> apiClient.put("/empleados/" + empleadoId + "/contrasenia", cuerpo),
+                respuesta -> JOptionPane.showMessageDialog(
+                        this,
+                        "La contraseña de " + usuario + " fue actualizada.",
+                        "Contraseña restablecida",
+                        JOptionPane.INFORMATION_MESSAGE
+                )
+        );
+    }
+
     private void mostrarFormularioHorario() {
         int filaVista = funcionesTabla.getSelectedRow();
         if (filaVista < 0) {
@@ -1073,8 +1629,8 @@ public class PrincipalFrame extends JFrame {
             mostrarAviso("Las contraseñas no coinciden.");
             return;
         }
-        if (clave.length() < 6) {
-            mostrarAviso("La contraseña debe tener al menos 6 caracteres.");
+        if (clave.length() < 4) {
+            mostrarAviso("La contraseña debe tener al menos 4 caracteres.");
             return;
         }
 
@@ -1125,6 +1681,7 @@ public class PrincipalFrame extends JFrame {
             apiClient.delete("/sesion");
             return null;
         }, respuesta -> {
+            detenerMonitoreoAvisos();
             dispose();
             new LoginFrame(apiClient).setVisible(true);
         });
@@ -1136,6 +1693,7 @@ public class PrincipalFrame extends JFrame {
         if (confirmar != JOptionPane.YES_OPTION) {
             return;
         }
+        detenerMonitoreoAvisos();
         dispose();
         System.exit(0);
     }
@@ -1234,7 +1792,10 @@ public class PrincipalFrame extends JFrame {
 
     private static void ordenarColumnas(JTable tabla) {
         DefaultTableModel model = (DefaultTableModel) tabla.getModel();
-        if (model.findColumn("Película") >= 0 && model.findColumn("Fecha") >= 0) {
+        if (model.findColumn("Fecha y hora") >= 0 && model.findColumn("Acción") >= 0) {
+            moverColumnas(tabla, "ID", "Fecha y hora", "Usuario", "Perfil", "Acción",
+                    "Entidad", "Entidad ID", "Resultado", "Detalle");
+        } else if (model.findColumn("Película") >= 0 && model.findColumn("Fecha") >= 0) {
             moverColumnas(tabla, "ID", "Fecha", "Horario", "Película", "Sala", "Formato", "Idioma", "Precio");
         } else if (model.findColumn("Producto") >= 0) {
             moverColumnas(tabla, "ID", "Producto", "Cantidad", "Estado", "Subtotal", "Ticket");
@@ -1261,25 +1822,50 @@ public class PrincipalFrame extends JFrame {
         for (int columna = 0; columna < tabla.getColumnModel().getColumnCount(); columna++) {
             TableColumn columnaTabla = tabla.getColumnModel().getColumn(columna);
             String nombre = String.valueOf(columnaTabla.getHeaderValue());
-            int ancho = switch (nombre) {
-                case "ID" -> 48;
-                case "Fecha" -> 95;
-                case "Horario", "Capacidad", "Cantidad", "Activo" -> 80;
-                case "Película", "Nombre", "Producto" -> 190;
-                case "Sala", "Estado" -> 130;
-                case "Formato", "Butaca", "Ticket" -> 75;
-                case "Idioma" -> 110;
-                case "Precio", "Subtotal" -> 95;
-                case "Apellido", "Usuario" -> 140;
-                default -> 110;
-            };
-            columnaTabla.setPreferredWidth(ancho);
-            columnaTabla.setMinWidth(Math.min(ancho, 55));
+            switch (nombre) {
+                case "ID" -> configurarColumna(columnaTabla, 42, 50, 65);
+                case "Fecha" -> configurarColumna(columnaTabla, 85, 100, 115);
+                case "Fecha y hora" -> configurarColumna(columnaTabla, 130, 160, 190);
+                case "Horario" -> configurarColumna(columnaTabla, 70, 82, 95);
+                case "Capacidad", "Cantidad", "Activo" ->
+                        configurarColumna(columnaTabla, 68, 82, 100);
+                case "Formato", "Butaca", "Ticket" ->
+                        configurarColumna(columnaTabla, 65, 78, 95);
+                case "Idioma" -> configurarColumna(columnaTabla, 90, 110, 130);
+                case "Precio", "Subtotal" -> configurarColumna(columnaTabla, 82, 98, 115);
+                case "Estado" -> configurarColumna(columnaTabla, 100, 130, 175);
+                case "Perfil", "Resultado" -> configurarColumna(columnaTabla, 80, 100, 125);
+                case "Entidad ID" -> configurarColumna(columnaTabla, 75, 88, 105);
+                case "Película", "Nombre", "Producto" ->
+                        configurarColumnaFlexible(columnaTabla, 120, 190);
+                case "Sala", "Apellido", "Usuario", "Entidad" ->
+                        configurarColumnaFlexible(columnaTabla, 95, 140);
+                case "Acción" -> configurarColumnaFlexible(columnaTabla, 140, 190);
+                case "Detalle" -> configurarColumnaFlexible(columnaTabla, 180, 280);
+                default -> configurarColumnaFlexible(columnaTabla, 80, 120);
+            }
         }
+    }
+
+    private static void configurarColumna(TableColumn columna, int minimo, int preferido, int maximo) {
+        columna.setMinWidth(minimo);
+        columna.setPreferredWidth(preferido);
+        columna.setMaxWidth(maximo);
+    }
+
+    private static void configurarColumnaFlexible(TableColumn columna, int minimo, int preferido) {
+        columna.setMinWidth(minimo);
+        columna.setPreferredWidth(preferido);
+        columna.setMaxWidth(Integer.MAX_VALUE);
     }
 
     private static void configurarOrdenInicial(TableRowSorter<DefaultTableModel> sorter,
                                                 DefaultTableModel model) {
+        int fechaHora = model.findColumn("Fecha y hora");
+        if (fechaHora >= 0) {
+            sorter.setSortKeys(List.of(new RowSorter.SortKey(fechaHora, SortOrder.DESCENDING)));
+            return;
+        }
         int fecha = model.findColumn("Fecha");
         int horario = model.findColumn("Horario");
         if (fecha >= 0 && horario >= 0) {
@@ -1366,6 +1952,13 @@ public class PrincipalFrame extends JFrame {
     }
 
     private record SalaOpcion(int id, String nombre) {
+        @Override
+        public String toString() {
+            return nombre;
+        }
+    }
+
+    private record EmpleadoOpcion(int id, String nombre) {
         @Override
         public String toString() {
             return nombre;

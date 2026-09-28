@@ -23,6 +23,10 @@ public class EmpleadoService {
         return empleadoRepository.findAll();
     }
 
+    public List<Empleado> listarActivos() {
+        return empleadoRepository.findByActivoTrueOrderByNombreAscApellidoAsc();
+    }
+
     public Empleado buscarPorId(int id) {
         return empleadoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe un empleado con ese id."));
@@ -87,6 +91,18 @@ public class EmpleadoService {
         return empleadoRepository.save(empleado);
     }
 
+    public Empleado restablecerContrasenia(int id, String nuevaContrasenia,
+                                           String contraseniaConfirmacion) {
+        validarContrasenia(nuevaContrasenia);
+        if (!nuevaContrasenia.equals(contraseniaConfirmacion)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Las contrasenias no coinciden.");
+        }
+
+        Empleado empleado = buscarPorId(id);
+        empleado.cambiarContrasenia(passwordEncoder.encode(nuevaContrasenia));
+        return empleadoRepository.save(empleado);
+    }
+
     private void validarDatos(String nombre, String apellido, String usuario) {
         if (nombre == null || nombre.isBlank() || apellido == null || apellido.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre y el apellido son obligatorios.");
@@ -97,8 +113,8 @@ public class EmpleadoService {
     }
 
     private void validarContrasenia(String contrasenia) {
-        if (contrasenia == null || contrasenia.length() < 6) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contrasenia debe tener al menos 6 caracteres.");
+        if (contrasenia == null || contrasenia.length() < 4) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contrasenia debe tener al menos 4 caracteres.");
         }
     }
 }
