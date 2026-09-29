@@ -74,6 +74,10 @@ public class AvisoSalaService {
                 .findByDestinatarioEmpleadoIdAndLeidoFalseOrderByFechaHoraAsc(empleadoId);
     }
 
+    public List<AvisoSala> listarHistorial(int empleadoId) {
+        return avisoSalaRepository.findByDestinatarioEmpleadoIdOrderByFechaHoraDesc(empleadoId);
+    }
+
     @Transactional
     public AvisoSala marcarLeido(long avisoId, int empleadoId) {
         AvisoSala aviso = avisoSalaRepository.findById(avisoId)

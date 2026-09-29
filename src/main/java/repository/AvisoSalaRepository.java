@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface AvisoSalaRepository extends JpaRepository<AvisoSala, Long> {
     List<AvisoSala> findByDestinatarioEmpleadoIdAndLeidoFalseOrderByFechaHoraAsc(int empleadoId);
+
+    List<AvisoSala> findByDestinatarioEmpleadoIdOrderByFechaHoraDesc(int empleadoId);
 }

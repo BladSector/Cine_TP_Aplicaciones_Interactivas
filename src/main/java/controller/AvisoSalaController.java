@@ -27,6 +27,14 @@ public class AvisoSalaController {
         this.sesionService = sesionService;
     }
 
+    @GetMapping
+    public List<AvisoSalaResponse> listarHistorial(HttpSession sesion) {
+        int empleadoId = requerirEmpleado(sesion);
+        return avisoSalaService.listarHistorial(empleadoId).stream()
+                .map(AvisoSalaResponse::desde)
+                .toList();
+    }
+
     @GetMapping("/pendientes")
     public List<AvisoSalaResponse> listarPendientes(HttpSession sesion) {
         int empleadoId = requerirEmpleado(sesion);

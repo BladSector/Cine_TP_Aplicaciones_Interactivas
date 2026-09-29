@@ -144,7 +144,7 @@ public class PrincipalFrame extends JFrame {
         herramientas.add(sesion);
         herramientas.addSeparator();
         if (esEmpleado()) {
-            avisosPendientes.addActionListener(event -> consultarAvisos(true));
+            avisosPendientes.addActionListener(event -> mostrarHistorialAvisos());
             herramientas.add(avisosPendientes);
         }
         herramientas.add(recargar);
@@ -1032,6 +1032,76 @@ public class PrincipalFrame extends JFrame {
         temporizadorAvisos = new Timer(15000, event -> consultarAvisos(false));
         temporizadorAvisos.setInitialDelay(1200);
         temporizadorAvisos.start();
+    }
+
+    private void mostrarHistorialAvisos() {
+        if (consultandoAvisos || mostrandoAvisos || !esEmpleado()) {
+            return;
+        }
+        consultandoAvisos = true;
+        estado.setText("Cargando historial de avisos...");
+        new SwingWorker<JsonNode, Void>() {
+            @Override
+            protected JsonNode doInBackground() throws Exception {
+                return apiClient.get("/avisos-sala");
+            }
+
+            @Override
+            protected void done() {
+                consultandoAvisos = false;
+                try {
+                    JsonNode avisos = get();
+                    mostrarDialogoHistorialAvisos(avisos);
+                    estado.setText("Historial de avisos actualizado.");
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    estado.setText("Se interrumpió la carga de avisos.");
+                } catch (ExecutionException e) {
+                    estado.setText("No se pudo cargar el historial de avisos.");
+                    JOptionPane.showMessageDialog(
+                            PrincipalFrame.this,
+                            e.getCause().getMessage(),
+                            "No se pudieron cargar los avisos",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                }
+            }
+        }.execute();
+    }
+
+    private void mostrarDialogoHistorialAvisos(JsonNode avisos) {
+        if (avisos.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Todavía no tenés avisos.",
+                    "Historial de avisos",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+            return;
+        }
+
+        DefaultTableModel historialModel = modelo(
+                "Estado", "Fecha y hora", "Sala", "Situación", "Descripción", "Informado por"
+        );
+        avisos.forEach(aviso -> historialModel.addRow(new Object[]{
+                aviso.path("leido").asBoolean() ? "Leído" : "Nuevo",
+                aviso.path("fechaHora").asText().replace('T', ' '),
+                aviso.path("salaNombre").asText(),
+                nombreEstadoSala(aviso.path("estado").asText()),
+                aviso.path("descripcion").asText(),
+                aviso.path("creadoPorUsuario").asText()
+        }));
+
+        JTable historial = tabla(historialModel);
+        historial.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
+        JScrollPane desplazamiento = new JScrollPane(historial);
+        desplazamiento.setPreferredSize(new Dimension(900, 360));
+        JOptionPane.showMessageDialog(
+                this,
+                desplazamiento,
+                "Historial de avisos",
+                JOptionPane.PLAIN_MESSAGE
+        );
     }
 
     private void consultarAvisos(boolean informarSiNoHay) {
