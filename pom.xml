@@ -76,7 +76,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.6.4</version>
                 <configuration>
-                    <mainClass>desktop.CineDesktopApplication</mainClass>
+                    <mainClass>desktop.inicio.CineDesktopApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>

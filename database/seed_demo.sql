@@ -76,10 +76,12 @@ CREATE TABLE metodo_pago (
 CREATE TABLE ticket (
     id INT AUTO_INCREMENT PRIMARY KEY,
     espectador_id INT NOT NULL,
+    metodo_pago_id INT NULL,
     metodo_pago_resumen VARCHAR(120),
     codigo_qr VARCHAR(120) NOT NULL,
     CONSTRAINT uq_ticket_codigo_qr UNIQUE (codigo_qr),
-    CONSTRAINT fk_ticket_espectador FOREIGN KEY (espectador_id) REFERENCES espectador(id)
+    CONSTRAINT fk_ticket_espectador FOREIGN KEY (espectador_id) REFERENCES espectador(id),
+    CONSTRAINT fk_ticket_metodo_pago FOREIGN KEY (metodo_pago_id) REFERENCES metodo_pago(id)
 );
 
 CREATE TABLE entrada (

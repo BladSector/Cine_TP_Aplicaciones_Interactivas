@@ -1,0 +1,27 @@
+package repository.ventas;
+
+
+import modelo.enums.EstadoEntrada;
+import modelo.entidades.Entrada;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+
+public interface EntradaRepository extends JpaRepository<Entrada, Integer> {
+    List<Entrada> findByEspectadorId(int espectadorId);
+
+    long countByEspectadorIdAndEstadoIn(int espectadorId, List<EstadoEntrada> estados);
+
+    @Query("""
+            SELECT COUNT(e) > 0
+            FROM Entrada e
+            WHERE e.funcion.id = :funcionId
+            AND e.butaca.id = :butacaId
+            AND e.estado NOT IN :estadosLibres
+            """)
+    boolean existeEntradaActivaParaButaca(@Param("funcionId") int funcionId,
+                                          @Param("butacaId") int butacaId,
+                                          @Param("estadosLibres") List<EstadoEntrada> estadosLibres);
+}
