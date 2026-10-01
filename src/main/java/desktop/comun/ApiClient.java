@@ -20,6 +20,7 @@ public class ApiClient {
     public ApiClient(String baseUrl) {
         String urlNormalizada = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         this.baseUri = URI.create(urlNormalizada);
+        // Conserva la cookie de sesión para que todas las peticiones pertenezcan al usuario autenticado.
         CookieManager cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
         this.httpClient = HttpClient.newBuilder()
                 .cookieHandler(cookies)

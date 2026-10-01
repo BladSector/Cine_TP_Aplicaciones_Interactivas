@@ -66,6 +66,7 @@ public class CompraService {
         this.eventPublisher = eventPublisher;
     }
 
+    // La compra es atómica: si falla una entrada o un consumo, no queda un ticket incompleto.
     @Transactional
     public Ticket comprar(int espectadorId, int metodoDePagoId, int funcionId,
                           List<Integer> butacasIds, List<ItemCompra> items) {
@@ -81,6 +82,7 @@ public class CompraService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe una funcion con ese id."));
         MetodoDePago metodoDePago = metodoDePagoService.validarParaCompra(metodoDePagoId, espectador);
 
+        // El orden estable reduce bloqueos cruzados cuando dos compras compiten por las mismas butacas.
         List<Integer> idsOrdenados = butacasIds.stream().sorted().toList();
         List<Butaca> butacas = butacaRepository.buscarPorIdsConBloqueo(idsOrdenados);
         if (butacas.size() != idsOrdenados.size()) {
@@ -105,6 +107,7 @@ public class CompraService {
         }
 
         Ticket ticketGuardado = ticketRepository.save(ticket);
+        // El correo se procesa después del commit para no informar una compra que luego se revierta.
         eventPublisher.publishEvent(new TicketCompradoEvent(ticketGuardado.getId()));
         return ticketGuardado;
     }

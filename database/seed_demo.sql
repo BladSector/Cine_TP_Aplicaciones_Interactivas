@@ -1,4 +1,5 @@
 -- Script de instalación y datos de prueba para MySQL 8.
+-- Carga una cartelera de 14 días consecutivos desde la fecha de ejecución.
 -- ATENCIÓN: elimina por completo la base tp_cine_api antes de recrearla.
 DROP DATABASE IF EXISTS tp_cine_api;
 CREATE DATABASE tp_cine_api CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -178,14 +179,14 @@ INSERT INTO categoria (id, nombre) VALUES
 (8, 'Aventura');
 
 INSERT INTO pelicula (id, titulo, duracion, descripcion, portada_url, categoria_id) VALUES
-(1, 'Código Rojo', 112, 'Una agente retirada vuelve a la ciudad para frenar un ataque que amenaza con paralizar todo el sistema de transporte.', 'https://picsum.photos/seed/codigo-rojo/420/620', 1),
-(2, 'La Última Carta', 104, 'Dos hermanos encuentran cartas familiares que revelan una historia oculta y los obliga a reconstruir su vínculo.', 'https://picsum.photos/seed/la-ultima-carta/420/620', 2),
-(3, 'Casa del Lago Negro', 98, 'Un grupo de amigos pasa un fin de semana en una cabaña aislada donde cada ruido parece venir de otra época.', 'https://picsum.photos/seed/lago-negro/420/620', 3),
-(4, 'Cita a las Ocho', 95, 'Una comedia romántica sobre citas cruzadas, confusiones y una reserva imposible de cancelar.', 'https://picsum.photos/seed/cita-ocho/420/620', 4),
-(5, 'Órbita 9', 118, 'La tripulación de una estación espacial descubre una señal que podría cambiar el destino de la Tierra.', 'https://picsum.photos/seed/orbita-nueve/420/620', 5),
-(6, 'Luna y el Bosque Encantado', 101, 'Una joven inventora atraviesa un bosque mágico para devolverle la luz a su pueblo.', 'https://picsum.photos/seed/luna-bosque/420/620', 6),
-(7, 'El Testigo Silencioso', 108, 'Un fotógrafo presencia un crimen desde su ventana y comienza una investigación que lo pone en peligro.', 'https://picsum.photos/seed/testigo-silencioso/420/620', 7),
-(8, 'Rumbo al Norte', 92, 'Tres amigos viajan por la ruta patagónica buscando un mapa perdido y una aventura que los cambie para siempre.', 'https://picsum.photos/seed/rumbo-norte/420/620', 8);
+(1, 'Código Rojo', 112, 'Una agente retirada vuelve a la ciudad para frenar un ataque que amenaza con paralizar todo el sistema de transporte.', NULL, 1),
+(2, 'La Última Carta', 104, 'Dos hermanos encuentran cartas familiares que revelan una historia oculta y los obliga a reconstruir su vínculo.', NULL, 2),
+(3, 'Casa del Lago Negro', 98, 'Un grupo de amigos pasa un fin de semana en una cabaña aislada donde cada ruido parece venir de otra época.', NULL, 3),
+(4, 'Cita a las Ocho', 95, 'Una comedia romántica sobre citas cruzadas, confusiones y una reserva imposible de cancelar.', NULL, 4),
+(5, 'Órbita 9', 118, 'La tripulación de una estación espacial descubre una señal que podría cambiar el destino de la Tierra.', NULL, 5),
+(6, 'Luna y el Bosque Encantado', 101, 'Una joven inventora atraviesa un bosque mágico para devolverle la luz a su pueblo.', NULL, 6),
+(7, 'El Testigo Silencioso', 108, 'Un fotógrafo presencia un crimen desde su ventana y comienza una investigación que lo pone en peligro.', NULL, 7),
+(8, 'Rumbo al Norte', 92, 'Tres amigos viajan por la ruta patagónica buscando un mapa perdido y una aventura que los cambie para siempre.', NULL, 8);
 
 INSERT INTO sala (id, nombre, capacidad, estado) VALUES
 (1, 'Sala Premium', 60, 'DISPONIBLE'),
@@ -232,7 +233,9 @@ JOIN seed_numeros n
 WHERE f.orden <= 5 AND n.numero <= 8;
 
 CREATE TEMPORARY TABLE seed_dias (n INT);
-INSERT INTO seed_dias (n) VALUES (0), (1), (2), (3), (4), (5), (6);
+INSERT INTO seed_dias (n) VALUES
+(0), (1), (2), (3), (4), (5), (6),
+(7), (8), (9), (10), (11), (12), (13);
 
 CREATE TEMPORARY TABLE seed_funciones (
     pelicula_id INT,
@@ -292,6 +295,65 @@ INSERT INTO producto_confiteria (id, nombre, precio, tipo, tamano) VALUES
 (16, 'Combo pareja', 9800, 'COMBO', 'UNICO'),
 (17, 'Combo familiar', 14500, 'COMBO', 'UNICO'),
 (18, 'Combo infantil', 5600, 'COMBO', 'UNICO');
+
+-- Cuenta y medio de pago técnicos para probar tickets desde las interfaces.
+INSERT INTO espectador (
+    id, nombre, apellido, email, contrasenia, email_verificado,
+    token_verificacion_email, token_recuperacion_contrasenia
+) VALUES (
+    1, 'Cliente', 'Demostración', 'cliente.demo@cine.test',
+    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    TRUE, NULL, NULL
+);
+
+INSERT INTO metodo_pago (
+    id, numero, fecha_vencimiento, nombre, apellido, cvv, activa, espectador_id
+) VALUES (
+    1, '4500123412345678', '2028-12', 'Cliente', 'Demostración', '123', TRUE, 1
+);
+
+INSERT INTO ticket (
+    id, espectador_id, metodo_pago_id, metodo_pago_resumen, codigo_qr
+) VALUES
+(1, 1, 1, 'Tarjeta terminada en 5678', 'TCK-DEMO-PENDIENTE'),
+(2, 1, 1, 'Tarjeta terminada en 5678', 'TCK-DEMO-CONSUMOS'),
+(3, 1, 1, 'Tarjeta terminada en 5678', 'TCK-DEMO-PROCESADO'),
+(4, 1, 1, 'Tarjeta terminada en 5678', 'TCK-DEMO-REEMBOLSADO');
+
+-- Ticket 1: dos entradas pagadas y consumos pendientes.
+INSERT INTO entrada (precio, espectador_id, ticket_id, funcion_id, butaca_id, horario, estado)
+SELECT f.precio_entrada, 1, 1, f.id, b.id, TIMESTAMP(f.fecha, f.horario), 'PAGADA'
+FROM funcion f
+JOIN butaca b ON b.sala_id = f.sala_id
+WHERE f.id = 17 AND b.fila = 'A' AND b.numero IN (1, 2);
+
+-- Ticket 2: entrada validada y consumo pendiente de entrega.
+INSERT INTO entrada (precio, espectador_id, ticket_id, funcion_id, butaca_id, horario, estado)
+SELECT f.precio_entrada, 1, 2, f.id, b.id, TIMESTAMP(f.fecha, f.horario), 'ESCANEADA'
+FROM funcion f
+JOIN butaca b ON b.sala_id = f.sala_id
+WHERE f.id = 18 AND b.fila = 'A' AND b.numero = 3;
+
+-- Ticket 3: entradas y consumos ya procesados.
+INSERT INTO entrada (precio, espectador_id, ticket_id, funcion_id, butaca_id, horario, estado)
+SELECT f.precio_entrada, 1, 3, f.id, b.id, TIMESTAMP(f.fecha, f.horario), 'ESCANEADA'
+FROM funcion f
+JOIN butaca b ON b.sala_id = f.sala_id
+WHERE f.id = 21 AND b.fila = 'A' AND b.numero IN (1, 2);
+
+-- Ticket 4: compra reembolsada.
+INSERT INTO entrada (precio, espectador_id, ticket_id, funcion_id, butaca_id, horario, estado)
+SELECT f.precio_entrada, 1, 4, f.id, b.id, TIMESTAMP(f.fecha, f.horario), 'REEMBOLSADA'
+FROM funcion f
+JOIN butaca b ON b.sala_id = f.sala_id
+WHERE f.id = 22 AND b.fila = 'A' AND b.numero = 3;
+
+INSERT INTO item_consumo (producto_id, ticket_id, cantidad, estado) VALUES
+(15, 1, 1, 'PENDIENTE'),
+(8, 1, 2, 'PENDIENTE'),
+(3, 2, 1, 'PENDIENTE'),
+(16, 3, 1, 'ENTREGADO'),
+(11, 4, 2, 'CANCELADO');
 
 DROP TEMPORARY TABLE IF EXISTS seed_funciones;
 DROP TEMPORARY TABLE IF EXISTS seed_dias;

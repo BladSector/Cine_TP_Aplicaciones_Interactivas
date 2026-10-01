@@ -24,6 +24,7 @@ public class TicketEmailListener {
         this.emailService = emailService;
     }
 
+    // AFTER_COMMIT impide enviar el PDF si la transacción de compra termina en rollback.
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void enviarTicket(TicketCompradoEvent event) {

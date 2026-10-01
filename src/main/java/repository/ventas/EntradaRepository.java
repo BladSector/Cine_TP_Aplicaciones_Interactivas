@@ -14,6 +14,8 @@ public interface EntradaRepository extends JpaRepository<Entrada, Integer> {
 
     long countByEspectadorIdAndEstadoIn(int espectadorId, List<EstadoEntrada> estados);
 
+    long countByFuncionIdAndEstadoNotIn(int funcionId, List<EstadoEntrada> estados);
+
     @Query("""
             SELECT COUNT(e) > 0
             FROM Entrada e

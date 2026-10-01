@@ -20,7 +20,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
-import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
@@ -127,8 +126,6 @@ public class AdministracionPanel extends JPanel {
         Runnable eliminar = () -> eliminarSeleccionado(categoriasTabla, "/categorias/", "la categoría");
         return panelCrud("Categorías", categoriasTabla, editar, eliminar,
                 boton("Nueva", event -> formularioCategoria(false)),
-                boton("Editar", event -> editar.run()),
-                boton("Eliminar", event -> eliminar.run()),
                 boton("Recargar", event -> cargarTodo()));
     }
 
@@ -137,8 +134,6 @@ public class AdministracionPanel extends JPanel {
         Runnable eliminar = () -> eliminarSeleccionado(peliculasTabla, "/peliculas/", "la película");
         return panelCrud("Películas", peliculasTabla, editar, eliminar,
                 boton("Nueva", event -> formularioPelicula(false)),
-                boton("Editar", event -> editar.run()),
-                boton("Eliminar", event -> eliminar.run()),
                 boton("Recargar", event -> cargarTodo()));
     }
 
@@ -147,9 +142,6 @@ public class AdministracionPanel extends JPanel {
         Runnable eliminar = () -> eliminarSeleccionado(salasTabla, "/salas/", "la sala");
         return panelCrud("Salas", salasTabla, editar, eliminar,
                 boton("Nueva sala", event -> formularioSalaNueva()),
-                boton("Editar sala", event -> editar.run()),
-                boton("Cambiar estado", event -> formularioEstadoSala()),
-                boton("Eliminar", event -> eliminar.run()),
                 boton("Recargar", event -> cargarTodo()));
     }
 
@@ -158,8 +150,6 @@ public class AdministracionPanel extends JPanel {
         Runnable eliminar = () -> eliminarSeleccionado(funcionesTabla, "/funciones/", "la función");
         return panelCrud("Funciones", funcionesTabla, editar, eliminar,
                 boton("Nueva función", event -> formularioFuncion(false)),
-                boton("Editar", event -> editar.run()),
-                boton("Eliminar", event -> eliminar.run()),
                 boton("Recargar", event -> cargarTodo()));
     }
 
@@ -168,8 +158,6 @@ public class AdministracionPanel extends JPanel {
         Runnable eliminar = () -> eliminarSeleccionado(productosTabla, "/productos-confiteria/", "el producto");
         return panelCrud("Productos de confitería", productosTabla, editar, eliminar,
                 boton("Nuevo", event -> formularioProducto(false)),
-                boton("Editar", event -> editar.run()),
-                boton("Eliminar", event -> eliminar.run()),
                 boton("Recargar", event -> cargarTodo()));
     }
 
@@ -182,20 +170,17 @@ public class AdministracionPanel extends JPanel {
         etiqueta.setFont(etiqueta.getFont().deriveFont(Font.BOLD, 15f));
         JTextField filtro = new JTextField(24);
         filtro.putClientProperty("JTextField.placeholderText", "Buscar...");
+        JPanel buscador = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        buscador.add(new JLabel("Buscar:"));
+        buscador.add(filtro);
         cabecera.add(etiqueta, BorderLayout.WEST);
-        cabecera.add(filtro, BorderLayout.EAST);
+        cabecera.add(buscador, BorderLayout.EAST);
         conectarFiltro(tabla, filtro);
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
         for (JButton boton : botones) {
             acciones.add(boton);
         }
-        JEditorPane detalle = crearAreaDetalle();
-        tabla.getSelectionModel().addListSelectionListener(event -> {
-            if (!event.getValueIsAdjusting()) {
-                actualizarDetalle(tabla, detalle);
-            }
-        });
         tabla.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent event) {
@@ -209,26 +194,27 @@ public class AdministracionPanel extends JPanel {
             }
         });
 
+        JPanel encabezado = new JPanel(new BorderLayout(0, 4));
+        encabezado.add(cabecera, BorderLayout.NORTH);
+        encabezado.add(etiquetaAyuda(
+                "Seleccioná una fila para operar. Hacé doble clic para ver la información y las acciones disponibles."),
+                BorderLayout.SOUTH);
+
         JPanel tablaPanel = new JPanel(new BorderLayout(0, 8));
-        tablaPanel.add(cabecera, BorderLayout.NORTH);
+        tablaPanel.add(encabezado, BorderLayout.NORTH);
         tablaPanel.add(new JScrollPane(tabla), BorderLayout.CENTER);
 
-        JPanel detallePanel = new JPanel(new BorderLayout(0, 8));
-        detallePanel.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
-        detallePanel.setPreferredSize(new java.awt.Dimension(225, 0));
-        JLabel tituloDetalle = new JLabel("Información");
-        tituloDetalle.setFont(tituloDetalle.getFont().deriveFont(Font.BOLD));
-        detallePanel.add(tituloDetalle, BorderLayout.NORTH);
-        detallePanel.add(new JScrollPane(detalle), BorderLayout.CENTER);
-
-        JSplitPane division = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tablaPanel, detallePanel);
-        division.setResizeWeight(0.82);
-        division.setDividerLocation(0.82);
-        division.setBorder(BorderFactory.createEmptyBorder());
-
-        panel.add(division, BorderLayout.CENTER);
+        panel.add(tablaPanel, BorderLayout.CENTER);
         panel.add(acciones, BorderLayout.SOUTH);
         return panel;
+    }
+
+    private static JLabel etiquetaAyuda(String texto) {
+        JLabel ayuda = new JLabel(texto);
+        ayuda.setForeground(new Color(92, 98, 108));
+        ayuda.setFont(ayuda.getFont().deriveFont(Font.ITALIC, 12f));
+        ayuda.setBorder(BorderFactory.createEmptyBorder(10, 8, 4, 8));
+        return ayuda;
     }
 
     private JEditorPane crearAreaDetalle() {
@@ -237,11 +223,6 @@ public class AdministracionPanel extends JPanel {
         area.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         area.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         return area;
-    }
-
-    private void actualizarDetalle(JTable tabla, JEditorPane detalle) {
-        detalle.setText(descripcionSeleccion(tabla));
-        detalle.setCaretPosition(0);
     }
 
     private String descripcionSeleccion(JTable tabla) {
@@ -365,7 +346,10 @@ public class AdministracionPanel extends JPanel {
         JScrollPane scroll = new JScrollPane(detalle);
         scroll.setPreferredSize(new java.awt.Dimension(480, 320));
 
-        Object[] opciones = {"Cerrar", "Editar", "Eliminar"};
+        boolean esSala = tabla == salasTabla;
+        Object[] opciones = esSala
+                ? new Object[]{"Cerrar", "Editar", "Cambiar estado", "Eliminar"}
+                : new Object[]{"Cerrar", "Editar", "Eliminar"};
         int opcion = JOptionPane.showOptionDialog(
                 this,
                 scroll,
@@ -378,7 +362,9 @@ public class AdministracionPanel extends JPanel {
         );
         if (opcion == 1) {
             editar.run();
-        } else if (opcion == 2) {
+        } else if (esSala && opcion == 2) {
+            formularioEstadoSala();
+        } else if ((!esSala && opcion == 2) || (esSala && opcion == 3)) {
             eliminar.run();
         }
     }
@@ -694,10 +680,41 @@ public class AdministracionPanel extends JPanel {
     }
 
     private void formularioFuncion(boolean edicion) {
-        int fila = edicion ? filaSeleccionada(funcionesTabla) : -1;
-        if (edicion && fila < 0) {
+        if (!edicion) {
+            mostrarFormularioFuncion(false, -1);
             return;
         }
+
+        int fila = filaSeleccionada(funcionesTabla);
+        if (fila < 0) {
+            return;
+        }
+        int funcionId = id(funcionesModel, fila);
+        ejecutar(
+                "Comprobando entradas vendidas...",
+                () -> apiClient.get("/funciones/" + funcionId + "/entradas-activas"),
+                respuesta -> {
+                    long cantidadEntradas = respuesta.path("cantidadEntradas").asLong();
+                    if (cantidadEntradas > 0) {
+                        int confirmacion = JOptionPane.showConfirmDialog(
+                                this,
+                                "Esta función tiene " + cantidadEntradas + " entrada(s) vendida(s).\n"
+                                        + "Modificar sus datos puede afectar a los espectadores.\n\n"
+                                        + "¿Querés continuar?",
+                                "Función con entradas vendidas",
+                                JOptionPane.YES_NO_OPTION,
+                                JOptionPane.WARNING_MESSAGE
+                        );
+                        if (confirmacion != JOptionPane.YES_OPTION) {
+                            return;
+                        }
+                    }
+                    mostrarFormularioFuncion(true, fila);
+                }
+        );
+    }
+
+    private void mostrarFormularioFuncion(boolean edicion, int fila) {
         if (peliculas.isEmpty() || salas.isEmpty()) {
             aviso("Primero deben existir Películas y Salas.");
             return;
@@ -1238,7 +1255,13 @@ public class AdministracionPanel extends JPanel {
             filas.addChangeListener(event -> cambiarDimensiones());
             columnas.addChangeListener(event -> cambiarDimensiones());
 
-            add(controles, BorderLayout.NORTH);
+            JPanel encabezado = new JPanel(new BorderLayout(0, 4));
+            encabezado.add(controles, BorderLayout.NORTH);
+            encabezado.add(etiquetaAyuda(
+                    "Ajustá las filas y butacas. Hacé clic en cada lugar para personalizar la sala: verde es butaca y gris es espacio vacío."),
+                    BorderLayout.SOUTH);
+
+            add(encabezado, BorderLayout.NORTH);
             add(mapa, BorderLayout.CENTER);
             dibujarMapa();
         }
