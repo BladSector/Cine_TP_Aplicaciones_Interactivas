@@ -236,7 +236,7 @@ h2 {
 }
 
 .hero__headline {
-  max-width: 14ch;
+  max-width: 30ch;
   margin: 0.2rem 0 1rem;
   font-family: var(--font-display);
   font-size: clamp(2rem, 5vw, 3.4rem);
@@ -996,4 +996,133 @@ textarea {
   .hero__content {
     padding-top: 3.5rem;
   }
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  min-height: min(72vh, 640px);
+  margin: 0 0 2rem;
+  color: #f7f1e6;
+  background:
+    linear-gradient(120deg, rgba(18, 20, 26, 0.92), rgba(18, 20, 26, 0.55)),
+    radial-gradient(circle at 70% 40%, rgba(214, 69, 43, 0.45), transparent 35%),
+    linear-gradient(160deg, #1c1f29, #0f1014 70%);
+
+  /* Agregamos Flexbox aquí directamente */
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centra el bloque de texto+galería en la pantalla */
+  gap: 2rem;
+  padding: 0 1rem;
+}
+
+.hero__content {
+  /* Eliminamos el width: 1180px y el margin: 0 auto para que comparta el espacio */
+  flex: 1;
+  max-width: 590px; /* Limita el texto a la mitad del ancho total */
+  padding: 5.5rem 0 4rem;
+  position: relative;
+  z-index: 2;
+}
+
+/* Agregamos la galería justo debajo para que compartan los 1180px */
+.hero__gallery {
+  flex: 1;
+  max-width: 590px; /* Limita la galería a la otra mitad */
+  z-index: 2;
+  min-width: 0; /* Evita que el carrusel desborde el flexbox */
+}
+
+
+/* --- ESTILOS DEL MENÚ DE USUARIO --- */
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.user-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* El botón circular con el icono */
+.user-icon-button {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--ink);
+  transition: 0.2s ease;
+}
+
+.user-icon-button:hover,
+.user-icon-button.is-active {
+  background: var(--bg-deep);
+  color: #fff;
+  border-color: var(--bg-deep);
+}
+
+/* La caja flotante del menú */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  min-width: 230px;
+  padding: 0.5rem 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdown-header {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 0.5rem;
+}
+
+/* Cada opción del menú */
+.dropdown-item {
+  padding: 0.6rem 1.25rem;
+  font-size: 0.95rem;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  display: block;
+  width: 100%;
+  transition: 0.15s ease;
+}
+
+.dropdown-item:hover {
+  background: var(--surface-soft);
+}
+
+.dropdown-divider {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 0.5rem 0;
+}
+
+/* Estilo especial para cerrar sesión */
+.text-danger {
+  color: var(--danger);
+}
+
+.text-danger:hover {
+  background: rgba(180, 35, 24, 0.08); /* Fondo rojo clarito al pasar el mouse */
 }

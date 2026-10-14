@@ -6,6 +6,18 @@ import { useCatalog } from '../context/CatalogContext'
 import { usePurchase } from '../context/PurchaseContext'
 import { formatFunction, todayValue } from '../utils/format'
 
+// 1. El import con la ruta correcta hacia la carpeta components/cartelera
+import AccordionGallery from '../components/cartelera/AccordionGallery'
+
+// 2. Las imágenes estáticas (fuera de la función principal)
+const items = [
+  { image: 'https://picsum.photos/id/1015/900/1200', label: 'Canyon', link: '#' },
+  { image: 'https://picsum.photos/id/1018/900/1200', label: 'Ridgeline', link: '#' },
+  { image: 'https://picsum.photos/id/1039/900/1200', label: 'Falls', link: '#' },
+  { image: 'https://picsum.photos/id/1043/900/1200', label: 'Harbour', link: '#' },
+  { image: 'https://picsum.photos/id/1044/900/1200', label: 'Skyline', link: '#' }
+];
+
 export default function CarteleraPage() {
   const navigate = useNavigate()
   const { peliculas, funciones, categorias, loading, error } = useCatalog()
@@ -48,15 +60,24 @@ export default function CarteleraPage() {
     <div className="cartelera-page">
       <section className="hero">
         <div className="hero__content">
-          <p className="hero__kicker">Film Zone</p>
           <h1 className="hero__brand">
-            Noche <span>Cine</span>
+             <span>Film Zone</span>
           </h1>
-          <p className="hero__headline">La gran pantalla te espera</p>
-          <p className="hero__support">
-            Cartelera. Elige tu película. Encuentra tu sesión. Vive el cine.
+          <p className="hero__headline">
+              Elegí tu película. Encontrá tu función. Viví el cine.
           </p>
         </div>
+
+        {/* contenedor de la galería*/}
+        <div className="hero__gallery">
+          <AccordionGallery
+            items={items}
+            defaultIndex={2}
+            expandRatio={0.52}
+            trigger="hover"
+          />
+        </div>
+
         <div className="hero__glow" aria-hidden="true" />
       </section>
 
@@ -128,7 +149,7 @@ export default function CarteleraPage() {
         </div>
 
         <p className="catalog-note">
-          Selecciona un horario para elegir tus butacas. Los precios pueden variar según la sesión y
+          Selecciona un horario para elegir tus butacas. Los precios pueden variar según la función y
           el formato.
         </p>
       </section>
