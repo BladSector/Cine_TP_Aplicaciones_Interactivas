@@ -82,6 +82,50 @@ export function paymentIsExpired(fechaVencimiento) {
   const [year, month] = String(fechaVencimiento).split('-').map(Number)
   if (!year || !month) return true
   const now = new Date()
-  const exp = new Date(year, month, 0, 23, 59, 59)
-  return exp < now
+  return year < now.getFullYear() || (year === now.getFullYear() && month <= now.getMonth() + 1)
+}
+
+export function nextMonthValue() {
+  const date = new Date()
+  date.setDate(1)
+  date.setMonth(date.getMonth() + 1)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  return `${year}-${month}`
+}
+
+export function functionHasStarted(funcion, now = new Date()) {
+  if (!funcion?.fecha || !funcion?.horario) return false
+  const time = String(funcion.horario).slice(0, 8).padEnd(8, ':00')
+  const start = new Date(`${funcion.fecha}T${time}`)
+  return !Number.isNaN(start.getTime()) && start <= now
+}
+
+export function seatLabel(seat) {
+  return seat?.butacaNombre || `${seat?.fila || ''}${seat?.numero || ''}`
+}
+
+export function normalizeText(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+export function formatStatus(value) {
+  const labels = {
+    DISPONIBLE: 'Disponible',
+    LIMPIEZA: 'Limpieza',
+    CERRADA: 'Cerrada',
+    PROBLEMA_PARTICULAR: 'Problema particular',
+    PAGADO: 'Pagado',
+    PROCESADO: 'Procesado',
+    REEMBOLSADO: 'Reembolsado',
+    PENDIENTE: 'Pendiente',
+    ENTREGADO: 'Entregado',
+    PAGADA: 'Pagada',
+    ESCANEADA: 'Escaneada',
+  }
+  return labels[value] || String(value || '').replaceAll('_', ' ')
 }

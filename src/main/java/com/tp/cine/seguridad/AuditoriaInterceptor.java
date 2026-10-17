@@ -13,6 +13,8 @@ import java.util.Set;
 
 @Component
 public class AuditoriaInterceptor implements HandlerInterceptor {
+    public static final String DETALLE_PERSONALIZADO_REQUEST =
+            AuditoriaInterceptor.class.getName() + ".detallePersonalizado";
     private static final Logger LOGGER = LoggerFactory.getLogger(AuditoriaInterceptor.class);
     private static final String ACTOR_REQUEST = AuditoriaInterceptor.class.getName() + ".actor";
     private static final Set<String> METODOS_ESCRITURA = Set.of("POST", "PUT", "PATCH", "DELETE");
@@ -52,7 +54,11 @@ public class AuditoriaInterceptor implements HandlerInterceptor {
         }
 
         String resultado = response.getStatus() < 400 && ex == null ? "EXITOSA" : "FALLIDA";
-        String detalle = request.getMethod() + " " + ruta + " - HTTP " + response.getStatus();
+        // Algunos casos agregan un detalle de negocio legible en lugar de la ruta HTTP.
+        Object detallePersonalizado = request.getAttribute(DETALLE_PERSONALIZADO_REQUEST);
+        String detalle = detallePersonalizado instanceof String texto && !texto.isBlank()
+                ? texto
+                : request.getMethod() + " " + ruta + " - HTTP " + response.getStatus();
         try {
             auditoriaService.registrar(
                     actor,

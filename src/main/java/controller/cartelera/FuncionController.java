@@ -40,6 +40,11 @@ public class FuncionController {
         return FuncionResponse.desde(funcionService.buscarPorId(id));
     }
 
+    @GetMapping("/{id}/entradas-activas")
+    public EntradasActivasResponse contarEntradasActivas(@PathVariable int id) {
+        return new EntradasActivasResponse(funcionService.contarEntradasActivas(id));
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public FuncionResponse guardar(@RequestBody FuncionRequest request) {
@@ -83,6 +88,9 @@ public class FuncionController {
     }
 
     public record HorarioRequest(LocalDate fecha, LocalTime horario) {
+    }
+
+    public record EntradasActivasResponse(long cantidadEntradas) {
     }
 
     public record FuncionResponse(int id, LocalDate fecha, LocalTime horario, FormatoFuncion formato, IdiomaFuncion idioma,

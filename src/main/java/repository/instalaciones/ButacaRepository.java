@@ -13,6 +13,7 @@ import java.util.List;
 public interface ButacaRepository extends JpaRepository<Butaca, Integer> {
     List<Butaca> findBySalaId(int salaId);
 
+    // Serializa compras simultáneas y evita vender la misma butaca dos veces en una función.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM Butaca b WHERE b.id IN :ids ORDER BY b.id")
     List<Butaca> buscarPorIdsConBloqueo(@Param("ids") List<Integer> ids);

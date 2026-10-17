@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import PurchaseAuthDrawer from '../cuenta/PurchaseAuthDrawer'
 import { useAuth } from '../../context/AuthContext'
 import { useState, useRef, useEffect } from 'react'
 
@@ -8,6 +9,7 @@ export default function SiteLayout() {
 
   // Estados para controlar el menú desplegable
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isAuthOpen, setIsAuthOpen] = useState(false)
   const menuRef = useRef(null)
 
   // Este efecto cierra el menú si el usuario hace clic fuera de él
@@ -22,6 +24,7 @@ export default function SiteLayout() {
   }, [])
 
   async function handleLogout() {
+    if (!window.confirm('¿Querés cerrar la sesión?')) return
     await logout()
     setIsMenuOpen(false) // Cerramos el menú al salir
     navigate('/')
@@ -68,18 +71,17 @@ export default function SiteLayout() {
                       Hola, <strong>{spectator.nombre}</strong>
                     </div>
 
-                    {/* Usamos <a> normal para forzar el salto al ID */}
-                    <a href="/cuenta#entradas" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
+                    <NavLink to="/cuenta#entradas" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
                       Mis Entradas
-                    </a>
+                    </NavLink>
 
-                    <a href="/cuenta#perfil" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
+                    <NavLink to="/cuenta#perfil" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
                       Editar Perfil
-                    </a>
+                    </NavLink>
 
-                    <a href="/cuenta#pagos" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
+                    <NavLink to="/cuenta#pagos" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
                       Métodos de Pago
-                    </a>
+                    </NavLink>
 
                     <hr className="dropdown-divider" />
 
@@ -91,9 +93,9 @@ export default function SiteLayout() {
               </div>
             ) : (
               // Si el usuario NO ESTÁ logueado, mostramos el botón de iniciar sesión
-              <NavLink to="/cuenta" className="secondary-button">
+              <button type="button" className="secondary-button" onClick={() => setIsAuthOpen(true)}>
                 Iniciar sesión
-              </NavLink>
+              </button>
             )}
           </div>
 
@@ -116,13 +118,19 @@ export default function SiteLayout() {
             <span>Nuestros cines</span>
             <span>Preguntas frecuentes</span>
             <span>Contacto</span>
-            <a href="/personal">Acceso personal</a>
           </div>
           <p className="site-footer__copy">
             © {new Date().getFullYear()} Film Zone. Todos los derechos reservados.
           </p>
         </div>
       </footer>
+
+      <PurchaseAuthDrawer
+        open={isAuthOpen}
+        purchase={false}
+        onClose={() => setIsAuthOpen(false)}
+        onComplete={() => setIsAuthOpen(false)}
+      />
     </div>
   )
 }

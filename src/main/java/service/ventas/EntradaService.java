@@ -153,7 +153,7 @@ public class EntradaService {
         }
         LocalDateTime inicioFuncion = LocalDateTime.of(funcion.getFecha(), funcion.getHorario());
         if (inicioFuncion.isBefore(LocalDateTime.now())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se pueden comprar entradas para una funcion pasada.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se pueden comprar entradas para una función pasada.");
         }
         if (butaca.getSala() == null || butaca.getSala().getId() != funcion.getSala().getId()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La butaca no pertenece a la sala de la funcion.");

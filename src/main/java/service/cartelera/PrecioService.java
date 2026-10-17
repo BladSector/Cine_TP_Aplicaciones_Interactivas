@@ -46,6 +46,7 @@ public class PrecioService {
     public double calcularTotal(Funcion funcion, Espectador espectador, double precioBase, int cantidadEntradas) {
         validarDatos(funcion, precioBase, cantidadEntradas);
         double precioUnitario = calcularPrecioUnitario(funcion, espectador, precioBase);
+        // El 2x1 cobra una entrada por pareja y una adicional cuando la cantidad es impar.
         int entradasACobrar = funcion.getFecha().getDayOfWeek() == DayOfWeek.WEDNESDAY
                 ? (cantidadEntradas / 2) + (cantidadEntradas % 2)
                 : cantidadEntradas;

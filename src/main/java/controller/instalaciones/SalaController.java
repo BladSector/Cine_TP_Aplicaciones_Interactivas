@@ -1,6 +1,9 @@
 package controller.instalaciones;
 
+import com.tp.cine.seguridad.AuditoriaInterceptor;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import modelo.entidades.Empleado;
 import modelo.enums.Permiso;
 import modelo.entidades.Sala;
 import modelo.enums.EstadoSala;
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import service.instalaciones.SalaService;
+import service.usuarios.EmpleadoService;
 import service.usuarios.SesionService;
 
 import java.util.List;
@@ -24,10 +28,13 @@ import java.util.List;
 public class SalaController {
     private final SalaService salaService;
     private final SesionService sesionService;
+    private final EmpleadoService empleadoService;
 
-    public SalaController(SalaService salaService, SesionService sesionService) {
+    public SalaController(SalaService salaService, SesionService sesionService,
+                          EmpleadoService empleadoService) {
         this.salaService = salaService;
         this.sesionService = sesionService;
+        this.empleadoService = empleadoService;
     }
 
     @GetMapping
@@ -81,16 +88,21 @@ public class SalaController {
     }
 
     @PutMapping("/{id}/estado")
-    public SalaResponse cambiarEstado(@PathVariable int id, @RequestBody EstadoSalaRequest request,
-                                      HttpSession sesion) {
+    public SalaResponse cambiarEstado(@PathVariable int id, @RequestBody EstadoSalaRequest estadoRequest,
+                                      HttpSession sesion, HttpServletRequest peticion) {
         sesionService.validarPermiso(sesion, Permiso.GESTIONAR_SALAS);
-        return SalaResponse.desde(salaService.cambiarEstado(
+        Sala sala = salaService.cambiarEstado(
                 id,
-                request.estado(),
-                request.descripcion(),
+                estadoRequest.estado(),
+                estadoRequest.descripcion(),
                 sesionService.obtenerEmpleadoId(sesion),
-                request.destinatarioEmpleadoId()
-        ));
+                estadoRequest.destinatarioEmpleadoId()
+        );
+        peticion.setAttribute(
+                AuditoriaInterceptor.DETALLE_PERSONALIZADO_REQUEST,
+                detalleCambioEstado(sala, estadoRequest)
+        );
+        return SalaResponse.desde(sala);
     }
 
     @DeleteMapping("/{id}")
@@ -113,6 +125,36 @@ public class SalaController {
 
     public record EstadoSalaRequest(EstadoSala estado, String descripcion,
                                     Integer destinatarioEmpleadoId) {
+    }
+
+    private String detalleCambioEstado(Sala sala, EstadoSalaRequest request) {
+        StringBuilder detalle = new StringBuilder()
+                .append("Sala: ").append(sala.getNombre())
+                .append(". Nuevo estado: ").append(nombreEstado(request.estado()))
+                .append(". Destinatario: ").append(nombreDestinatario(request.destinatarioEmpleadoId()))
+                .append('.');
+        if (request.descripcion() != null && !request.descripcion().isBlank()) {
+            detalle.append(" Mensaje: ").append(request.descripcion().trim()).append('.');
+        }
+        return detalle.toString();
+    }
+
+    private String nombreDestinatario(Integer empleadoId) {
+        if (empleadoId == null) {
+            return "todos los empleados";
+        }
+        Empleado empleado = empleadoService.buscarPorId(empleadoId);
+        return empleado.getNombre() + " " + empleado.getApellido()
+                + " (" + empleado.getUsuario() + ")";
+    }
+
+    private String nombreEstado(EstadoSala estado) {
+        return switch (estado) {
+            case DISPONIBLE -> "Disponible";
+            case LIMPIEZA -> "Limpieza";
+            case CERRADA -> "Cerrada";
+            case PROBLEMA_PARTICULAR -> "Problema particular";
+        };
     }
 
     public record SalaResponse(int id, String nombre, int capacidad, EstadoSala estado,

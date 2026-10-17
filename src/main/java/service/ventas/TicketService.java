@@ -130,6 +130,7 @@ public class TicketService {
         return ticket;
     }
 
+    // Un solo escaneo puede validar las entradas y entregar los consumos pendientes del ticket.
     @Transactional
     public Ticket procesarIngreso(int id) {
         Ticket ticket = buscarPorId(id);
@@ -280,6 +281,7 @@ public class TicketService {
         return item.getProducto().getPrecio() * item.getCantidad();
     }
 
+    // El estado se deriva de entradas y consumos para no duplicar información persistida.
     public EstadoTicket calcularEstado(Ticket ticket) {
         boolean todasReembolsadas = ticket.getEntradas().stream()
                 .allMatch(entrada -> entrada.getEstado() == EstadoEntrada.REEMBOLSADA);

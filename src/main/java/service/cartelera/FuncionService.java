@@ -2,6 +2,7 @@ package service.cartelera;
 
 
 import modelo.enums.FormatoFuncion;
+import modelo.enums.EstadoEntrada;
 import modelo.entidades.Funcion;
 import modelo.enums.IdiomaFuncion;
 import modelo.entidades.Pelicula;
@@ -13,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import repository.cartelera.FuncionRepository;
 import repository.cartelera.PeliculaRepository;
 import repository.instalaciones.SalaRepository;
+import repository.ventas.EntradaRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,11 +26,14 @@ public class FuncionService {
     private final FuncionRepository funcionRepository;
     private final PeliculaRepository peliculaRepository;
     private final SalaRepository salaRepository;
+    private final EntradaRepository entradaRepository;
 
-    public FuncionService(FuncionRepository funcionRepository, PeliculaRepository peliculaRepository, SalaRepository salaRepository) {
+    public FuncionService(FuncionRepository funcionRepository, PeliculaRepository peliculaRepository,
+                          SalaRepository salaRepository, EntradaRepository entradaRepository) {
         this.funcionRepository = funcionRepository;
         this.peliculaRepository = peliculaRepository;
         this.salaRepository = salaRepository;
+        this.entradaRepository = entradaRepository;
     }
 
     public List<Funcion> listar() {
@@ -38,6 +43,14 @@ public class FuncionService {
     public Funcion buscarPorId(int id) {
         return funcionRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe una funcion con ese id."));
+    }
+
+    public long contarEntradasActivas(int id) {
+        buscarPorId(id);
+        return entradaRepository.countByFuncionIdAndEstadoNotIn(
+                id,
+                List.of(EstadoEntrada.REEMBOLSADA, EstadoEntrada.CANCELADA)
+        );
     }
 
     public Funcion guardar(LocalDate fecha, LocalTime horario, int peliculaId, int salaId, FormatoFuncion formato, IdiomaFuncion idioma, double precioEntrada) {
@@ -94,6 +107,7 @@ public class FuncionService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe una sala con ese id."));
     }
 
+    // Compara intervalos completos; la duración de la película también ocupa la sala.
     private void validarDisponibilidadSala(LocalDate fecha, LocalTime horario, Pelicula pelicula, Sala sala, Integer funcionIdIgnorada) {
         LocalDateTime inicioNuevaFuncion = LocalDateTime.of(fecha, horario);
         LocalDateTime finNuevaFuncion = inicioNuevaFuncion.plusMinutes(pelicula.getDuracion());

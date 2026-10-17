@@ -26,7 +26,6 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
@@ -106,8 +105,6 @@ public class PrincipalFrame extends JFrame {
     private final JTable ticketsTabla = tabla(ticketsModel);
     private final JTable empleadosTabla = tabla(empleadosModel);
     private final JTable auditoriasTabla = tabla(auditoriasModel);
-    private final JEditorPane detalleSala = crearVisorDetalle("Seleccioná una sala para ver su información.");
-    private final JEditorPane detalleConsumo = crearVisorDetalle("Seleccioná un consumo para ver su información.");
 
     private final JComboBox<SalaOpcion> salaButacas = new JComboBox<>();
     private final JPanel mapaButacas = new JPanel(new BorderLayout());
@@ -117,7 +114,6 @@ public class PrincipalFrame extends JFrame {
 
     private final JTextField codigoQr = new JTextField(32);
     private final JTextField codigoQrConsumo = new JTextField(28);
-    private final JTextArea detalleTicket = new JTextArea();
     private final Map<Integer, JsonNode> ticketsActuales = new LinkedHashMap<>();
     private final JButton avisosPendientes = new JButton("Avisos");
     private Integer ticketActualId;
@@ -343,19 +339,10 @@ public class PrincipalFrame extends JFrame {
     }
 
     private JPanel crearPanelSalas() {
-        JPanel panel = panelConTablaYDetalle("Salas del cine", salasTabla, detalleSala);
-        salasTabla.getSelectionModel().addListSelectionListener(event -> {
-            if (!event.getValueIsAdjusting()) {
-                detalleSala.setText(descripcionSalaSeleccionada());
-                detalleSala.setCaretPosition(0);
-            }
-        });
+        JPanel panel = panelConTabla("Salas del cine", salasTabla);
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton cambiar = new JButton("Cambiar estado");
         JButton actualizar = new JButton("Recargar");
-        cambiar.addActionListener(event -> mostrarSelectorEstadoSala());
         actualizar.addActionListener(event -> cargarSalas());
-        acciones.add(cambiar);
         acciones.add(actualizar);
         panel.add(acciones, BorderLayout.SOUTH);
         return panel;
@@ -364,11 +351,6 @@ public class PrincipalFrame extends JFrame {
     private JPanel crearPanelFunciones() {
         JPanel panel = panelConTabla("Funciones programadas", funcionesTabla);
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        if (esEmpleado()) {
-            JButton modificarHorario = new JButton("Modificar horario");
-            modificarHorario.addActionListener(event -> mostrarFormularioHorario());
-            acciones.add(modificarHorario);
-        }
         JButton actualizar = new JButton("Recargar funciones");
         actualizar.addActionListener(event -> cargarFunciones());
         acciones.add(actualizar);
@@ -413,7 +395,13 @@ public class PrincipalFrame extends JFrame {
         acciones.add(liberar);
         acciones.add(fueraServicio);
 
-        panel.add(superior, BorderLayout.NORTH);
+        JPanel encabezado = new JPanel(new BorderLayout(0, 4));
+        encabezado.add(superior, BorderLayout.NORTH);
+        encabezado.add(etiquetaAyuda(
+                "Seleccioná una butaca en el plano y usá los botones inferiores para cambiar su estado."),
+                BorderLayout.SOUTH);
+
+        panel.add(encabezado, BorderLayout.NORTH);
         panel.add(scrollMapa, BorderLayout.CENTER);
         panel.add(acciones, BorderLayout.SOUTH);
         return panel;
@@ -441,10 +429,6 @@ public class PrincipalFrame extends JFrame {
         superior.add(encabezado, BorderLayout.NORTH);
         superior.add(busqueda, BorderLayout.SOUTH);
 
-        detalleTicket.setEditable(false);
-        detalleTicket.setLineWrap(true);
-        detalleTicket.setWrapStyleWord(true);
-        detalleTicket.setFont(new java.awt.Font(java.awt.Font.MONOSPACED, java.awt.Font.PLAIN, 13));
         ticketsTabla.getSelectionModel().addListSelectionListener(event -> {
             if (event.getValueIsAdjusting()) {
                 return;
@@ -454,26 +438,11 @@ public class PrincipalFrame extends JFrame {
                 return;
             }
             int fila = ticketsTabla.convertRowIndexToModel(filaVista);
-            int ticketId = ((Number) ticketsModel.getValueAt(fila, 0)).intValue();
-            JsonNode ticket = ticketsActuales.get(ticketId);
-            if (ticket != null) {
-                actualizarDetalleTicket(ticket);
-            }
+            ticketActualId = ((Number) ticketsModel.getValueAt(fila, 0)).intValue();
         });
 
         JPanel tablaPanel = panelConTabla("Tickets creados", ticketsTabla);
         tablaPanel.setBorder(BorderFactory.createEmptyBorder());
-        JPanel detallePanel = new JPanel(new BorderLayout(0, 8));
-        detallePanel.setPreferredSize(new Dimension(350, 0));
-        JLabel tituloDetalle = new JLabel("Detalle del ticket");
-        tituloDetalle.setFont(tituloDetalle.getFont().deriveFont(Font.BOLD));
-        detallePanel.add(tituloDetalle, BorderLayout.NORTH);
-        detallePanel.add(new JScrollPane(detalleTicket), BorderLayout.CENTER);
-
-        JSplitPane division = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tablaPanel, detallePanel);
-        division.setResizeWeight(0.68);
-        division.setDividerLocation(0.68);
-        division.setBorder(BorderFactory.createEmptyBorder());
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton procesar = new JButton("Procesar ingreso");
@@ -498,37 +467,45 @@ public class PrincipalFrame extends JFrame {
         acciones.add(limpiar);
 
         panel.add(superior, BorderLayout.NORTH);
-        panel.add(division, BorderLayout.CENTER);
+        panel.add(tablaPanel, BorderLayout.CENTER);
         panel.add(acciones, BorderLayout.SOUTH);
         return panel;
     }
 
     private JPanel crearPanelConsumos() {
-        JPanel panel = panelConTablaYDetalle("Consumos pendientes y entregados", consumosTabla, detalleConsumo);
-        consumosTabla.getSelectionModel().addListSelectionListener(event -> {
-            if (!event.getValueIsAdjusting()) {
-                detalleConsumo.setText(descripcionFila(consumosTabla));
-                detalleConsumo.setCaretPosition(0);
-            }
-        });
-        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton entregar = new JButton("Marcar entregado");
-        JButton actualizar = new JButton("Recargar");
-        entregar.addActionListener(event -> entregarConsumoSeleccionado());
-        actualizar.addActionListener(event -> cargarConsumos());
-        acciones.add(entregar);
-        acciones.add(actualizar);
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+
+        JPanel superior = new JPanel(new BorderLayout(0, 8));
+        JLabel titulo = new JLabel("Consumos");
+        titulo.setFont(titulo.getFont().deriveFont(Font.BOLD, 17f));
+        JLabel indicacion = new JLabel(
+                "Escaneá el QR o pegá el código del ticket para entregar sus consumos."
+        );
+        JPanel encabezado = new JPanel(new GridLayout(0, 1, 0, 4));
+        encabezado.add(titulo);
+        encabezado.add(indicacion);
 
         JPanel lectorQr = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        lectorQr.setBorder(BorderFactory.createTitledBorder("Entrega por QR"));
         JButton entregarQr = new JButton("Entregar consumos");
         entregarQr.addActionListener(event -> entregarConsumosPorQr());
         codigoQrConsumo.addActionListener(event -> entregarConsumosPorQr());
         lectorQr.add(new JLabel("Código QR:"));
         lectorQr.add(codigoQrConsumo);
         lectorQr.add(entregarQr);
+        superior.add(encabezado, BorderLayout.NORTH);
+        superior.add(lectorQr, BorderLayout.SOUTH);
 
-        panel.add(lectorQr, BorderLayout.NORTH);
+        JPanel tablaPanel = panelConTabla("Consumos pendientes y entregados", consumosTabla);
+        tablaPanel.setBorder(BorderFactory.createEmptyBorder());
+
+        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton actualizar = new JButton("Recargar");
+        actualizar.addActionListener(event -> cargarConsumos());
+        acciones.add(actualizar);
+
+        panel.add(superior, BorderLayout.NORTH);
+        panel.add(tablaPanel, BorderLayout.CENTER);
         panel.add(acciones, BorderLayout.SOUTH);
         return panel;
     }
@@ -585,44 +562,43 @@ public class PrincipalFrame extends JFrame {
         etiqueta.setFont(etiqueta.getFont().deriveFont(Font.BOLD, 15f));
         JTextField filtro = new JTextField(24);
         filtro.putClientProperty("JTextField.placeholderText", "Buscar...");
+        JPanel buscador = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        buscador.add(new JLabel("Buscar:"));
+        buscador.add(filtro);
         cabecera.add(etiqueta, BorderLayout.WEST);
-        cabecera.add(filtro, BorderLayout.EAST);
+        cabecera.add(buscador, BorderLayout.EAST);
         conectarFiltro(tabla, filtro);
 
-        panel.add(cabecera, BorderLayout.NORTH);
+        JPanel encabezado = new JPanel(new BorderLayout(0, 4));
+        encabezado.add(cabecera, BorderLayout.NORTH);
+        encabezado.add(etiquetaAyuda(
+                "Seleccioná una fila para operar. Hacé doble clic para ver toda la información."),
+                BorderLayout.SOUTH);
+
+        panel.add(encabezado, BorderLayout.NORTH);
         panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
         return panel;
     }
 
-    private JPanel panelConTablaYDetalle(String titulo, JTable tabla, JEditorPane detalle) {
-        JPanel panel = new JPanel(new BorderLayout(8, 8));
-        panel.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-
-        JPanel tablaPanel = panelConTabla(titulo, tabla);
-        tablaPanel.setBorder(BorderFactory.createEmptyBorder());
-
-        JPanel detallePanel = new JPanel(new BorderLayout(0, 8));
-        detallePanel.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
-        detallePanel.setPreferredSize(new Dimension(260, 0));
-        JLabel tituloDetalle = new JLabel("Información");
-        tituloDetalle.setFont(tituloDetalle.getFont().deriveFont(Font.BOLD));
-        detallePanel.add(tituloDetalle, BorderLayout.NORTH);
-        detallePanel.add(new JScrollPane(detalle), BorderLayout.CENTER);
-
-        JSplitPane division = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tablaPanel, detallePanel);
-        division.setResizeWeight(0.78);
-        division.setDividerLocation(0.78);
-        division.setBorder(BorderFactory.createEmptyBorder());
-        panel.add(division, BorderLayout.CENTER);
-        return panel;
+    private static JLabel etiquetaAyuda(String texto) {
+        JLabel ayuda = new JLabel(texto);
+        ayuda.setForeground(new Color(92, 98, 108));
+        ayuda.setFont(ayuda.getFont().deriveFont(Font.ITALIC, 12f));
+        ayuda.setBorder(BorderFactory.createEmptyBorder(10, 8, 4, 8));
+        return ayuda;
     }
 
     private void instalarDetallesDobleClick() {
         instalarDetalleDobleClick(salasTabla, "Información de la sala", this::descripcionSalaSeleccionada,
                 "Cambiar estado", this::mostrarSelectorEstadoSala);
-        instalarDetalleDobleClick(funcionesTabla, "Información de la función",
-                () -> descripcionFila(funcionesTabla),
-                "Modificar horario", this::mostrarFormularioHorario);
+        if (esEmpleado()) {
+            instalarDetalleDobleClick(funcionesTabla, "Información de la función",
+                    () -> descripcionFila(funcionesTabla));
+        } else {
+            instalarDetalleDobleClick(funcionesTabla, "Información de la función",
+                    () -> descripcionFila(funcionesTabla),
+                    "Modificar horario", this::mostrarFormularioHorario);
+        }
         instalarDetalleDobleClick(consumosTabla, "Información del consumo",
                 () -> descripcionFila(consumosTabla), "Marcar entregado", this::entregarConsumoSeleccionado);
         instalarDetalleDobleClick(ticketsTabla, "Información del ticket", this::descripcionTicketSeleccionado);
@@ -1031,6 +1007,8 @@ public class PrincipalFrame extends JFrame {
                         auditoria.path("accion").asText(),
                         auditoria.path("entidad").asText()
                 );
+                String codigoAccion = auditoria.path("accion").asText();
+                String detalleRegistrado = auditoria.path("detalle").asText();
 
                 auditoriasModel.addRow(new Object[]{
                         auditoria.path("id").asLong(),
@@ -1041,7 +1019,10 @@ public class PrincipalFrame extends JFrame {
                         entidad,
                         entidadId,
                         exitosa ? "Completada" : "Fallida",
-                        detalleActividad(usuario, perfil, accion, entidadId, exitosa)
+                        detalleActividad(
+                                usuario, perfil, accion, entidadId, exitosa,
+                                codigoAccion, detalleRegistrado
+                        )
                 });
             });
         });
@@ -1139,13 +1120,19 @@ public class PrincipalFrame extends JFrame {
     }
 
     private static String detalleActividad(String usuario, String perfil, String accion,
-                                           String entidadId, boolean exitosa) {
+                                           String entidadId, boolean exitosa,
+                                           String codigoAccion, String detalleRegistrado) {
         String accionEnFrase = accion.isEmpty()
                 ? "realizó una operación"
                 : Character.toLowerCase(accion.charAt(0)) + accion.substring(1);
         String referencia = "-".equals(entidadId) ? "" : " (registro #" + entidadId + ")";
+        String resultado = exitosa ? " correctamente." : ", pero no pudo completarse.";
+        String informacionAdicional = "CAMBIAR_ESTADO_SALA".equals(codigoAccion)
+                && detalleRegistrado != null && !detalleRegistrado.isBlank()
+                ? " " + detalleRegistrado
+                : "";
         return usuario + " (" + perfil + ") " + accionEnFrase + referencia
-                + (exitosa ? " correctamente." : ", pero no pudo completarse.");
+                + resultado + informacionAdicional;
     }
 
     private void iniciarMonitoreoAvisos() {
@@ -1716,14 +1703,11 @@ public class PrincipalFrame extends JFrame {
 
     private void actualizarDetalleTicket(JsonNode ticket) {
         ticketActualId = ticket.path("id").asInt();
-        detalleTicket.setText(formatearTicket(ticket));
-        detalleTicket.setCaretPosition(0);
     }
 
     private void limpiarControlAcceso() {
         ticketActualId = null;
         codigoQr.setText("");
-        detalleTicket.setText("");
         ticketsTabla.clearSelection();
         codigoQr.requestFocusInWindow();
     }
@@ -1959,6 +1943,7 @@ public class PrincipalFrame extends JFrame {
 
     private <T> void ejecutar(String mensaje, Operacion<T> operacion, Consumer<T> alCompletar) {
         estado.setText(mensaje);
+        // Las llamadas HTTP se ejecutan fuera del hilo gráfico para no congelar Swing.
         new SwingWorker<T, Void>() {
             @Override
             protected T doInBackground() throws Exception {

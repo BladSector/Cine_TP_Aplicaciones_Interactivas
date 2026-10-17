@@ -4,6 +4,7 @@ import {
   formatFunction,
   formatLanguage,
   money,
+  seatLabel,
   shortTime,
 } from '../../utils/format'
 
@@ -61,10 +62,9 @@ export default function OrderSummary({
             <strong>${money(totalTickets)}</strong>
           </div>
           <div className="order-summary__seats">
-            <span>Fila {seats[0]?.fila}</span>
             {seats.map((seat) => (
               <span key={seat.id} className="seat-chip">
-                {seat.numero}
+                {seatLabel(seat)}
               </span>
             ))}
             {editSeatsTo && (

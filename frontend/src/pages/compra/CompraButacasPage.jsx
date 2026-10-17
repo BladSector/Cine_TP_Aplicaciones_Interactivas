@@ -6,7 +6,7 @@ import SeatMap from '../../components/compra/SeatMap'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
-import { formatFunction, formatLanguage, money, shortTime } from '../../utils/format'
+import { formatFunction, formatLanguage, functionHasStarted, money, seatLabel, shortTime } from '../../utils/format'
 
 export default function CompraButacasPage() {
   const { movieId } = useParams()
@@ -24,6 +24,9 @@ export default function CompraButacasPage() {
 
   if (!isSpectator) return <Navigate to={`/compra/${movieId}/acceso`} replace />
   if (!funcion || !movie) return <Navigate to={`/pelicula/${movieId}`} replace />
+  if (functionHasStarted(funcion)) {
+    return <Navigate to={`/pelicula/${movieId}`} replace state={{ expiredFunction: true }} />
+  }
 
   const roomSeats = butacas
     .filter((seat) => seat.salaId === funcion.salaId)
@@ -75,7 +78,7 @@ export default function CompraButacasPage() {
               {draft.selectedSeats.length} butaca
               {draft.selectedSeats.length > 1 ? 's' : ''} seleccionada
               {draft.selectedSeats.length > 1 ? 's' : ''} ·{' '}
-              {draft.selectedSeats.map((s) => `${s.fila}${s.numero}`).join(', ')}
+              {draft.selectedSeats.map(seatLabel).join(', ')}
             </p>
           )}
         </section>

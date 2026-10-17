@@ -4,10 +4,12 @@ import DateStrip from '../components/cartelera/DateStrip'
 import MovieCard from '../components/cartelera/MovieCard'
 import { useCatalog } from '../context/CatalogContext'
 import { usePurchase } from '../context/PurchaseContext'
-import { formatFunction, todayValue } from '../utils/format'
+import { formatFunction, functionHasStarted, normalizeText, todayValue } from '../utils/format'
 
 // 1. El import con la ruta correcta hacia la carpeta components/cartelera
 import AccordionGallery from '../components/cartelera/AccordionGallery'
+import PurchaseAuthDrawer from '../components/cuenta/PurchaseAuthDrawer'
+import { useAuth } from '../context/AuthContext'
 
 // 2. Las imágenes estáticas (fuera de la función principal)
 const items = [
@@ -21,12 +23,14 @@ const items = [
 export default function CarteleraPage() {
   const navigate = useNavigate()
   const { peliculas, funciones, categorias, loading, error } = useCatalog()
+  const { spectator, isSpectator } = useAuth()
   const { setDraft } = usePurchase()
   const [selectedDate, setSelectedDate] = useState(todayValue())
   const [categoryId, setCategoryId] = useState('')
   const [formato, setFormato] = useState('')
   const [idioma, setIdioma] = useState('')
   const [query, setQuery] = useState('')
+  const [pendingMovieId, setPendingMovieId] = useState(null)
 
   const moviesWithSessions = useMemo(() => {
     return peliculas
@@ -34,10 +38,11 @@ export default function CarteleraPage() {
         const movieFunctions = funciones.filter((fn) => {
           if (fn.peliculaId !== movie.id) return false
           if (fn.fecha !== selectedDate) return false
+          if (functionHasStarted(fn)) return false
           if (categoryId && String(movie.categoriaId) !== categoryId) return false
           if (formato && fn.formato !== formato) return false
           if (idioma && fn.idioma !== idioma) return false
-          if (query && !movie.titulo.toLowerCase().includes(query.toLowerCase())) return false
+          if (query && !normalizeText(movie.titulo).includes(normalizeText(query))) return false
           return true
         })
         return { movie, functions: movieFunctions }
@@ -53,7 +58,11 @@ export default function CarteleraPage() {
       consumptions: {},
       returnPath: null,
     })
-    navigate(`/compra/${movie.id}/acceso`)
+    if (!isSpectator || !spectator.emailVerificado) {
+      setPendingMovieId(movie.id)
+      return
+    }
+    navigate(`/compra/${movie.id}/butacas`)
   }
 
   return (
@@ -153,6 +162,16 @@ export default function CarteleraPage() {
           el formato.
         </p>
       </section>
+
+      <PurchaseAuthDrawer
+        open={pendingMovieId !== null}
+        onClose={() => setPendingMovieId(null)}
+        onComplete={() => {
+          const movieId = pendingMovieId
+          setPendingMovieId(null)
+          navigate(`/compra/${movieId}/butacas`)
+        }}
+      />
     </div>
   )
 }

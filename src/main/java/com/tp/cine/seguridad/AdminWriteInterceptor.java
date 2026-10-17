@@ -35,11 +35,9 @@ public class AdminWriteInterceptor implements HandlerInterceptor {
         return true;
     }
 
+    // Solo estas operaciones se delegan al empleado; las demás escrituras quedan reservadas al dueño.
     private Permiso permisoRequerido(HttpServletRequest request) {
         String ruta = request.getRequestURI();
-        if ("PUT".equals(request.getMethod()) && ruta.matches("/funciones/\\d+/horario")) {
-            return Permiso.GESTIONAR_CARTELERA;
-        }
         if ("PUT".equals(request.getMethod()) && (ruta.matches("/salas/\\d+/estado")
                 || ruta.matches("/butacas/\\d+/(ocupar|liberar|fuera-de-servicio)"))) {
             return Permiso.GESTIONAR_SALAS;
