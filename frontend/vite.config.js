@@ -17,12 +17,8 @@ export default defineConfig({
       '/tickets': 'http://localhost:8080',
       '/compras': 'http://localhost:8080',
       '/productos-confiteria': 'http://localhost:8080',
-      '/items-consumo': 'http://localhost:8080',
       '/sesion': 'http://localhost:8080',
-      '/empleados': 'http://localhost:8080',
-      '/avisos-sala': 'http://localhost:8080',
       '/precios': 'http://localhost:8080',
-      '/auditoria': 'http://localhost:8080',
     },
   },
 })

@@ -6,6 +6,7 @@ export default function PerfilForm() {
   const { spectator, refreshSpectator } = useAuth()
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [changePassword, setChangePassword] = useState(false)
   const [profile, setProfile] = useState({
     nombre: '',
     apellido: '',
@@ -35,9 +36,21 @@ export default function PerfilForm() {
     setError('')
     setMessage('')
     try {
-      const updated = await api.updateEspectador(spectator.id, profile)
+      if (changePassword && profile.nuevaContrasenia !== profile.nuevaContraseniaConfirmacion) {
+        throw new Error('Las contraseñas nuevas no coinciden.')
+      }
+      const payload = changePassword
+        ? profile
+        : {
+            ...profile,
+            contraseniaActual: '',
+            nuevaContrasenia: '',
+            nuevaContraseniaConfirmacion: '',
+          }
+      const updated = await api.updateEspectador(spectator.id, payload)
       await refreshSpectator(updated.id)
       setMessage('Perfil actualizado.')
+      setChangePassword(false)
       setProfile((prev) => ({
         ...prev,
         contraseniaActual: '',
@@ -68,18 +81,16 @@ export default function PerfilForm() {
           Email
           <input type="email" name="email" value={profile.email} onChange={update(setProfile)} required />
         </label>
-        <label>
-          Contraseña actual
-          <input type="password" name="contraseniaActual" value={profile.contraseniaActual} onChange={update(setProfile)} />
-        </label>
-        <label>
-          Nueva contraseña
-          <input type="password" name="nuevaContrasenia" value={profile.nuevaContrasenia} onChange={update(setProfile)} />
-        </label>
-        <label>
-          Confirmar nueva contraseña
-          <input type="password" name="nuevaContraseniaConfirmacion" value={profile.nuevaContraseniaConfirmacion} onChange={update(setProfile)} />
-        </label>
+        <button type="button" className="text-button form-inline-action" onClick={() => setChangePassword((value) => !value)}>
+          {changePassword ? 'Cancelar cambio de contraseña' : 'Cambiar contraseña'}
+        </button>
+        {changePassword && (
+          <div className="password-panel">
+            <label>Contraseña actual<input type="password" name="contraseniaActual" value={profile.contraseniaActual} onChange={update(setProfile)} required /></label>
+            <label>Nueva contraseña<input type="password" name="nuevaContrasenia" value={profile.nuevaContrasenia} onChange={update(setProfile)} minLength="4" required /></label>
+            <label>Confirmar nueva contraseña<input type="password" name="nuevaContraseniaConfirmacion" value={profile.nuevaContraseniaConfirmacion} onChange={update(setProfile)} minLength="4" required /></label>
+          </div>
+        )}
         <button type="submit" className="primary-button">
           Guardar cambios
         </button>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api, errorMessage } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
-import { paymentIsExpired } from '../../utils/format'
+import { nextMonthValue, paymentIsExpired } from '../../utils/format'
 
 export default function MetodosPagoList() {
   const { spectator, refreshSpectator } = useAuth()
@@ -23,13 +23,15 @@ export default function MetodosPagoList() {
     setError('')
     setMessage('')
     try {
-      const created = await api.crearMetodoPago({
+      if (paymentIsExpired(card.fechaVencimiento)) {
+        throw new Error('La fecha de vencimiento debe ser posterior a la fecha actual.')
+      }
+      await api.crearMetodoPago({
         numero: card.numero.replace(/\s/g, ''),
         fechaVencimiento: card.fechaVencimiento,
         nombreTitular: card.nombreTitular,
         cvv: card.cvv,
       })
-      await api.asociarMetodoPago(spectator.id, created.id)
       await refreshSpectator(spectator.id)
       setCard({ numero: '', fechaVencimiento: '', nombreTitular: '', cvv: '' })
       setMessage('Tarjeta agregada.')
@@ -39,6 +41,9 @@ export default function MetodosPagoList() {
   }
 
   async function handleDeleteCard(id) {
+    if (!window.confirm('¿Querés eliminar esta tarjeta de tus métodos de pago?')) return
+    setError('')
+    setMessage('')
     try {
       await api.eliminarMetodoPago(id)
       await refreshSpectator(spectator.id)
@@ -67,6 +72,10 @@ export default function MetodosPagoList() {
           </li>
         ))}
       </ul>
+      {(spectator.metodosDePago || []).length === 0 && (
+        <div className="info-box">No tenés tarjetas activas asociadas.</div>
+      )}
+      <h3>Agregar una tarjeta</h3>
       <form className="stack-form" onSubmit={handleAddCard}>
         <label>
           Titular
@@ -74,15 +83,15 @@ export default function MetodosPagoList() {
         </label>
         <label>
           Número
-          <input name="numero" value={card.numero} onChange={update(setCard)} required />
+          <input name="numero" inputMode="numeric" maxLength="19" value={card.numero} onChange={update(setCard)} placeholder="16 dígitos" required />
         </label>
         <label>
-          Vencimiento
-          <input type="month" name="fechaVencimiento" value={card.fechaVencimiento} onChange={update(setCard)} required />
+          Vencimiento (mes y año)
+          <input type="month" min={nextMonthValue()} name="fechaVencimiento" value={card.fechaVencimiento} onChange={update(setCard)} required />
         </label>
         <label>
           CVV
-          <input type="password" name="cvv" value={card.cvv} onChange={update(setCard)} required />
+          <input type="password" name="cvv" inputMode="numeric" maxLength="4" value={card.cvv} onChange={update(setCard)} required />
         </label>
         <button type="submit" className="secondary-button">
           Agregar tarjeta

@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
+import TicketDetails from '../../components/tickets/TicketDetails'
 import { api, errorMessage } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
-import { money, paymentIsExpired } from '../../utils/format'
+import { functionHasStarted, money, nextMonthValue, paymentIsExpired } from '../../utils/format'
 
 export default function CompraPagoPage() {
   const { movieId } = useParams()
@@ -26,17 +27,33 @@ export default function CompraPagoPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [ticket, setTicket] = useState(null)
+  const [calculatedTickets, setCalculatedTickets] = useState(null)
 
   const movie = peliculas.find((item) => item.id === Number(movieId))
   const funcion = funciones.find((item) => item.id === draft.functionId)
   const metodos = spectator?.metodosDePago || []
+
+  useEffect(() => {
+    const firstValid = metodos.find((metodo) => !paymentIsExpired(metodo.fechaVencimiento))
+    if (firstValid && !selectedMethodId) setSelectedMethodId(String(firstValid.id))
+  }, [metodos, selectedMethodId])
+
+  useEffect(() => {
+    if (!funcion || !spectator || draft.selectedSeats.length === 0) return
+    api.calcularPrecio(
+      funcion.id,
+      spectator.id,
+      funcion.precioEntrada,
+      draft.selectedSeats.length,
+    ).then((response) => setCalculatedTickets(response.total)).catch(() => setCalculatedTickets(null))
+  }, [funcion, spectator, draft.selectedSeats.length])
 
   if (!isSpectator) return <Navigate to={`/compra/${movieId}/acceso`} replace />
   if (!funcion || !movie || draft.selectedSeats.length === 0) {
     return <Navigate to={`/compra/${movieId}/butacas`} replace />
   }
 
-  const totalTickets = draft.selectedSeats.length * funcion.precioEntrada
+  const totalTickets = calculatedTickets ?? draft.selectedSeats.length * funcion.precioEntrada
   const totalCandy = Object.entries(draft.consumptions).reduce((sum, [id, qty]) => {
     const product = productos.find((item) => item.id === Number(id))
     return sum + (product ? product.precio * qty : 0)
@@ -55,6 +72,9 @@ export default function CompraPagoPage() {
     if (!card.numero || !card.fechaVencimiento || !card.nombreTitular || !card.cvv) {
       throw new Error('Completá todos los datos de la tarjeta.')
     }
+    if (paymentIsExpired(card.fechaVencimiento)) {
+      throw new Error('La tarjeta está vencida. Ingresá una fecha posterior a la actual.')
+    }
 
     const created = await api.crearMetodoPago({
       numero: card.numero.replace(/\s/g, ''),
@@ -68,8 +88,16 @@ export default function CompraPagoPage() {
 
   async function handlePay(event) {
     event.preventDefault()
+    if (functionHasStarted(funcion)) {
+      setError('La función seleccionada ya comenzó. Elegí otro horario para continuar.')
+      return
+    }
     if (!accepted) {
       setError('Debés aceptar las condiciones de compra.')
+      return
+    }
+    if (!spectator.emailVerificado) {
+      setError('Debés verificar tu correo antes de realizar la compra.')
       return
     }
 
@@ -95,7 +123,6 @@ export default function CompraPagoPage() {
       await reload()
       await refreshSpectator(spectator.id)
       setTicket(result)
-      reset()
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -113,21 +140,12 @@ export default function CompraPagoPage() {
             Enviamos el comprobante a <strong>{spectator.email}</strong>. También podés verlo en Mi
             cuenta.
           </p>
-          <div className="ticket-card">
-            <p className="eyebrow">Ticket #{ticket.id}</p>
-            <h2>{ticket.entradas?.[0]?.pelicula || movie.titulo}</h2>
-            <p>QR: {ticket.codigoQR}</p>
-            <p>Total: ${money(ticket.total)}</p>
-            <p>
-              Butacas:{' '}
-              {(ticket.entradas || []).map((entrada) => entrada.butaca).join(', ') || '-'}
-            </p>
-          </div>
+          <TicketDetails ticket={ticket} />
           <div className="summary-actions">
-            <button type="button" className="primary-button" onClick={() => navigate('/cuenta')}>
+            <button type="button" className="primary-button" onClick={() => { reset(); navigate('/cuenta') }}>
               Ir a Mi cuenta
             </button>
-            <button type="button" className="secondary-button" onClick={() => navigate('/')}>
+            <button type="button" className="secondary-button" onClick={() => { reset(); navigate('/') }}>
               Volver a cartelera
             </button>
           </div>
@@ -222,13 +240,16 @@ export default function CompraPagoPage() {
                     value={card.numero}
                     onChange={(e) => setCard((prev) => ({ ...prev, numero: e.target.value }))}
                     placeholder="16 dígitos"
+                    inputMode="numeric"
+                    maxLength="19"
                     required={methodMode === 'new' || metodos.length === 0}
                   />
                 </label>
                 <label>
-                  Fecha de caducidad
+                  Vencimiento (mes y año)
                   <input
                     type="month"
+                    min={nextMonthValue()}
                     value={card.fechaVencimiento}
                     onChange={(e) =>
                       setCard((prev) => ({ ...prev, fechaVencimiento: e.target.value }))
@@ -242,6 +263,8 @@ export default function CompraPagoPage() {
                     type="password"
                     value={card.cvv}
                     onChange={(e) => setCard((prev) => ({ ...prev, cvv: e.target.value }))}
+                    inputMode="numeric"
+                    maxLength="4"
                     required={methodMode === 'new' || metodos.length === 0}
                   />
                 </label>
@@ -259,7 +282,7 @@ export default function CompraPagoPage() {
 
             {error && <div className="info-box info-box--error">{error}</div>}
 
-            <button type="submit" className="primary-button" disabled={loading}>
+            <button type="submit" className="primary-button" disabled={loading || functionHasStarted(funcion)}>
               {loading ? 'Procesando…' : `Pagar $${money(total)}`}
             </button>
             <p className="muted tiny">Pago seguro · Datos cifrados</p>

@@ -8,16 +8,6 @@ import CompraCandyPage from './pages/compra/CompraCandyPage'
 import CompraPagoPage from './pages/compra/CompraPagoPage'
 import CuentaPage from './pages/CuentaPage'
 import PlaceholderPage from './pages/PlaceholderPage'
-import AdminLoginPage from './pages/admin/AdminLoginPage'
-import AdminDashboardPage from './pages/admin/AdminDashboardPage'
-import { useAuth } from './context/AuthContext'
-
-function PersonalRoute({ children }) {
-  const { isPersonal, loading } = useAuth()
-  if (loading) return <div className="page-loading">Cargando…</div>
-  if (!isPersonal) return <Navigate to="/personal" replace />
-  return children
-}
 
 export default function App() {
   return (
@@ -59,15 +49,6 @@ export default function App() {
         />
       </Route>
 
-      <Route path="/personal" element={<AdminLoginPage />} />
-      <Route
-        path="/admin"
-        element={
-          <PersonalRoute>
-            <AdminDashboardPage />
-          </PersonalRoute>
-        }
-      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

@@ -1,14 +1,20 @@
+import { useState } from 'react'
+import Modal from '../common/Modal'
+import TicketDetails from '../tickets/TicketDetails'
 import { useCatalog } from '../../context/CatalogContext'
 import { formatDateShort, money, shortTime } from '../../utils/format'
 
 export default function MisEntradasList() {
   const { tickets } = useCatalog()
-  const myTickets = tickets || []
+  const [selected, setSelected] = useState(null)
+  const myTickets = [...(tickets || [])].sort((a, b) => b.id - a.id)
 
   return (
-    // El ID "entradas" es clave para el link del menú
     <section id="entradas" className="account-section">
-      <h2>Mis entradas</h2>
+      <div className="section-heading">
+        <div><p className="eyebrow">Historial</p><h2>Mis tickets</h2></div>
+        <span className="count-pill">{myTickets.length}</span>
+      </div>
       {myTickets.length === 0 ? (
         <div className="info-box">Todavía no tenés compras. Elegí una función en cartelera.</div>
       ) : (
@@ -16,25 +22,27 @@ export default function MisEntradasList() {
           {myTickets.map((ticket) => {
             const first = ticket.entradas?.[0]
             return (
-              <article key={ticket.id} className="ticket-card">
+              <button key={ticket.id} type="button" className="ticket-list-item" onClick={() => setSelected(ticket)}>
                 <div>
                   <p className="eyebrow">Ticket #{ticket.id}</p>
                   <h3>{first?.pelicula || 'Entrada'}</h3>
-                  <p>
-                    {formatDateShort(first?.fecha)} · {shortTime(first?.horario)}
-                  </p>
-                  <p>
-                    Sala {first?.sala} · Butacas{' '}
-                    {(ticket.entradas || []).map((e) => e.butaca).join(', ')}
-                  </p>
-                  <p>Estado: {ticket.estado}</p>
-                  <p>Total: ${money(ticket.total)}</p>
+                  <p>{formatDateShort(first?.fecha)} · {shortTime(first?.horario)}</p>
+                  <p>{first?.sala} · {(ticket.entradas || []).map((e) => e.butaca).join(', ')}</p>
                 </div>
-                <p className="qr-code">QR {ticket.codigoQR}</p>
-              </article>
+                <div className="ticket-list-item__summary">
+                  <span className={`status-pill status-pill--${String(ticket.estado).toLowerCase()}`}>{String(ticket.estado).replaceAll('_', ' ')}</span>
+                  <strong>${money(ticket.total)}</strong>
+                  <span>Ver ticket</span>
+                </div>
+              </button>
             )
           })}
         </div>
+      )}
+      {selected && (
+        <Modal title="Detalle de la compra" onClose={() => setSelected(null)}>
+          <TicketDetails ticket={selected} />
+        </Modal>
       )}
     </section>
   )
