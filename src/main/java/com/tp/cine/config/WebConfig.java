@@ -23,10 +23,6 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(auditoriaInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns(
-                        "/",
-                        "/index.html",
-                        "/styles.css",
-                        "/app.js",
                         "/images/**",
                         "/error"
                 )

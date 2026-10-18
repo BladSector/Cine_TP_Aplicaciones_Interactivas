@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
@@ -6,6 +6,8 @@ import SeatMap from '../../components/compra/SeatMap'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
+import { api, errorMessage } from '../../api/client'
+import useSeatReservationHeartbeat from '../../hooks/useSeatReservationHeartbeat'
 import { formatFunction, formatLanguage, functionHasStarted, money, seatLabel, shortTime } from '../../utils/format'
 
 export default function CompraButacasPage() {
@@ -14,6 +16,14 @@ export default function CompraButacasPage() {
   const { isSpectator } = useAuth()
   const { peliculas, funciones, butacas, entradas, productos, reload } = useCatalog()
   const { draft, toggleSeat } = usePurchase()
+  const [reservations, setReservations] = useState([])
+  const [pendingSeatIds, setPendingSeatIds] = useState([])
+  const [reservationError, setReservationError] = useState('')
+  const heartbeatError = useSeatReservationHeartbeat(
+    draft.functionId,
+    draft.selectedSeats,
+    isSpectator,
+  )
 
   useEffect(() => {
     if (isSpectator) reload()
@@ -21,6 +31,25 @@ export default function CompraButacasPage() {
 
   const movie = peliculas.find((item) => item.id === Number(movieId))
   const funcion = funciones.find((item) => item.id === draft.functionId)
+
+  const loadReservations = useCallback(async () => {
+    if (!isSpectator || !funcion?.id) return
+    try {
+      const data = await api.getReservasButacas(funcion.id)
+      if (!Array.isArray(data)) {
+        throw new Error('No se pudo obtener la disponibilidad de las butacas.')
+      }
+      setReservations(data)
+    } catch (error) {
+      setReservationError(errorMessage(error))
+    }
+  }, [isSpectator, funcion?.id])
+
+  useEffect(() => {
+    loadReservations()
+    const timer = window.setInterval(loadReservations, 5_000)
+    return () => window.clearInterval(timer)
+  }, [loadReservations])
 
   if (!isSpectator) return <Navigate to={`/compra/${movieId}/acceso`} replace />
   if (!funcion || !movie) return <Navigate to={`/pelicula/${movieId}`} replace />
@@ -36,6 +65,9 @@ export default function CompraButacasPage() {
 
   function isUnavailable(butaca) {
     if (butaca.estado !== 'DISPONIBLE') return true
+    if (reservations.some((reservation) => reservation.butacaId === butaca.id && !reservation.propia)) {
+      return true
+    }
     return entradas.some(
       (entrada) =>
         entrada.funcionId === funcion.id &&
@@ -43,6 +75,33 @@ export default function CompraButacasPage() {
         entrada.estado !== 'REEMBOLSADA' &&
         entrada.estado !== 'CANCELADA',
     )
+  }
+
+  async function handleToggleSeat(butaca) {
+    const selected = draft.selectedSeats.some((seat) => seat.id === butaca.id)
+    setPendingSeatIds((ids) => [...ids, butaca.id])
+    setReservationError('')
+    try {
+      if (selected) {
+        await api.liberarReservaButaca(funcion.id, butaca.id)
+        setReservations((current) => current.filter((item) => item.butacaId !== butaca.id))
+      } else {
+        const reservation = await api.reservarButaca(funcion.id, butaca.id)
+        if (!reservation || typeof reservation !== 'object') {
+          throw new Error('No se pudo reservar la butaca seleccionada.')
+        }
+        setReservations((current) => [
+          ...current.filter((item) => item.butacaId !== butaca.id),
+          reservation,
+        ])
+      }
+      toggleSeat(butaca)
+    } catch (error) {
+      setReservationError(errorMessage(error))
+      await loadReservations()
+    } finally {
+      setPendingSeatIds((ids) => ids.filter((id) => id !== butaca.id))
+    }
   }
 
   const totalTickets = draft.selectedSeats.length * funcion.precioEntrada
@@ -70,8 +129,16 @@ export default function CompraButacasPage() {
             seats={roomSeats}
             selectedSeats={draft.selectedSeats}
             isUnavailable={isUnavailable}
-            onToggle={toggleSeat}
+            isPending={(seat) => pendingSeatIds.includes(seat.id)}
+            onToggle={handleToggleSeat}
           />
+
+          <p className="reservation-note">
+            Las butacas seleccionadas se reservan durante 5 minutos y se renuevan mientras completás la compra.
+          </p>
+          {(reservationError || heartbeatError) && (
+            <div className="info-box info-box--error">{reservationError || heartbeatError}</div>
+          )}
 
           {draft.selectedSeats.length > 0 && (
             <p className="selection-note">
@@ -100,15 +167,7 @@ export default function CompraButacasPage() {
                 disabled={draft.selectedSeats.length === 0}
                 onClick={() => navigate(`/compra/${movieId}/candy`)}
               >
-                Añadir candy bar
-              </button>
-              <button
-                type="button"
-                className="secondary-button"
-                disabled={draft.selectedSeats.length === 0}
-                onClick={() => navigate(`/compra/${movieId}/pago`)}
-              >
-                Ir directamente a pagar
+                Continuar
               </button>
             </div>
           }

@@ -1,6 +1,5 @@
 package service.ventas;
 
-import service.comunicacion.EmailService;
 import service.comunicacion.TicketPdfService;
 import service.usuarios.MetodoDePagoService;
 
@@ -31,7 +30,6 @@ public class TicketService {
     private final EntradaRepository entradaRepository;
     private final ItemConsumoRepository itemConsumoRepository;
     private final MetodoDePagoService metodoDePagoService;
-    private final EmailService emailService;
     private final EntradaService entradaService;
     private final ItemConsumoService itemConsumoService;
     private final TicketPdfService ticketPdfService;
@@ -41,7 +39,6 @@ public class TicketService {
                          EntradaRepository entradaRepository,
                          ItemConsumoRepository itemConsumoRepository,
                          MetodoDePagoService metodoDePagoService,
-                         EmailService emailService,
                          EntradaService entradaService,
                          ItemConsumoService itemConsumoService,
                          TicketPdfService ticketPdfService) {
@@ -50,7 +47,6 @@ public class TicketService {
         this.entradaRepository = entradaRepository;
         this.itemConsumoRepository = itemConsumoRepository;
         this.metodoDePagoService = metodoDePagoService;
-        this.emailService = emailService;
         this.entradaService = entradaService;
         this.itemConsumoService = itemConsumoService;
         this.ticketPdfService = ticketPdfService;
@@ -241,12 +237,6 @@ public class TicketService {
         ticket.agregarItem(itemConsumo);
         itemConsumoRepository.save(itemConsumo);
         return ticketRepository.save(ticket);
-    }
-
-    public Ticket enviarPorMail(int id) {
-        Ticket ticket = buscarPorId(id);
-        emailService.enviarTicket(ticket, calcularTotal(ticket));
-        return ticket;
     }
 
     public void eliminar(int id) {

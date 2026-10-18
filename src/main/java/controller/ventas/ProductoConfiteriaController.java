@@ -45,7 +45,8 @@ public class ProductoConfiteriaController {
                 request.nombre(),
                 request.precio(),
                 request.tipo(),
-                request.tamano()
+                request.tamano(),
+                request.imagenUrl()
         ));
     }
 
@@ -56,7 +57,8 @@ public class ProductoConfiteriaController {
                 request.nombre(),
                 request.precio(),
                 request.tipo(),
-                request.tamano()
+                request.tamano(),
+                request.imagenUrl()
         ));
     }
 
@@ -68,19 +70,22 @@ public class ProductoConfiteriaController {
 
     public record ProductoConfiteriaRequest(String nombre, double precio,
                                             TipoProductoConfiteria tipo,
-                                            TamanoProductoConfiteria tamano) {
+                                            TamanoProductoConfiteria tamano,
+                                            String imagenUrl) {
     }
 
     public record ProductoConfiteriaResponse(int id, String nombre, double precio,
                                              TipoProductoConfiteria tipo,
-                                             TamanoProductoConfiteria tamano) {
+                                             TamanoProductoConfiteria tamano,
+                                             String imagenUrl) {
         public static ProductoConfiteriaResponse desde(ProductoConfiteria producto) {
             return new ProductoConfiteriaResponse(
                     producto.getId(),
                     producto.getNombre(),
                     producto.getPrecio(),
                     producto.getTipo(),
-                    producto.getTamano()
+                    producto.getTamano(),
+                    producto.getImagenUrl()
             );
         }
     }

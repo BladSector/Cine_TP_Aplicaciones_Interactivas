@@ -27,15 +27,18 @@ public class ProductoConfiteriaService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe un producto de confiteria con ese id."));
     }
 
-    public ProductoConfiteria guardar(String nombre, double precio, TipoProductoConfiteria tipo, TamanoProductoConfiteria tamano) {
+    public ProductoConfiteria guardar(String nombre, double precio, TipoProductoConfiteria tipo,
+                                      TamanoProductoConfiteria tamano, String imagenUrl) {
         validarDatos(nombre, precio, tipo, tamano);
-        return productoConfiteriaRepository.save(new ProductoConfiteria(nombre.trim(), precio, tipo, tamano));
+        return productoConfiteriaRepository.save(new ProductoConfiteria(
+                nombre.trim(), precio, tipo, tamano, textoOpcional(imagenUrl)));
     }
 
-    public ProductoConfiteria actualizar(int id, String nombre, double precio, TipoProductoConfiteria tipo, TamanoProductoConfiteria tamano) {
+    public ProductoConfiteria actualizar(int id, String nombre, double precio, TipoProductoConfiteria tipo,
+                                         TamanoProductoConfiteria tamano, String imagenUrl) {
         validarDatos(nombre, precio, tipo, tamano);
         ProductoConfiteria producto = buscarPorId(id);
-        producto.actualizarDatos(nombre.trim(), precio, tipo, tamano);
+        producto.actualizarDatos(nombre.trim(), precio, tipo, tamano, textoOpcional(imagenUrl));
         return productoConfiteriaRepository.save(producto);
     }
 
@@ -54,5 +57,9 @@ public class ProductoConfiteriaService {
         if (tipo == null || tamano == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El tipo y el tamaño del producto son obligatorios.");
         }
+    }
+
+    private String textoOpcional(String texto) {
+        return texto == null || texto.isBlank() ? null : texto.trim();
     }
 }

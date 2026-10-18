@@ -10,6 +10,7 @@ export default defineConfig({
       '/peliculas': 'http://localhost:8080',
       '/salas': 'http://localhost:8080',
       '/butacas': 'http://localhost:8080',
+      '/reservas-butacas': 'http://localhost:8080',
       '/funciones': 'http://localhost:8080',
       '/metodos-pago': 'http://localhost:8080',
       '/espectadores': 'http://localhost:8080',
@@ -19,6 +20,7 @@ export default defineConfig({
       '/productos-confiteria': 'http://localhost:8080',
       '/sesion': 'http://localhost:8080',
       '/precios': 'http://localhost:8080',
+      '/images': 'http://localhost:8080',
     },
   },
 })

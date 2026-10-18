@@ -40,6 +40,7 @@ public class CompraService {
     private final PrecioService precioService;
     private final EntradaService entradaService;
     private final TicketService ticketService;
+    private final ReservaButacaService reservaButacaService;
     private final ApplicationEventPublisher eventPublisher;
 
     public CompraService(EspectadorRepository espectadorRepository,
@@ -52,6 +53,7 @@ public class CompraService {
                          PrecioService precioService,
                          EntradaService entradaService,
                          TicketService ticketService,
+                         ReservaButacaService reservaButacaService,
                          ApplicationEventPublisher eventPublisher) {
         this.espectadorRepository = espectadorRepository;
         this.funcionRepository = funcionRepository;
@@ -63,6 +65,7 @@ public class CompraService {
         this.precioService = precioService;
         this.entradaService = entradaService;
         this.ticketService = ticketService;
+        this.reservaButacaService = reservaButacaService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -88,6 +91,7 @@ public class CompraService {
         if (butacas.size() != idsOrdenados.size()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Una o mas butacas no existen.");
         }
+        reservaButacaService.validarDisponibilidadParaCompra(funcion, espectador, butacas);
 
         double totalEntradas = precioService.calcularTotal(
                 funcion, espectador, funcion.getPrecioEntrada(), butacas.size()
@@ -105,6 +109,8 @@ public class CompraService {
                 agregarItem(ticket, itemCompra);
             }
         }
+
+        reservaButacaService.liberarTrasCompra(funcion, espectador, butacas);
 
         Ticket ticketGuardado = ticketRepository.save(ticket);
         // El correo se procesa después del commit para no informar una compra que luego se revierta.

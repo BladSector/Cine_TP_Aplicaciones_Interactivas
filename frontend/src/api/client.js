@@ -54,12 +54,18 @@ export const api = {
   getFuncion: (id) => request(`/funciones/${id}`),
   getSalas: () => request('/salas'),
   getButacas: () => request('/butacas'),
+  getReservasButacas: (funcionId) => request(`/reservas-butacas/funciones/${funcionId}`),
+  reservarButaca: (funcionId, butacaId) =>
+    request('/reservas-butacas', { method: 'POST', body: { funcionId, butacaId } }),
+  liberarReservaButaca: (funcionId, butacaId) =>
+    request(`/reservas-butacas/funciones/${funcionId}/butacas/${butacaId}`, {
+      method: 'DELETE',
+    }),
   getProductos: () => request('/productos-confiteria'),
   getEntradas: () => request('/entradas'),
   getTickets: () => request('/tickets'),
   getTicket: (id) => request(`/tickets/${id}`),
   getTicketPdf: (id) => download(`/tickets/${id}/pdf`),
-  reenviarTicket: (id) => request(`/tickets/${id}/enviar-mail`, { method: 'POST' }),
   comprar: (body) => request('/compras', { method: 'POST', body }),
   loginEspectador: (body) => request('/espectadores/login', { method: 'POST', body }),
   registrarEspectador: (body) => request('/espectadores', { method: 'POST', body }),

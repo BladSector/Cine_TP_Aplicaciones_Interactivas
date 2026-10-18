@@ -3,8 +3,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { api, errorMessage } from '../../api/client'
 import { formatDateShort, formatFunction, formatLanguage, money, shortTime } from '../../utils/format'
 
-export default function TicketDetails({ ticket, allowEmail = true }) {
-  const [message, setMessage] = useState('')
+export default function TicketDetails({ ticket }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -19,20 +18,6 @@ export default function TicketDetails({ ticket, allowEmail = true }) {
       anchor.download = `ticket-${ticket.id}.pdf`
       anchor.click()
       URL.revokeObjectURL(url)
-    } catch (err) {
-      setError(errorMessage(err))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function resendEmail() {
-    setLoading(true)
-    setError('')
-    setMessage('')
-    try {
-      await api.reenviarTicket(ticket.id)
-      setMessage('Ticket enviado nuevamente al correo de la cuenta.')
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -82,11 +67,9 @@ export default function TicketDetails({ ticket, allowEmail = true }) {
 
       <div className="ticket-total"><span>Total</span><strong>${money(ticket.total)}</strong></div>
       <p className="muted tiny">Pago: {ticket.metodoDePagoResumen || 'Método registrado en la compra'}</p>
-      {message && <div className="info-box">{message}</div>}
       {error && <div className="info-box info-box--error">{error}</div>}
       <div className="summary-actions">
         <button type="button" className="primary-button" onClick={downloadPdf} disabled={loading}>Descargar PDF</button>
-        {allowEmail && <button type="button" className="secondary-button" onClick={resendEmail} disabled={loading}>Reenviar por correo</button>}
       </div>
     </div>
   )

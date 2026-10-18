@@ -49,6 +49,7 @@ export default function PeliculaPage() {
       functionId: selected.id,
       selectedSeats: [],
       consumptions: {},
+      candyVisited: false,
       returnPath: null,
     })
     if (!isSpectator || !spectator.emailVerificado) {
@@ -85,50 +86,50 @@ export default function PeliculaPage() {
         </div>
 
         <div className="movie-detail__content">
-          <p className="eyebrow">Ahora en pantalla</p>
-          <h1>{movie.titulo}</h1>
-          <p className="movie-detail__meta">
-            {movie.duracion} min · {movie.categoriaNombre}
-          </p>
-          <h2>Sinopsis</h2>
-          <p>{movie.descripcion}</p>
+          <header className="movie-detail__summary">
+            <p className="eyebrow">Ahora en pantalla</p>
+            <h1>{movie.titulo}</h1>
+            <p className="movie-detail__meta">
+              {movie.duracion} min · {movie.categoriaNombre}
+            </p>
+            <p className="movie-detail__description">{movie.descripcion}</p>
+          </header>
 
-          <h2>Elige tu función</h2>
-          <DateStrip selectedDate={selectedDate} onChange={setSelectedDate} days={7} />
+          <section className="movie-detail__booking" aria-labelledby="function-title">
+            <h2 id="function-title">Elegí tu función</h2>
+            <DateStrip selectedDate={selectedDate} onChange={setSelectedDate} days={14} />
 
-          {dayFunctions.length === 0 ? (
-            <div className="info-box">No hay funciones para este día.</div>
-          ) : (
-            <div className="function-picker">
-              {dayFunctions.map((fn) => (
-                <button
-                  key={fn.id}
-                  type="button"
-                  className={`function-option ${selected?.id === fn.id ? 'is-selected' : ''}`}
-                  onClick={() => setSelectedFunctionId(fn.id)}
-                >
-                  <strong>{shortTime(fn.horario)}</strong>
-                  <span>
-                    {formatFunction(fn.formato)} · {formatLanguage(fn.idioma)}
-                  </span>
-                  <span>{fn.salaNombre}</span>
-                  <em>{selected?.id === fn.id ? 'Seleccionada' : 'Disponible'}</em>
+            {dayFunctions.length === 0 ? (
+              <div className="info-box">No hay funciones para este día.</div>
+            ) : (
+              <div className="function-picker">
+                {dayFunctions.map((fn) => (
+                  <button
+                    key={fn.id}
+                    type="button"
+                    className={`function-option ${selected?.id === fn.id ? 'is-selected' : ''}`}
+                    onClick={() => setSelectedFunctionId(fn.id)}
+                  >
+                    <strong className="function-option__time">{shortTime(fn.horario)}</strong>
+                    <span className="function-option__format">
+                      {formatFunction(fn.formato)} · {formatLanguage(fn.idioma)}
+                    </span>
+                    <span className="function-option__room">{fn.salaNombre}</span>
+                    <span className="function-option__price">${money(fn.precioEntrada)}</span>
+                    {selected?.id === fn.id && <em>Elegida</em>}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {selected && (
+              <div className="movie-detail__cta">
+                <button type="button" className="primary-button" onClick={continueToSeats}>
+                  Continuar con butacas
                 </button>
-              ))}
-            </div>
-          )}
-
-          <div className="movie-detail__cta">
-            <button
-              type="button"
-              className="primary-button"
-              disabled={!selected}
-              onClick={continueToSeats}
-            >
-              Elegir butacas
-            </button>
-            {selected && <span>Desde ${money(selected.precioEntrada)}</span>}
-          </div>
+              </div>
+            )}
+          </section>
         </div>
       </div>
 

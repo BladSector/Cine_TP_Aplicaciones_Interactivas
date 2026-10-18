@@ -7,6 +7,7 @@ const initialState = {
   functionId: null,
   selectedSeats: [],
   consumptions: {},
+  candyVisited: false,
   returnPath: null,
 }
 
@@ -29,6 +30,7 @@ export function PurchaseProvider({ children }) {
       functionId,
       selectedSeats: [],
       consumptions: {},
+      candyVisited: false,
     }))
   }, [])
 
@@ -40,6 +42,7 @@ export function PurchaseProvider({ children }) {
         selectedSeats: exists
           ? prev.selectedSeats.filter((seat) => seat.id !== butaca.id)
           : [...prev.selectedSeats, butaca],
+        candyVisited: false,
       }
     })
   }, [])
@@ -57,6 +60,10 @@ export function PurchaseProvider({ children }) {
     setDraft((prev) => ({ ...prev, consumptions: {} }))
   }, [])
 
+  const markCandyVisited = useCallback(() => {
+    setDraft((prev) => ({ ...prev, candyVisited: true }))
+  }, [])
+
   const value = useMemo(
     () => ({
       draft,
@@ -66,9 +73,19 @@ export function PurchaseProvider({ children }) {
       toggleSeat,
       setConsumption,
       clearConsumptions,
+      markCandyVisited,
       setDraft,
     }),
-    [draft, reset, startFromMovie, selectFunction, toggleSeat, setConsumption, clearConsumptions],
+    [
+      draft,
+      reset,
+      startFromMovie,
+      selectFunction,
+      toggleSeat,
+      setConsumption,
+      clearConsumptions,
+      markCandyVisited,
+    ],
   )
 
   return <PurchaseContext.Provider value={value}>{children}</PurchaseContext.Provider>

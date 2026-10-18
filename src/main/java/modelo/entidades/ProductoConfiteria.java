@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @Entity
@@ -23,25 +24,31 @@ public class ProductoConfiteria {
     private TipoProductoConfiteria tipo;
     @Enumerated(EnumType.STRING)
     private TamanoProductoConfiteria tamano;
+    @Lob
+    private String imagenUrl;
 
     protected ProductoConfiteria() {
     }
 
     public ProductoConfiteria(String nombre, double precio,
                               TipoProductoConfiteria tipo,
-                              TamanoProductoConfiteria tamano) {
+                              TamanoProductoConfiteria tamano,
+                              String imagenUrl) {
         this.id = 0;
         this.nombre = nombre;
         this.precio = precio;
         this.tipo = tipo;
         this.tamano = tamano;
+        this.imagenUrl = imagenUrl;
     }
 
-    public void actualizarDatos(String nombre, double precio, TipoProductoConfiteria tipo, TamanoProductoConfiteria tamano) {
+    public void actualizarDatos(String nombre, double precio, TipoProductoConfiteria tipo,
+                                TamanoProductoConfiteria tamano, String imagenUrl) {
         this.nombre = nombre;
         this.precio = precio;
         this.tipo = tipo;
         this.tamano = tamano;
+        this.imagenUrl = imagenUrl;
     }
 
     public void asignarId(int id) {
@@ -66,5 +73,9 @@ public class ProductoConfiteria {
 
     public TamanoProductoConfiteria getTamano() {
         return tamano;
+    }
+
+    public String getImagenUrl() {
+        return imagenUrl;
     }
 }

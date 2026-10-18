@@ -1,13 +1,13 @@
 import { addDays, formatDayLabel, formatDayNumber, formatMonthYear, todayValue } from '../../utils/format'
 
-export default function DateStrip({ selectedDate, onChange, days = 7 }) {
+export default function DateStrip({ selectedDate, onChange, days = 14 }) {
   const today = todayValue()
   const dates = Array.from({ length: days }, (_, index) => addDays(today, index))
 
   return (
     <section className="date-strip" aria-label="Elegí el día">
       <div className="date-strip__heading">
-        <p className="eyebrow">Elige el día</p>
+        <p className="eyebrow">Elegí el día</p>
         <h2>{formatMonthYear(selectedDate || today)}</h2>
       </div>
       <div className="date-strip__list">

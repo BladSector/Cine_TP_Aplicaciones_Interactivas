@@ -96,6 +96,7 @@ public class EspectadorService {
                 .ifPresent(otro -> {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ya existe una cuenta con ese email.");
                 });
+        boolean emailCambiado = !espectador.getEmail().equalsIgnoreCase(emailNormalizado);
         String contraseniaActualizada = espectador.getContrasenia();
 
         if (nuevaContrasenia != null && !nuevaContrasenia.isBlank()) {
@@ -104,7 +105,15 @@ public class EspectadorService {
         }
 
         espectador.actualizarDatos(nombre.trim(), apellido.trim(), emailNormalizado, contraseniaActualizada);
-        return espectadorRepository.save(espectador);
+        if (emailCambiado) {
+            espectador.requerirNuevaVerificacionDeEmail(UUID.randomUUID().toString());
+        }
+
+        Espectador actualizado = espectadorRepository.save(espectador);
+        if (emailCambiado) {
+            emailService.enviarConfirmacionCuenta(actualizado, actualizado.getTokenVerificacionEmail());
+        }
+        return actualizado;
     }
 
     public Espectador recuperarContrasenia(String email, String token, String nuevaContrasenia,
@@ -159,7 +168,6 @@ public class EspectadorService {
         Espectador espectador = espectadorRepository.findByTokenVerificacionEmail(token)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "El enlace de verificacion no es valido."));
         espectador.verificarMail();
-        espectador.asignarTokenVerificacionEmail(null);
         return espectadorRepository.save(espectador);
     }
 

@@ -100,12 +100,26 @@ CREATE TABLE entrada (
     CONSTRAINT fk_entrada_butaca FOREIGN KEY (butaca_id) REFERENCES butaca(id)
 );
 
+CREATE TABLE reserva_butaca (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    funcion_id INT NOT NULL,
+    butaca_id INT NOT NULL,
+    espectador_id INT NOT NULL,
+    vence_en DATETIME(6) NOT NULL,
+    CONSTRAINT uq_reserva_funcion_butaca UNIQUE (funcion_id, butaca_id),
+    CONSTRAINT fk_reserva_funcion FOREIGN KEY (funcion_id) REFERENCES funcion(id),
+    CONSTRAINT fk_reserva_butaca FOREIGN KEY (butaca_id) REFERENCES butaca(id),
+    CONSTRAINT fk_reserva_espectador FOREIGN KEY (espectador_id) REFERENCES espectador(id),
+    INDEX idx_reserva_vencimiento (vence_en)
+);
+
 CREATE TABLE producto_confiteria (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(120) NOT NULL,
     precio DOUBLE NOT NULL,
     tipo VARCHAR(30) NOT NULL,
-    tamano VARCHAR(30) NOT NULL
+    tamano VARCHAR(30) NOT NULL,
+    imagen_url LONGTEXT NULL
 );
 
 CREATE TABLE item_consumo (
@@ -179,14 +193,24 @@ INSERT INTO categoria (id, nombre) VALUES
 (8, 'Aventura');
 
 INSERT INTO pelicula (id, titulo, duracion, descripcion, portada_url, categoria_id) VALUES
-(1, 'Código Rojo', 112, 'Una agente retirada vuelve a la ciudad para frenar un ataque que amenaza con paralizar todo el sistema de transporte.', NULL, 1),
-(2, 'La Última Carta', 104, 'Dos hermanos encuentran cartas familiares que revelan una historia oculta y los obliga a reconstruir su vínculo.', NULL, 2),
-(3, 'Casa del Lago Negro', 98, 'Un grupo de amigos pasa un fin de semana en una cabaña aislada donde cada ruido parece venir de otra época.', NULL, 3),
-(4, 'Cita a las Ocho', 95, 'Una comedia romántica sobre citas cruzadas, confusiones y una reserva imposible de cancelar.', NULL, 4),
-(5, 'Órbita 9', 118, 'La tripulación de una estación espacial descubre una señal que podría cambiar el destino de la Tierra.', NULL, 5),
-(6, 'Luna y el Bosque Encantado', 101, 'Una joven inventora atraviesa un bosque mágico para devolverle la luz a su pueblo.', NULL, 6),
-(7, 'El Testigo Silencioso', 108, 'Un fotógrafo presencia un crimen desde su ventana y comienza una investigación que lo pone en peligro.', NULL, 7),
-(8, 'Rumbo al Norte', 92, 'Tres amigos viajan por la ruta patagónica buscando un mapa perdido y una aventura que los cambie para siempre.', NULL, 8);
+(1, 'El Padrino', 175, 'El anciano patriarca de una dinastía del crimen organizado en la ciudad de Nueva York de la posguerra transfiere el control de su imperio clandestino a su reacio hijo menor.', '/images/peliculas/el_padrino.jpg', 2),
+(2, 'La naranja mecánica', 136, 'En el futuro, un sádico líder de una pandilla es encarcelado y se ofrece como voluntario para un experimento de aversión a la conducta, pero el proceso no sale como estaba planeado.', '/images/peliculas/naranja_mecanica.jpg', 5),
+(3, 'El bueno, el malo y el feo', 161, 'Durante la Guerra de Secesión, tres cazarrecompensas se lanzan a la búsqueda de un tesoro que ninguno de ellos puede encontrar sin la ayuda de los otros dos.', '/images/peliculas/the_good_the_bad_the_ugly.jpg', 8),
+(4, 'Matrix', 136, 'Un hacker informático descubre la impactante verdad: la vida tal como la conoce es una simulación virtual creada por una inteligencia artificial, y se une a la rebelión para liberar a la humanidad.', '/images/peliculas/the_matrix.jpg', 5),
+(5, 'Pulp Fiction', 154, 'Las vidas de dos sicarios de la mafia, un boxeador, la esposa de un gángster y un par de bandidos se entrelazan en cuatro historias de violencia y redención.', '/images/peliculas/pulp_fiction.jpg', 7),
+(6, 'Jurassic Park', 127, 'Un paleontólogo pragmático que visita un parque temático secreto recibe el encargo de proteger a dos niños después de que un sabotaje provoca un corte de energía y los dinosaurios clonados escapan de sus recintos.', '/images/peliculas/jurasic_park.jpg', 8),
+(7, 'The Truman Show', 103, 'Un vendedor de seguros descubre poco a poco que toda su vida es en realidad un programa de telerrealidad y que todos los que lo rodean son actores.', '/images/peliculas/the_truman_show.jpg', 4),
+(8, 'Shrek Tercero', 93, 'Cuando su suegro, el rey Harold, enferma, Shrek es designado como el heredero al trono de Muy Muy Lejano, pero él prefiere buscar al primo de Fiona, Artie, para que reine en su lugar.', '/images/peliculas/sherk3.jpg', 6),
+(9, 'Volver al futuro', 116, 'Un adolescente de 17 años es enviado accidentalmente treinta años al pasado en un DeLorean que viaja en el tiempo, inventado por su excéntrico amigo científico.', '/images/peliculas/back_to_the_future.jpg', 5),
+(10, 'La cosa', 109, 'Un equipo de investigación estadounidense en la Antártida es perseguido por un organismo extraterrestre que cambia de forma y asume la apariencia exacta de sus víctimas.', '/images/peliculas/The_thing.jpg', 3),
+(11, 'Rocky IV', 91, 'Después de que el letal boxeador soviético Ivan Drago mata a su amigo Apollo Creed en una pelea de exhibición, Rocky Balboa decide viajar a la Unión Soviética para enfrentarse a él en el ring y vengar su muerte.', '/images/peliculas/rocky4.jpg', 1),
+(12, 'El club de la pelea', 139, 'Un oficinista insomne deprimido y un fabricante de jabón desentendido de la sociedad forman un club de lucha clandestino que evoluciona hacia algo mucho más grande y peligroso.', '/images/peliculas/club_fight.jpg', 2),
+(13, 'Gladiador', 155, 'Un ex general romano es traicionado y se propone vengarse del emperador corrupto que asesinó a su familia y lo envió a la esclavitud como gladiador.', '/images/peliculas/gladiator.jpg', 1),
+(14, 'El caballero oscuro', 152, 'Cuando la amenaza conocida como el Guasón causa estragos y caos en Ciudad Gótica, Batman debe aceptar una de las mayores pruebas psicológicas y físicas de su capacidad para luchar contra la injusticia.', '/images/peliculas/el_caballero_oscruo.jpg', 1),
+(15, 'El pianista', 150, 'Un músico judío polaco lucha por sobrevivir a la destrucción del gueto de Varsovia durante la ocupación nazi en la Segunda Guerra Mundial.', '/images/peliculas/the_pianist.jpg', 2),
+(16, 'Gran Torino', 116, 'Un viudo y amargado veterano de la Guerra de Corea se propone reformar a su vecino, un adolescente hmong que, presionado por una pandilla, intentó robar su preciado auto Ford Gran Torino de 1972.', '/images/peliculas/gran_torino.jpg', 2),
+(17, 'Piratas del Caribe: La maldición de la Perla Negra', 143, 'El herrero Will Turner se une al excéntrico pirata Capitán Jack Sparrow para salvar a su amada, la hija del gobernador, de los antiguos aliados piratas de Jack, que ahora son no muertos.', '/images/peliculas/piratas_del_caribe.jpg', 8),
+(18, 'El secreto de sus ojos', 129, 'Un oficial de un juzgado de instrucción retirado escribe una novela con la esperanza de encontrar cierre para un caso de violación y homicidio no resuelto del pasado y para su amor no correspondido por su superior.', '/images/peliculas/el_secreto_de_sus_ojos.jpg', 7);
 
 INSERT INTO sala (id, nombre, capacidad, estado) VALUES
 (1, 'Sala Premium', 60, 'DISPONIBLE'),
@@ -237,44 +261,66 @@ INSERT INTO seed_dias (n) VALUES
 (0), (1), (2), (3), (4), (5), (6),
 (7), (8), (9), (10), (11), (12), (13);
 
-CREATE TEMPORARY TABLE seed_funciones (
+CREATE TEMPORARY TABLE seed_cartelera (
+    dia_modulo INT,
     pelicula_id INT,
+    orden_pelicula INT,
+    precio_base DOUBLE
+);
+
+INSERT INTO seed_cartelera (dia_modulo, pelicula_id, orden_pelicula, precio_base) VALUES
+(0, 1, 1, 8200), (0, 2, 2, 7800), (0, 3, 3, 8400),
+(0, 4, 4, 8100), (0, 5, 5, 8300), (0, 6, 6, 8000),
+(1, 4, 1, 8100), (1, 5, 2, 8300), (1, 6, 3, 8000),
+(1, 7, 4, 7400), (1, 8, 5, 7200), (1, 9, 6, 7600),
+(2, 7, 1, 7400), (2, 8, 2, 7200), (2, 9, 3, 7600),
+(2, 10, 4, 7900), (2, 11, 5, 7300), (2, 12, 6, 8100),
+(3, 10, 1, 7900), (3, 11, 2, 7300), (3, 12, 3, 8100),
+(3, 13, 4, 8500), (3, 14, 5, 8900), (3, 15, 6, 8000),
+(4, 13, 1, 8500), (4, 14, 2, 8900), (4, 15, 3, 8000),
+(4, 16, 4, 7500), (4, 17, 5, 8400), (4, 18, 6, 8200),
+(5, 16, 1, 7500), (5, 17, 2, 8400), (5, 18, 3, 8200),
+(5, 1, 4, 8200), (5, 2, 5, 7800), (5, 3, 6, 8400);
+
+CREATE TEMPORARY TABLE seed_variantes (
+    orden_pelicula INT,
     sala_id INT,
     horario TIME,
     formato VARCHAR(30),
     idioma VARCHAR(30),
-    precio_entrada DOUBLE
+    recargo DOUBLE
 );
 
-INSERT INTO seed_funciones (pelicula_id, sala_id, horario, formato, idioma, precio_entrada) VALUES
-(1, 1, '13:00:00', 'DOS_D', 'ESPANIOL', 7800),
-(2, 1, '15:20:00', 'DOS_D', 'SUBTITULADA', 7600),
-(3, 1, '17:35:00', 'DOS_D', 'SUBTITULADA', 8200),
-(4, 1, '20:00:00', 'DOS_D', 'ESPANIOL', 7400),
-(5, 2, '13:15:00', 'DOS_D', 'SUBTITULADA', 8400),
-(6, 2, '15:45:00', 'DOS_D', 'ESPANIOL', 7200),
-(7, 2, '18:00:00', 'DOS_D', 'SUBTITULADA', 8000),
-(8, 2, '20:30:00', 'DOS_D', 'ESPANIOL', 7300),
-(1, 3, '14:15:00', 'TRES_D', 'SUBTITULADA', 9400),
-(3, 3, '16:45:00', 'TRES_D', 'ESPANIOL', 9600),
-(5, 3, '19:00:00', 'TRES_D', 'SUBTITULADA', 9800),
-(7, 3, '21:35:00', 'TRES_D', 'SUBTITULADA', 9300),
-(2, 4, '13:45:00', 'DOS_D', 'ESPANIOL', 6900),
-(4, 4, '16:10:00', 'DOS_D', 'ESPANIOL', 6900),
-(6, 4, '18:20:00', 'TRES_D', 'ESPANIOL', 8500),
-(8, 4, '20:45:00', 'DOS_D', 'SUBTITULADA', 7100);
+INSERT INTO seed_variantes (orden_pelicula, sala_id, horario, formato, idioma, recargo) VALUES
+(1, 1, '13:00:00', 'DOS_D', 'ESPANIOL', 0),
+(1, 2, '19:45:00', 'DOS_D', 'SUBTITULADA', 300),
+(1, 3, '16:45:00', 'TRES_D', 'ESPANIOL', 1200),
+(1, 4, '13:45:00', 'TRES_D', 'SUBTITULADA', 1500),
+(2, 1, '16:15:00', 'DOS_D', 'ESPANIOL', 0),
+(2, 2, '13:15:00', 'DOS_D', 'SUBTITULADA', 300),
+(2, 3, '20:00:00', 'TRES_D', 'ESPANIOL', 1200),
+(2, 4, '17:00:00', 'TRES_D', 'SUBTITULADA', 1500),
+(3, 1, '19:30:00', 'DOS_D', 'ESPANIOL', 0),
+(3, 2, '16:30:00', 'DOS_D', 'SUBTITULADA', 300),
+(3, 3, '13:30:00', 'TRES_D', 'ESPANIOL', 1200),
+(3, 4, '20:15:00', 'TRES_D', 'SUBTITULADA', 1500),
+(4, 1, '23:20:00', 'DOS_D', 'ESPANIOL', 0),
+(4, 2, '23:20:00', 'DOS_D', 'SUBTITULADA', 300),
+(5, 3, '23:20:00', 'TRES_D', 'ESPANIOL', 1200),
+(6, 4, '23:20:00', 'TRES_D', 'SUBTITULADA', 1500);
 
 INSERT INTO funcion (fecha, horario, pelicula_id, sala_id, formato, idioma, precio_entrada)
 SELECT DATE_ADD(CURDATE(), INTERVAL d.n DAY),
-       sf.horario,
-       sf.pelicula_id,
-       sf.sala_id,
-       sf.formato,
-       sf.idioma,
-       sf.precio_entrada
+       v.horario,
+       c.pelicula_id,
+       v.sala_id,
+       v.formato,
+       v.idioma,
+       c.precio_base + v.recargo
 FROM seed_dias d
-CROSS JOIN seed_funciones sf
-ORDER BY d.n, sf.sala_id, sf.horario;
+JOIN seed_cartelera c ON c.dia_modulo = MOD(d.n, 6)
+JOIN seed_variantes v ON v.orden_pelicula = c.orden_pelicula
+ORDER BY d.n, v.sala_id, v.horario;
 
 INSERT INTO producto_confiteria (id, nombre, precio, tipo, tamano) VALUES
 (1, 'Pochoclos salados chicos', 2600, 'POCHOCLOS', 'CHICO'),
@@ -295,6 +341,15 @@ INSERT INTO producto_confiteria (id, nombre, precio, tipo, tamano) VALUES
 (16, 'Combo pareja', 9800, 'COMBO', 'UNICO'),
 (17, 'Combo familiar', 14500, 'COMBO', 'UNICO'),
 (18, 'Combo infantil', 5600, 'COMBO', 'UNICO');
+
+UPDATE producto_confiteria
+SET imagen_url = CASE tipo
+    WHEN 'POCHOCLOS' THEN '/images/consumibles/pochoclos.png'
+    WHEN 'BEBIDA' THEN '/images/consumibles/bebida.png'
+    WHEN 'DULCE' THEN '/images/consumibles/dulce.png'
+    WHEN 'COMBO' THEN '/images/consumibles/combo.png'
+    ELSE NULL
+END;
 
 -- Cuenta y medio de pago técnicos para probar tickets desde las interfaces.
 INSERT INTO espectador (

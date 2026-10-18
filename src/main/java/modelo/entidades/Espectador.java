@@ -61,6 +61,12 @@ public class Espectador {
 
     public void verificarMail(){
         this.emailVerificado = true;
+        this.tokenVerificacionEmail = null;
+    }
+
+    public void requerirNuevaVerificacionDeEmail(String token) {
+        this.emailVerificado = false;
+        this.tokenVerificacionEmail = token;
     }
 
     public void agregarMetodoDePago(MetodoDePago metodoDePago) {

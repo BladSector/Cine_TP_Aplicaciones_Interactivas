@@ -116,11 +116,6 @@ public class TicketController {
         return crearResponse(ticketService.agregarItem(id, itemId));
     }
 
-    @PostMapping("/{id}/enviar-mail")
-    public TicketResponse enviarPorMail(@PathVariable int id) {
-        return crearResponse(ticketService.enviarPorMail(id));
-    }
-
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void eliminar(@PathVariable int id) {

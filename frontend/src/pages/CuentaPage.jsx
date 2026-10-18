@@ -221,8 +221,8 @@ export default function CuentaPage() {
       )}
       {notice && <div className="info-box">{notice}</div>}
       {activeSection === '#entradas' && <MisEntradasList />}
-      {activeSection === '#perfil' && <div className="account-grid"><PerfilForm /></div>}
-      {activeSection === '#pagos' && <div className="account-grid"><MetodosPagoList /></div>}
+      {activeSection === '#perfil' && <div className="account-grid account-grid--profile"><PerfilForm /></div>}
+      {activeSection === '#pagos' && <div className="account-grid account-grid--wallet"><MetodosPagoList /></div>}
 
       {showVerification && (
         <Modal title="Confirmá tu correo" onClose={() => setShowVerification(false)}>

@@ -1,20 +1,41 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Check, CreditCard } from 'lucide-react'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
+import ExpiryMonthPicker from '../../components/compra/ExpiryMonthPicker'
 import TicketDetails from '../../components/tickets/TicketDetails'
 import { api, errorMessage } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
 import { functionHasStarted, money, nextMonthValue, paymentIsExpired } from '../../utils/format'
+import useSeatReservationHeartbeat from '../../hooks/useSeatReservationHeartbeat'
+
+function formatCardNumber(value) {
+  return value
+    .replace(/\D/g, '')
+    .slice(0, 16)
+    .replace(/(.{4})/g, '$1 ')
+    .trim()
+}
+
+function formatExpiry(value) {
+  if (!value || !value.includes('-')) return 'MM/AA'
+  const [year, month] = value.split('-')
+  return `${month}/${year.slice(-2)}`
+}
+
+function cardPreviewNumber(value) {
+  if (!value) return '•••• •••• •••• ••••'
+  return formatCardNumber(value).padEnd(19, '•')
+}
 
 export default function CompraPagoPage() {
   const { movieId } = useParams()
-  const navigate = useNavigate()
   const { spectator, isSpectator, refreshSpectator } = useAuth()
   const { peliculas, funciones, productos, reload } = useCatalog()
-  const { draft, reset, clearConsumptions } = usePurchase()
+  const { draft, clearConsumptions } = usePurchase()
   const [accepted, setAccepted] = useState(false)
   const [methodMode, setMethodMode] = useState('saved')
   const [selectedMethodId, setSelectedMethodId] = useState('')
@@ -28,6 +49,11 @@ export default function CompraPagoPage() {
   const [error, setError] = useState('')
   const [ticket, setTicket] = useState(null)
   const [calculatedTickets, setCalculatedTickets] = useState(null)
+  const reservationError = useSeatReservationHeartbeat(
+    draft.functionId,
+    draft.selectedSeats,
+    !ticket,
+  )
 
   const movie = peliculas.find((item) => item.id === Number(movieId))
   const funcion = funciones.find((item) => item.id === draft.functionId)
@@ -51,6 +77,9 @@ export default function CompraPagoPage() {
   if (!isSpectator) return <Navigate to={`/compra/${movieId}/acceso`} replace />
   if (!funcion || !movie || draft.selectedSeats.length === 0) {
     return <Navigate to={`/compra/${movieId}/butacas`} replace />
+  }
+  if (!draft.candyVisited) {
+    return <Navigate to={`/compra/${movieId}/candy`} replace />
   }
 
   const totalTickets = calculatedTickets ?? draft.selectedSeats.length * funcion.precioEntrada
@@ -141,14 +170,6 @@ export default function CompraPagoPage() {
             cuenta.
           </p>
           <TicketDetails ticket={ticket} />
-          <div className="summary-actions">
-            <button type="button" className="primary-button" onClick={() => { reset(); navigate('/cuenta') }}>
-              Ir a Mi cuenta
-            </button>
-            <button type="button" className="secondary-button" onClick={() => { reset(); navigate('/') }}>
-              Volver a cartelera
-            </button>
-          </div>
         </section>
       </div>
     )
@@ -168,20 +189,16 @@ export default function CompraPagoPage() {
           <p>Revisa tu pedido y completa el pago. Enviaremos las entradas a tu correo.</p>
 
           <form className="stack-form" onSubmit={handlePay}>
-            <div className="form-grid">
-              <label>
-                Nombre
-                <input value={spectator.nombre} readOnly />
-              </label>
-              <label>
-                Apellidos
-                <input value={spectator.apellido} readOnly />
-              </label>
+            <div className="checkout-customer">
+              <div>
+                <span>Comprador</span>
+                <strong>{spectator.nombre} {spectator.apellido}</strong>
+              </div>
+              <div>
+                <span>Correo electrónico</span>
+                <strong>{spectator.email}</strong>
+              </div>
             </div>
-            <label>
-              Correo electrónico
-              <input value={spectator.email} readOnly />
-            </label>
 
             <h2>Método de pago</h2>
             {metodos.length > 0 && (
@@ -204,70 +221,110 @@ export default function CompraPagoPage() {
             )}
 
             {methodMode === 'saved' && metodos.length > 0 ? (
-              <label>
-                Tarjeta
-                <select
-                  value={selectedMethodId}
-                  onChange={(e) => setSelectedMethodId(e.target.value)}
-                  required
-                >
-                  <option value="">Seleccionar…</option>
-                  {metodos.map((metodo) => (
-                    <option
-                      key={metodo.id}
-                      value={metodo.id}
-                      disabled={paymentIsExpired(metodo.fechaVencimiento)}
-                    >
-                      **** {metodo.ultimosNumeros} · vence {metodo.fechaVencimiento}
-                      {paymentIsExpired(metodo.fechaVencimiento) ? ' (vencida)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="checkout-card-options" role="radiogroup" aria-label="Tarjetas guardadas">
+                {metodos.map((metodo) => {
+                  const expired = paymentIsExpired(metodo.fechaVencimiento)
+                  const selected = selectedMethodId === String(metodo.id)
+                  return (
+                    <label key={metodo.id} className="payment-card-option">
+                      <input
+                        type="radio"
+                        name="metodoDePago"
+                        value={metodo.id}
+                        checked={selected}
+                        disabled={expired}
+                        onChange={(event) => setSelectedMethodId(event.target.value)}
+                      />
+                      <div className={`payment-card${expired ? ' is-expired' : ''}`}>
+                        <div className="payment-card__top">
+                          <span className="payment-card__chip" aria-hidden="true" />
+                          <CreditCard size={22} aria-hidden="true" />
+                        </div>
+                        <div className="payment-card__number">•••• •••• •••• {metodo.ultimosNumeros}</div>
+                        <div className="payment-card__details">
+                          <div>
+                            <span>Titular</span>
+                            <strong>{metodo.titular || `${metodo.nombre} ${metodo.apellido || ''}`}</strong>
+                          </div>
+                          <div>
+                            <span>Vence</span>
+                            <strong>{formatExpiry(metodo.fechaVencimiento)}</strong>
+                          </div>
+                        </div>
+                        {expired && <span className="payment-card__status">Vencida</span>}
+                        {selected && !expired && (
+                          <span className="payment-card__selected">
+                            <Check size={14} aria-hidden="true" />
+                            Seleccionada
+                          </span>
+                        )}
+                      </div>
+                    </label>
+                  )
+                })}
+              </div>
             ) : (
-              <div className="form-grid">
-                <label className="full">
-                  Titular de la tarjeta
-                  <input
-                    value={card.nombreTitular}
-                    onChange={(e) => setCard((prev) => ({ ...prev, nombreTitular: e.target.value }))}
-                    required={methodMode === 'new' || metodos.length === 0}
-                  />
-                </label>
-                <label className="full">
-                  Número de tarjeta
-                  <input
-                    value={card.numero}
-                    onChange={(e) => setCard((prev) => ({ ...prev, numero: e.target.value }))}
-                    placeholder="16 dígitos"
-                    inputMode="numeric"
-                    maxLength="19"
-                    required={methodMode === 'new' || metodos.length === 0}
-                  />
-                </label>
-                <label>
-                  Vencimiento (mes y año)
-                  <input
-                    type="month"
-                    min={nextMonthValue()}
-                    value={card.fechaVencimiento}
-                    onChange={(e) =>
-                      setCard((prev) => ({ ...prev, fechaVencimiento: e.target.value }))
-                    }
-                    required={methodMode === 'new' || metodos.length === 0}
-                  />
-                </label>
-                <label>
-                  CVV
-                  <input
-                    type="password"
-                    value={card.cvv}
-                    onChange={(e) => setCard((prev) => ({ ...prev, cvv: e.target.value }))}
-                    inputMode="numeric"
-                    maxLength="4"
-                    required={methodMode === 'new' || metodos.length === 0}
-                  />
-                </label>
+              <div className="checkout-new-card">
+                <div className="payment-card payment-card--preview" aria-label="Vista previa de la tarjeta">
+                  <div className="payment-card__top">
+                    <span className="payment-card__chip" aria-hidden="true" />
+                    <CreditCard size={22} aria-hidden="true" />
+                  </div>
+                  <div className="payment-card__number">{cardPreviewNumber(card.numero)}</div>
+                  <div className="payment-card__details">
+                    <div>
+                      <span>Titular</span>
+                      <strong>{card.nombreTitular || 'NOMBRE Y APELLIDO'}</strong>
+                    </div>
+                    <div>
+                      <span>Vence</span>
+                      <strong>{formatExpiry(card.fechaVencimiento)}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-grid payment-card-grid">
+                  <label className="full">
+                    Titular de la tarjeta
+                    <input
+                      value={card.nombreTitular}
+                      onChange={(e) => setCard((prev) => ({ ...prev, nombreTitular: e.target.value }))}
+                      required={methodMode === 'new' || metodos.length === 0}
+                    />
+                  </label>
+                  <label className="full">
+                    Número de tarjeta
+                    <input
+                      value={card.numero}
+                      onChange={(e) => setCard((prev) => ({ ...prev, numero: formatCardNumber(e.target.value) }))}
+                      placeholder="0000 0000 0000 0000"
+                      inputMode="numeric"
+                      maxLength="19"
+                      required={methodMode === 'new' || metodos.length === 0}
+                    />
+                  </label>
+                  <label>
+                    Vencimiento (mes y año)
+                    <ExpiryMonthPicker
+                      min={nextMonthValue()}
+                      value={card.fechaVencimiento}
+                      onChange={(fechaVencimiento) =>
+                        setCard((prev) => ({ ...prev, fechaVencimiento }))
+                      }
+                    />
+                  </label>
+                  <label className="payment-card-grid__cvv">
+                    CVV
+                    <input
+                      type="password"
+                      value={card.cvv}
+                      onChange={(e) => setCard((prev) => ({ ...prev, cvv: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                      inputMode="numeric"
+                      maxLength="4"
+                      required={methodMode === 'new' || metodos.length === 0}
+                    />
+                  </label>
+                </div>
               </div>
             )}
 
@@ -280,7 +337,9 @@ export default function CompraPagoPage() {
               He leído y acepto las condiciones de compra y la política de privacidad.
             </label>
 
-            {error && <div className="info-box info-box--error">{error}</div>}
+            {(error || reservationError) && (
+              <div className="info-box info-box--error">{error || reservationError}</div>
+            )}
 
             <button type="submit" className="primary-button" disabled={loading || functionHasStarted(funcion)}>
               {loading ? 'Procesando…' : `Pagar $${money(total)}`}

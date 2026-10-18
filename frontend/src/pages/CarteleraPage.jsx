@@ -6,19 +6,9 @@ import { useCatalog } from '../context/CatalogContext'
 import { usePurchase } from '../context/PurchaseContext'
 import { formatFunction, functionHasStarted, normalizeText, todayValue } from '../utils/format'
 
-// 1. El import con la ruta correcta hacia la carpeta components/cartelera
 import AccordionGallery from '../components/cartelera/AccordionGallery'
 import PurchaseAuthDrawer from '../components/cuenta/PurchaseAuthDrawer'
 import { useAuth } from '../context/AuthContext'
-
-// 2. Las imágenes estáticas (fuera de la función principal)
-const items = [
-  { image: 'https://picsum.photos/id/1015/900/1200', label: 'Canyon', link: '#' },
-  { image: 'https://picsum.photos/id/1018/900/1200', label: 'Ridgeline', link: '#' },
-  { image: 'https://picsum.photos/id/1039/900/1200', label: 'Falls', link: '#' },
-  { image: 'https://picsum.photos/id/1043/900/1200', label: 'Harbour', link: '#' },
-  { image: 'https://picsum.photos/id/1044/900/1200', label: 'Skyline', link: '#' }
-];
 
 export default function CarteleraPage() {
   const navigate = useNavigate()
@@ -31,6 +21,24 @@ export default function CarteleraPage() {
   const [idioma, setIdioma] = useState('')
   const [query, setQuery] = useState('')
   const [pendingMovieId, setPendingMovieId] = useState(null)
+
+  const featuredMovies = useMemo(() => {
+    const availableMovieIds = new Set(
+      funciones
+        .filter((fn) => fn.fecha === selectedDate && !functionHasStarted(fn))
+        .map((fn) => fn.peliculaId),
+    )
+
+    return peliculas
+      .filter((movie) => availableMovieIds.has(movie.id) && movie.portadaUrl)
+      .slice(0, 5)
+      .map((movie) => ({
+        image: movie.portadaUrl,
+        label: movie.titulo,
+        alt: `Portada de ${movie.titulo}`,
+        link: `/pelicula/${movie.id}`,
+      }))
+  }, [peliculas, funciones, selectedDate])
 
   const moviesWithSessions = useMemo(() => {
     return peliculas
@@ -56,6 +64,7 @@ export default function CarteleraPage() {
       functionId: fn.id,
       selectedSeats: [],
       consumptions: {},
+      candyVisited: false,
       returnPath: null,
     })
     if (!isSpectator || !spectator.emailVerificado) {
@@ -73,18 +82,23 @@ export default function CarteleraPage() {
              <span>Film Zone</span>
           </h1>
           <p className="hero__headline">
-              Elegí tu película. Encontrá tu función. Viví el cine.
+            <span>Elegí tu película.</span>
+            <span>Encontrá tu función.</span>
+            <span>Viví el cine.</span>
           </p>
         </div>
 
-        {/* contenedor de la galería*/}
         <div className="hero__gallery">
-          <AccordionGallery
-            items={items}
-            defaultIndex={2}
-            expandRatio={0.52}
-            trigger="hover"
-          />
+          {featuredMovies.length > 0 ? (
+            <AccordionGallery
+              items={featuredMovies}
+              defaultIndex={Math.min(2, featuredMovies.length - 1)}
+              expandRatio={0.52}
+              trigger="hover"
+            />
+          ) : (
+            <div className="hero__empty-gallery">No hay películas disponibles para esta fecha.</div>
+          )}
         </div>
 
         <div className="hero__glow" aria-hidden="true" />

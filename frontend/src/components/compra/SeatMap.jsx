@@ -1,7 +1,13 @@
 import { Armchair } from 'lucide-react'
 import { seatLabel } from '../../utils/format'
 
-export default function SeatMap({ seats, selectedSeats, isUnavailable, onToggle }) {
+export default function SeatMap({
+  seats,
+  selectedSeats,
+  isUnavailable,
+  isPending = () => false,
+  onToggle,
+}) {
   if (!seats.length) {
     return <div className="info-box">No hay butacas disponibles en esta sala.</div>
   }
@@ -23,14 +29,15 @@ export default function SeatMap({ seats, selectedSeats, isUnavailable, onToggle 
 
               const selected = selectedSeats.some((seat) => seat.id === butaca.id)
               const unavailable = isUnavailable(butaca)
+              const pending = isPending(butaca)
               const label = seatLabel(butaca)
 
               return (
                 <button
                   key={butaca.id}
                   type="button"
-                  className={`seat-button ${selected ? 'is-selected' : ''} ${unavailable ? 'is-blocked' : ''}`}
-                  disabled={unavailable}
+                  className={`seat-button ${selected ? 'is-selected' : ''} ${unavailable ? 'is-blocked' : ''} ${pending ? 'is-pending' : ''}`}
+                  disabled={unavailable || pending}
                   onClick={() => onToggle(butaca)}
                   aria-label={`Butaca ${label}`}
                   title={`Butaca ${label}`}

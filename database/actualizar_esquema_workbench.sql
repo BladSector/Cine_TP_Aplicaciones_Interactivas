@@ -49,6 +49,19 @@ CREATE TABLE IF NOT EXISTS aviso_sala (
     INDEX idx_aviso_fecha (fecha_hora)
 );
 
+CREATE TABLE IF NOT EXISTS reserva_butaca (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    funcion_id INT NOT NULL,
+    butaca_id INT NOT NULL,
+    espectador_id INT NOT NULL,
+    vence_en DATETIME(6) NOT NULL,
+    CONSTRAINT uq_reserva_funcion_butaca UNIQUE (funcion_id, butaca_id),
+    CONSTRAINT fk_reserva_funcion FOREIGN KEY (funcion_id) REFERENCES funcion(id),
+    CONSTRAINT fk_reserva_butaca FOREIGN KEY (butaca_id) REFERENCES butaca(id),
+    CONSTRAINT fk_reserva_espectador FOREIGN KEY (espectador_id) REFERENCES espectador(id),
+    INDEX idx_reserva_vencimiento (vence_en)
+);
+
 -- Utilidades para que la migracion pueda ejecutarse mas de una vez.
 DROP PROCEDURE IF EXISTS agregar_columna_si_falta;
 DROP PROCEDURE IF EXISTS quitar_columna_si_existe;
@@ -151,6 +164,7 @@ DELIMITER ;
 -- Columnas agregadas durante la evolucion del modelo.
 CALL agregar_columna_si_falta('pelicula', 'descripcion', '`descripcion` LONGTEXT NULL');
 CALL agregar_columna_si_falta('pelicula', 'portada_url', '`portada_url` LONGTEXT NULL');
+CALL agregar_columna_si_falta('producto_confiteria', 'imagen_url', '`imagen_url` LONGTEXT NULL');
 
 CALL agregar_columna_si_falta('sala', 'estado', "`estado` VARCHAR(40) NOT NULL DEFAULT 'DISPONIBLE'");
 CALL agregar_columna_si_falta('sala', 'detalle_estado', '`detalle_estado` VARCHAR(500) NULL');
@@ -211,7 +225,6 @@ CALL agregar_indice_si_falta(
 -- El estado del ticket ahora se calcula a partir de entradas y consumos.
 CALL quitar_columna_si_existe('ticket', 'estado');
 CALL quitar_columna_si_existe('metodo_pago', 'nombre_titular');
-CALL quitar_columna_si_existe('producto_confiteria', 'imagen_url');
 
 DROP PROCEDURE agregar_columna_si_falta;
 DROP PROCEDURE quitar_columna_si_existe;

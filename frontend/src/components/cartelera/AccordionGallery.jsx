@@ -160,10 +160,10 @@ const AccordionGallery = ({
     if (trigger === 'hover') setActive(i);
   };
 
-  const handleClick = (i, e) => {
+  const handleClick = (i, item, e) => {
     if (i !== active) {
-      e.preventDefault();
       setActive(i);
+      if (!item.link) e.preventDefault();
     }
   };
 
@@ -202,7 +202,7 @@ const AccordionGallery = ({
             className={`ag-panel${isActive ? ' ag-panel--active' : ''}`}
             style={{ borderRadius: `${radius}px` }}
             href={item.link || undefined}
-            onClick={e => handleClick(i, e)}
+            onClick={e => handleClick(i, item, e)}
             onMouseEnter={() => handleEnter(i)}
             onFocus={() => setActive(i)}
             onKeyDown={e => handleKeyDown(i, e)}

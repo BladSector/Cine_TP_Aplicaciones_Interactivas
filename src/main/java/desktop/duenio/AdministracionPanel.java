@@ -70,7 +70,7 @@ public class AdministracionPanel extends JPanel {
     private final DefaultTableModel funcionesModel = modelo(
             "ID", "Fecha", "Horario", "Película ID", "Película", "Sala ID", "Sala", "Formato", "Idioma", "Precio"
     );
-    private final DefaultTableModel productosModel = modelo("ID", "Nombre", "Precio", "Tipo", "Tamaño");
+    private final DefaultTableModel productosModel = modelo("ID", "Nombre", "Precio", "Tipo", "Tamaño", "Imagen");
 
     private final JTable categoriasTabla = tabla(categoriasModel);
     private final JTable peliculasTabla = tabla(peliculasModel);
@@ -82,6 +82,7 @@ public class AdministracionPanel extends JPanel {
     private List<Opcion> peliculas = new ArrayList<>();
     private List<Opcion> salas = new ArrayList<>();
     private final Map<Integer, String> portadasPeliculas = new HashMap<>();
+    private final Map<Integer, String> imagenesProductos = new HashMap<>();
     private Consumer<String> estadoExterno = mensaje -> {
     };
 
@@ -483,7 +484,7 @@ public class AdministracionPanel extends JPanel {
 
     private void seleccionarImagenLocal(String[] portada, JLabel vistaPrevia) {
         JFileChooser selector = new JFileChooser();
-        selector.setDialogTitle("Elegir imagen de portada");
+        selector.setDialogTitle("Elegir imagen");
         selector.setFileFilter(new FileNameExtensionFilter(
                 "Imágenes JPG, PNG o WEBP", "jpg", "jpeg", "png", "webp"));
 
@@ -549,7 +550,11 @@ public class AdministracionPanel extends JPanel {
                 throw new IllegalArgumentException("Imagen inválida");
             }
 
-            double escala = Math.min(82.0 / original.getIconWidth(), 112.0 / original.getIconHeight());
+            int anchoMaximo = Math.max(1, vistaPrevia.getPreferredSize().width - 8);
+            int altoMaximo = Math.max(1, vistaPrevia.getPreferredSize().height - 8);
+            double escala = Math.min(
+                    (double) anchoMaximo / original.getIconWidth(),
+                    (double) altoMaximo / original.getIconHeight());
             int ancho = Math.max(1, (int) (original.getIconWidth() * escala));
             int alto = Math.max(1, (int) (original.getIconHeight() * escala));
             Image imagen = original.getImage().getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
@@ -784,15 +789,28 @@ public class AdministracionPanel extends JPanel {
             tipo.setSelectedItem(valor(productosModel, fila, 3));
             tamano.setSelectedItem(valor(productosModel, fila, 4));
         }
+        int productoId = edicion ? id(productosModel, fila) : 0;
+        String[] imagen = {edicion ? imagenesProductos.getOrDefault(productoId, "") : ""};
+        JLabel vistaPrevia = new JLabel("Sin imagen", JLabel.CENTER);
+        vistaPrevia.setPreferredSize(new Dimension(140, 105));
+        vistaPrevia.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        actualizarVistaPrevia(vistaPrevia, imagen[0]);
+        JButton elegirImagen = new JButton("Elegir imagen...");
+        elegirImagen.addActionListener(event -> seleccionarImagenLocal(imagen, vistaPrevia));
+        JPanel controlImagen = new JPanel(new BorderLayout(6, 6));
+        controlImagen.add(vistaPrevia, BorderLayout.CENTER);
+        controlImagen.add(elegirImagen, BorderLayout.SOUTH);
         if (!confirmarFormulario("Producto de confitería", formulario(
-                new String[]{"Nombre", "Precio", "Tipo", "Tamaño"}, nombre, precio, tipo, tamano))) {
+                new String[]{"Nombre", "Precio", "Tipo", "Tamaño", "Imagen"},
+                nombre, precio, tipo, tamano, controlImagen))) {
             return;
         }
         Map<String, Object> cuerpo = Map.of(
                 "nombre", nombre.getText().trim(),
                 "precio", precio.getValue(),
                 "tipo", tipo.getSelectedItem(),
-                "tamano", tamano.getSelectedItem()
+                "tamano", tamano.getSelectedItem(),
+                "imagenUrl", imagen[0]
         );
         guardarOActualizar(edicion, productosModel, fila, "/productos-confiteria", cuerpo, "producto");
     }
@@ -882,10 +900,17 @@ public class AdministracionPanel extends JPanel {
         }));
 
         limpiar(productosModel);
-        datos.productos().forEach(item -> productosModel.addRow(new Object[]{
-                item.path("id").asInt(), item.path("nombre").asText(), item.path("precio").asDouble(),
-                item.path("tipo").asText(), item.path("tamano").asText()
-        }));
+        imagenesProductos.clear();
+        datos.productos().forEach(item -> {
+            int productoId = item.path("id").asInt();
+            String imagen = item.path("imagenUrl").asText("");
+            imagenesProductos.put(productoId, imagen);
+            productosModel.addRow(new Object[]{
+                    productoId, item.path("nombre").asText(), item.path("precio").asDouble(),
+                    item.path("tipo").asText(), item.path("tamano").asText(),
+                    imagen.isBlank() ? "Sin imagen" : "Cargada"
+            });
+        });
     }
 
     private JPanel formulario(String[] etiquetas, java.awt.Component... componentes) {

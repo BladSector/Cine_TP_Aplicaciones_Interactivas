@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom'
 import { formatFunction, formatLanguage, money, shortTime } from '../../utils/format'
 
+function compactLanguage(idioma) {
+  if (idioma === 'ESPANIOL') return 'Doblada'
+  if (idioma === 'SUBTITULADA') return 'Subtitulada'
+  return formatLanguage(idioma)
+}
+
 export default function MovieCard({ movie, functions, onSelectFunction }) {
   const grouped = functions.reduce((acc, fn) => {
     const key = `${fn.formato}|${fn.idioma}`
@@ -14,6 +20,18 @@ export default function MovieCard({ movie, functions, onSelectFunction }) {
     functions[0]?.precioEntrada ?? 0,
   )
 
+  const groupedSessions = Object.entries(grouped).sort(([firstKey], [secondKey]) => {
+    const [firstFormat, firstLanguage] = firstKey.split('|')
+    const [secondFormat, secondLanguage] = secondKey.split('|')
+    const formatOrder = { DOS_D: 0, TRES_D: 1 }
+    const languageOrder = { ESPANIOL: 0, SUBTITULADA: 1 }
+
+    return (
+      (formatOrder[firstFormat] ?? 9) - (formatOrder[secondFormat] ?? 9) ||
+      (languageOrder[firstLanguage] ?? 9) - (languageOrder[secondLanguage] ?? 9)
+    )
+  })
+
   return (
     <article className="movie-card">
       <div className="movie-card__poster">
@@ -24,7 +42,6 @@ export default function MovieCard({ movie, functions, onSelectFunction }) {
             <span>{movie.titulo}</span>
           </div>
         )}
-        <span className="movie-card__badge">Estreno</span>
       </div>
 
       <div className="movie-card__body">
@@ -36,13 +53,15 @@ export default function MovieCard({ movie, functions, onSelectFunction }) {
         <h3>{movie.titulo}</h3>
         <p className="movie-card__desc">{movie.descripcion}</p>
 
-        {Object.entries(grouped).map(([key, list]) => {
+        <div className="movie-card__schedule">
+        {groupedSessions.map(([key, list]) => {
           const [formato, idioma] = key.split('|')
           return (
             <div key={key} className="movie-card__sessions">
-              <p className="movie-card__format">
-                {formatFunction(formato)} · {formatLanguage(idioma)}
-              </p>
+              <div className="movie-card__format">
+                <span>{formatFunction(formato)}</span>
+                <span>{compactLanguage(idioma)}</span>
+              </div>
               <div className="session-list">
                 {list
                   .slice()
@@ -61,6 +80,7 @@ export default function MovieCard({ movie, functions, onSelectFunction }) {
             </div>
           )
         })}
+        </div>
 
         <div className="movie-card__footer">
           <Link to={`/pelicula/${movie.id}`} className="text-button">
