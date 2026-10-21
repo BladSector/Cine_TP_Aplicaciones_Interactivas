@@ -446,22 +446,22 @@ public class PrincipalFrame extends JFrame {
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton procesar = new JButton("Procesar ingreso");
-        JButton validar = new JButton("Validar entradas");
+        JButton validar = new JButton("Validar entradas manualmente");
         JButton entregar = new JButton("Entregar consumos");
         JButton reembolsar = new JButton("Reembolsar ticket");
         JButton recargar = new JButton("Recargar tickets");
         JButton limpiar = new JButton("Limpiar");
         procesar.addActionListener(event -> procesarIngreso());
-        validar.addActionListener(event -> operarTicket("validar-entradas"));
-        entregar.addActionListener(event -> operarTicket("entregar-consumos"));
+        validar.addActionListener(event -> validarEntradasManualmente());
+        entregar.addActionListener(event -> entregarConsumosTicketSeleccionado());
         reembolsar.addActionListener(event -> reembolsarTicket());
         recargar.addActionListener(event -> cargarTickets());
         limpiar.addActionListener(event -> limpiarControlAcceso());
         if (!esEmpleado()) {
             acciones.add(procesar);
-            acciones.add(validar);
             acciones.add(entregar);
         }
+        acciones.add(validar);
         acciones.add(reembolsar);
         acciones.add(recargar);
         acciones.add(limpiar);
@@ -500,8 +500,11 @@ public class PrincipalFrame extends JFrame {
         tablaPanel.setBorder(BorderFactory.createEmptyBorder());
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton entregarManual = new JButton("Entregar seleccionado manualmente");
         JButton actualizar = new JButton("Recargar");
+        entregarManual.addActionListener(event -> entregarConsumosManualmente());
         actualizar.addActionListener(event -> cargarConsumos());
+        acciones.add(entregarManual);
         acciones.add(actualizar);
 
         panel.add(superior, BorderLayout.NORTH);
@@ -1562,25 +1565,9 @@ public class PrincipalFrame extends JFrame {
             return;
         }
         String codigoCodificado = URLEncoder.encode(codigo, StandardCharsets.UTF_8).replace("+", "%20");
-        ejecutar("Validando acceso...", () -> {
-            JsonNode ticket = apiClient.get("/tickets/qr/" + codigoCodificado);
-            return apiClient.put(
-                    "/tickets/" + ticket.path("id").asInt() + "/validar-entradas",
-                    null
-            );
-        }, ticket -> {
-            actualizarDetalleTicket(ticket);
-            cargarTickets();
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Las entradas del Ticket #" + ticket.path("id").asInt()
-                            + " fueron validadas. Los consumos no se modificaron.",
-                    "Acceso validado",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
-            codigoQr.requestFocusInWindow();
-            codigoQr.selectAll();
-        });
+        ejecutar("Consultando ticket...",
+                () -> apiClient.get("/tickets/qr/" + codigoCodificado),
+                ticket -> confirmarValidacionEntradas(ticket, true));
     }
 
     private void entregarConsumosPorQr() {
@@ -1590,25 +1577,9 @@ public class PrincipalFrame extends JFrame {
             return;
         }
         String codigoCodificado = URLEncoder.encode(codigo, StandardCharsets.UTF_8).replace("+", "%20");
-        ejecutar("Entregando consumos...", () -> {
-            JsonNode ticket = apiClient.get("/tickets/qr/" + codigoCodificado);
-            return apiClient.put(
-                    "/tickets/" + ticket.path("id").asInt() + "/entregar-consumos",
-                    null
-            );
-        }, ticket -> {
-            cargarConsumos();
-            cargarTickets();
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Los consumos del Ticket #" + ticket.path("id").asInt()
-                            + " fueron marcados como entregados.",
-                    "Consumos entregados",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
-            codigoQrConsumo.requestFocusInWindow();
-            codigoQrConsumo.selectAll();
-        });
+        ejecutar("Consultando ticket...",
+                () -> apiClient.get("/tickets/qr/" + codigoCodificado),
+                ticket -> entregarConsumosTicket(ticket.path("id").asInt(), true));
     }
 
     private void buscarTicket() {
@@ -1622,17 +1593,152 @@ public class PrincipalFrame extends JFrame {
                 this::actualizarDetalleTicket);
     }
 
-    private void operarTicket(String operacion) {
+    private void validarEntradasManualmente() {
         if (ticketActualId == null) {
-            mostrarAviso("Primero buscá un Ticket por su QR.");
+            mostrarAviso("Seleccioná un ticket de la tabla para validar sus entradas manualmente.");
             return;
         }
-        ejecutar("Procesando ticket...",
-                () -> apiClient.put("/tickets/" + ticketActualId + "/" + operacion, null),
-                respuesta -> {
-                    actualizarDetalleTicket(respuesta);
+
+        int ticketId = ticketActualId;
+        ejecutar("Consultando ticket...",
+                () -> apiClient.get("/tickets/" + ticketId),
+                ticket -> confirmarValidacionEntradas(ticket, false));
+    }
+
+    private void confirmarValidacionEntradas(JsonNode ticket, boolean lecturaQr) {
+        actualizarDetalleTicket(ticket);
+        int consumosPendientes = cantidadConsumosPendientes(ticket);
+
+        if (consumosPendientes > 0) {
+            int confirmacion = JOptionPane.showConfirmDialog(
+                    this,
+                    "El Ticket #" + ticket.path("id").asInt() + " todavía tiene "
+                            + consumosPendientes + " consumo(s) pendiente(s) de entrega.\n"
+                            + "Si validás el acceso ahora, los consumos seguirán pendientes.\n\n"
+                            + "¿Querés continuar igualmente?",
+                    "Consumos pendientes",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+            );
+            if (confirmacion != JOptionPane.YES_OPTION) {
+                return;
+            }
+        } else if (!lecturaQr) {
+            int confirmacion = JOptionPane.showConfirmDialog(
+                    this,
+                    "¿Validar manualmente las entradas del Ticket #"
+                            + ticket.path("id").asInt() + "?",
+                    "Validación manual",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE
+            );
+            if (confirmacion != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+
+        validarEntradasTicket(ticket.path("id").asInt(), lecturaQr);
+    }
+
+    private int cantidadConsumosPendientes(JsonNode ticket) {
+        int cantidad = 0;
+        JsonNode items = ticket.path("itemsConsumo");
+        if (!items.isArray()) {
+            return cantidad;
+        }
+
+        for (JsonNode item : items) {
+            if ("PENDIENTE".equals(item.path("estado").asText())) {
+                cantidad += Math.max(1, item.path("cantidad").asInt());
+            }
+        }
+        return cantidad;
+    }
+
+    private void validarEntradasTicket(int ticketId, boolean lecturaQr) {
+        ejecutar("Validando acceso...",
+                () -> apiClient.put("/tickets/" + ticketId + "/validar-entradas", null),
+                ticket -> {
+                    actualizarDetalleTicket(ticket);
                     cargarTickets();
                     cargarConsumos();
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Las entradas del Ticket #" + ticket.path("id").asInt()
+                                    + " fueron validadas. Los consumos no se modificaron.",
+                            "Acceso validado",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+                    if (lecturaQr) {
+                        codigoQr.requestFocusInWindow();
+                        codigoQr.selectAll();
+                    }
+                });
+    }
+
+    private void entregarConsumosTicketSeleccionado() {
+        if (ticketActualId == null) {
+            mostrarAviso("Seleccioná un ticket de la tabla para entregar sus consumos.");
+            return;
+        }
+        confirmarEntregaManual(ticketActualId);
+    }
+
+    private void entregarConsumosManualmente() {
+        int filaVista = consumosTabla.getSelectedRow();
+        if (filaVista < 0) {
+            mostrarAviso("Seleccioná un consumo de la tabla para realizar la entrega manual.");
+            return;
+        }
+
+        int fila = consumosTabla.convertRowIndexToModel(filaVista);
+        String estadoConsumo = String.valueOf(consumosModel.getValueAt(fila, 4));
+        if (!"PENDIENTE".equals(estadoConsumo)) {
+            mostrarAviso("El consumo seleccionado no está pendiente de entrega.");
+            return;
+        }
+
+        Object valorTicketId = consumosModel.getValueAt(fila, 3);
+        try {
+            int ticketId = Integer.parseInt(String.valueOf(valorTicketId));
+            confirmarEntregaManual(ticketId);
+        } catch (NumberFormatException e) {
+            mostrarAviso("El consumo seleccionado no tiene un ticket asociado.");
+        }
+    }
+
+    private void confirmarEntregaManual(int ticketId) {
+        int confirmacion = JOptionPane.showConfirmDialog(
+                this,
+                "Se marcarán como entregados todos los consumos pendientes del Ticket #"
+                        + ticketId + ". ¿Continuar?",
+                "Entrega manual",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            entregarConsumosTicket(ticketId, false);
+        }
+    }
+
+    private void entregarConsumosTicket(int ticketId, boolean lecturaQr) {
+        ejecutar("Entregando consumos...",
+                () -> apiClient.put("/tickets/" + ticketId + "/entregar-consumos", null),
+                ticket -> {
+                    actualizarDetalleTicket(ticket);
+                    cargarConsumos();
+                    cargarTickets();
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Los consumos del Ticket #" + ticket.path("id").asInt()
+                                    + " fueron marcados como entregados.",
+                            "Consumos entregados",
+                            JOptionPane.INFORMATION_MESSAGE
+                    );
+                    if (lecturaQr) {
+                        codigoQrConsumo.requestFocusInWindow();
+                        codigoQrConsumo.selectAll();
+                    }
                 });
     }
 

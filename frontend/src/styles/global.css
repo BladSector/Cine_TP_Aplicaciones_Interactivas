@@ -1056,7 +1056,8 @@ textarea {
 .stack-form .payment-card-option {
   position: relative;
   display: block;
-  width: fit-content;
+  width: 100%;
+  min-width: 0;
   cursor: pointer;
 }
 

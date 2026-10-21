@@ -74,6 +74,12 @@ export default function CompraPagoPage() {
     ).then((response) => setCalculatedTickets(response.total)).catch(() => setCalculatedTickets(null))
   }, [funcion, spectator, draft.selectedSeats.length])
 
+  useEffect(() => {
+    if (ticket) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [ticket])
+
   if (!isSpectator) return <Navigate to={`/compra/${movieId}/acceso`} replace />
   if (!funcion || !movie || draft.selectedSeats.length === 0) {
     return <Navigate to={`/compra/${movieId}/butacas`} replace />
