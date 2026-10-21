@@ -104,9 +104,10 @@ export default function SiteLayout() {
           </NavLink>
 
           <nav className="site-nav" aria-label="Principal">
-              <div className= "destacar_cartelera">
-                  <NavLink to="/" end>Cartelera</NavLink>
-              </div>
+            <div className="destacar_cartelera">
+              <NavLink to="/" end>Cartelera</NavLink>
+            </div>
+            <NavLink to="/candy">Candy</NavLink>
             <NavLink to="/proximamente">Próximamente</NavLink>
             <NavLink to="/experiencias">Experiencias</NavLink>
             <NavLink to="/club">Club Film Zone</NavLink>
@@ -224,7 +225,7 @@ export default function SiteLayout() {
                     </div>
 
                     <NavLink to="/cuenta#entradas" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
-                      Mis Entradas
+                      Mis tickets
                     </NavLink>
 
                     <NavLink to="/cuenta#perfil" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>

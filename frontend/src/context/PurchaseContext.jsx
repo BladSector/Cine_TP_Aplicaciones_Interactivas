@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from 'react
 const PurchaseContext = createContext(null)
 
 const initialState = {
+  purchaseType: null,
   movieId: null,
   functionId: null,
   selectedSeats: [],
@@ -19,8 +20,17 @@ export function PurchaseProvider({ children }) {
   const startFromMovie = useCallback((movieId, returnPath = null) => {
     setDraft({
       ...initialState,
+      purchaseType: 'movie',
       movieId,
       returnPath,
+    })
+  }, [])
+
+  const startCandyOnly = useCallback(() => {
+    setDraft({
+      ...initialState,
+      purchaseType: 'candy',
+      candyVisited: true,
     })
   }, [])
 
@@ -69,6 +79,7 @@ export function PurchaseProvider({ children }) {
       draft,
       reset,
       startFromMovie,
+      startCandyOnly,
       selectFunction,
       toggleSeat,
       setConsumption,
@@ -80,6 +91,7 @@ export function PurchaseProvider({ children }) {
       draft,
       reset,
       startFromMovie,
+      startCandyOnly,
       selectFunction,
       toggleSeat,
       setConsumption,

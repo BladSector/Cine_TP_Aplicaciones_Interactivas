@@ -50,6 +50,7 @@ export default function PeliculaPage() {
   function continueToSeats() {
     if (!selected) return
     setDraft({
+      purchaseType: 'movie',
       movieId,
       functionId: selected.id,
       selectedSeats: [],

@@ -38,6 +38,23 @@ public class CompraController {
                 request.butacasIds(),
                 request.items()
         );
+        return crearResponse(ticket);
+    }
+
+    @PostMapping("/candy")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TicketController.TicketResponse comprarCandy(@RequestBody CompraCandyRequest request,
+                                                         HttpSession sesion) {
+        sesionService.validarEspectador(sesion, request.espectadorId());
+        Ticket ticket = compraService.comprarConsumibles(
+                request.espectadorId(),
+                request.metodoDePagoId(),
+                request.items()
+        );
+        return crearResponse(ticket);
+    }
+
+    private TicketController.TicketResponse crearResponse(Ticket ticket) {
         List<TicketController.ItemConsumoDetalle> items = ticket.getItemsConsumo().stream()
                 .map(item -> TicketController.ItemConsumoDetalle.desde(item, ticketService.calcularSubtotal(item)))
                 .toList();
@@ -51,5 +68,9 @@ public class CompraController {
 
     public record CompraRequest(int espectadorId, int metodoDePagoId, int funcionId,
                                 List<Integer> butacasIds, List<CompraService.ItemCompra> items) {
+    }
+
+    public record CompraCandyRequest(int espectadorId, int metodoDePagoId,
+                                     List<CompraService.ItemCompra> items) {
     }
 }

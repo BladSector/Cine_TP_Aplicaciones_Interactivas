@@ -31,7 +31,7 @@ function cardPreviewNumber(value) {
   return formatCardNumber(value).padEnd(19, '•')
 }
 
-export default function CompraPagoPage() {
+export default function CompraPagoPage({ candyOnly = false }) {
   const { movieId } = useParams()
   const { spectator, isSpectator, refreshSpectator } = useAuth()
   const { peliculas, funciones, productos, reload } = useCatalog()
@@ -52,7 +52,7 @@ export default function CompraPagoPage() {
   const reservationError = useSeatReservationHeartbeat(
     draft.functionId,
     draft.selectedSeats,
-    !ticket,
+    !candyOnly && !ticket,
   )
 
   const movie = peliculas.find((item) => item.id === Number(movieId))
@@ -65,14 +65,14 @@ export default function CompraPagoPage() {
   }, [metodos, selectedMethodId])
 
   useEffect(() => {
-    if (!funcion || !spectator || draft.selectedSeats.length === 0) return
+    if (candyOnly || !funcion || !spectator || draft.selectedSeats.length === 0) return
     api.calcularPrecio(
       funcion.id,
       spectator.id,
       funcion.precioEntrada,
       draft.selectedSeats.length,
     ).then((response) => setCalculatedTickets(response.total)).catch(() => setCalculatedTickets(null))
-  }, [funcion, spectator, draft.selectedSeats.length])
+  }, [candyOnly, funcion, spectator, draft.selectedSeats.length])
 
   useEffect(() => {
     if (ticket) {
@@ -80,15 +80,30 @@ export default function CompraPagoPage() {
     }
   }, [ticket])
 
-  if (!isSpectator) return <Navigate to={`/compra/${movieId}/acceso`} replace />
-  if (!funcion || !movie || draft.selectedSeats.length === 0) {
-    return <Navigate to={`/compra/${movieId}/butacas`} replace />
+  const candyItemCount = Object.values(draft.consumptions).reduce(
+    (sum, quantity) => sum + Number(quantity),
+    0,
+  )
+
+  if (!isSpectator) {
+    return <Navigate to={candyOnly ? '/candy' : `/compra/${movieId}/acceso`} replace />
   }
-  if (!draft.candyVisited) {
-    return <Navigate to={`/compra/${movieId}/candy`} replace />
+  if (candyOnly) {
+    if (!ticket && (draft.purchaseType !== 'candy' || candyItemCount === 0)) {
+      return <Navigate to="/candy" replace />
+    }
+  } else {
+    if (!funcion || !movie || draft.selectedSeats.length === 0) {
+      return <Navigate to={`/compra/${movieId}/butacas`} replace />
+    }
+    if (!draft.candyVisited) {
+      return <Navigate to={`/compra/${movieId}/candy`} replace />
+    }
   }
 
-  const totalTickets = calculatedTickets ?? draft.selectedSeats.length * funcion.precioEntrada
+  const totalTickets = candyOnly
+    ? 0
+    : calculatedTickets ?? draft.selectedSeats.length * funcion.precioEntrada
   const totalCandy = Object.entries(draft.consumptions).reduce((sum, [id, qty]) => {
     const product = productos.find((item) => item.id === Number(id))
     return sum + (product ? product.precio * qty : 0)
@@ -123,7 +138,7 @@ export default function CompraPagoPage() {
 
   async function handlePay(event) {
     event.preventDefault()
-    if (functionHasStarted(funcion)) {
+    if (!candyOnly && functionHasStarted(funcion)) {
       setError('La función seleccionada ya comenzó. Elegí otro horario para continuar.')
       return
     }
@@ -147,17 +162,24 @@ export default function CompraPagoPage() {
         }))
         .filter((item) => item.cantidad > 0)
 
-      const result = await api.comprar({
-        espectadorId: spectator.id,
-        metodoDePagoId,
-        funcionId: funcion.id,
-        butacasIds: draft.selectedSeats.map((seat) => seat.id),
-        items,
-      })
+      const result = candyOnly
+        ? await api.comprarCandy({
+            espectadorId: spectator.id,
+            metodoDePagoId,
+            items,
+          })
+        : await api.comprar({
+            espectadorId: spectator.id,
+            metodoDePagoId,
+            funcionId: funcion.id,
+            butacasIds: draft.selectedSeats.map((seat) => seat.id),
+            items,
+          })
 
       await reload()
       await refreshSpectator(spectator.id)
       setTicket(result)
+      if (candyOnly) clearConsumptions()
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -170,10 +192,12 @@ export default function CompraPagoPage() {
       <div className="purchase-page">
         <section className="success-panel">
           <p className="eyebrow">Compra confirmada</p>
-          <h1>¡Listo para la gran pantalla!</h1>
+          <h1>{candyOnly ? '¡Tu pedido está listo!' : '¡Listo para la gran pantalla!'}</h1>
           <p>
-            Enviamos el comprobante a <strong>{spectator.email}</strong>. También podés verlo en Mi
-            cuenta.
+            Enviamos el comprobante a <strong>{spectator.email}</strong>.{' '}
+            {candyOnly
+              ? 'Presentá el QR en el Candy para retirar tus productos.'
+              : 'También podés verlo en Mi cuenta.'}
           </p>
           <TicketDetails ticket={ticket} />
         </section>
@@ -183,16 +207,22 @@ export default function CompraPagoPage() {
 
   return (
     <div className="purchase-page">
-      <Link to={`/compra/${movieId}/candy`} className="back-link">
-        Volver al candy bar
+      <Link to={candyOnly ? '/candy' : `/compra/${movieId}/candy`} className="back-link">
+        {candyOnly ? 'Volver al Candy' : 'Volver al candy bar'}
       </Link>
-      <PurchaseStepper current="pago" />
+      {!candyOnly && <PurchaseStepper current="pago" />}
 
       <div className="purchase-grid purchase-grid--wide">
         <section className="purchase-panel">
-          <p className="eyebrow">El último paso antes de la gran pantalla</p>
-          <h1>Todo listo para tu noche</h1>
-          <p>Revisa tu pedido y completa el pago. Enviaremos las entradas a tu correo.</p>
+          <p className="eyebrow">
+            {candyOnly ? 'Confirmá tu pedido' : 'El último paso antes de la gran pantalla'}
+          </p>
+          <h1>{candyOnly ? 'Completá el pago' : 'Todo listo para tu noche'}</h1>
+          <p>
+            {candyOnly
+              ? 'Elegí cómo pagar tus productos. Enviaremos el QR a tu correo.'
+              : 'Revisá tu pedido y completá el pago. Enviaremos las entradas a tu correo.'}
+          </p>
 
           <form className="stack-form" onSubmit={handlePay}>
             <div className="checkout-customer">
@@ -347,7 +377,11 @@ export default function CompraPagoPage() {
               <div className="info-box info-box--error">{error || reservationError}</div>
             )}
 
-            <button type="submit" className="primary-button" disabled={loading || functionHasStarted(funcion)}>
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={loading || (!candyOnly && functionHasStarted(funcion))}
+            >
               {loading ? 'Procesando…' : `Pagar $${money(total)}`}
             </button>
             <p className="muted tiny">Pago seguro · Datos cifrados</p>
@@ -355,13 +389,14 @@ export default function CompraPagoPage() {
         </section>
 
         <OrderSummary
+          candyOnly={candyOnly}
           movie={movie}
           funcion={funcion}
           seats={draft.selectedSeats}
           products={productos}
           consumptions={draft.consumptions}
           onClearCandy={clearConsumptions}
-          editSeatsTo={`/compra/${movieId}/butacas`}
+          editSeatsTo={candyOnly ? undefined : `/compra/${movieId}/butacas`}
           totalTickets={totalTickets}
           totalCandy={totalCandy}
           total={total}

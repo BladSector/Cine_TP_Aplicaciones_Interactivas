@@ -60,6 +60,7 @@ export default function CarteleraPage() {
 
   function handleSelectFunction(movie, fn) {
     setDraft({
+      purchaseType: 'movie',
       movieId: movie.id,
       functionId: fn.id,
       selectedSeats: [],

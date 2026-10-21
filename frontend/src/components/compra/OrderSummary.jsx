@@ -20,6 +20,7 @@ export default function OrderSummary({
   totalCandy,
   total,
   footer,
+  candyOnly = false,
 }) {
   const selectedProducts = Object.entries(consumptions || {})
     .map(([id, qty]) => {
@@ -30,17 +31,19 @@ export default function OrderSummary({
 
   return (
     <aside className="order-summary">
-      <p className="eyebrow">Tu noche de cine</p>
-      <h2>{movie?.titulo}</h2>
-      <p className="muted">
-        {movie?.duracion} min
-        {funcion && (
-          <>
-            {' · '}
-            {formatFunction(funcion.formato)} · {formatLanguage(funcion.idioma)}
-          </>
-        )}
-      </p>
+      <p className="eyebrow">{candyOnly ? 'Tu pedido' : 'Tu noche de cine'}</p>
+      <h2>{candyOnly ? 'Candy bar' : movie?.titulo}</h2>
+      {!candyOnly && (
+        <p className="muted">
+          {movie?.duracion} min
+          {funcion && (
+            <>
+              {' · '}
+              {formatFunction(funcion.formato)} · {formatLanguage(funcion.idioma)}
+            </>
+          )}
+        </p>
+      )}
 
       {funcion && (
         <div className="order-summary__block">
@@ -78,11 +81,15 @@ export default function OrderSummary({
 
       <div className="order-summary__block">
         {selectedProducts.length === 0 ? (
-          <p className="muted">Candy bar no añadido. Puedes añadir productos o ir directamente al pago.</p>
+          <p className="muted">
+            {candyOnly
+              ? 'Todavía no seleccionaste productos.'
+              : 'Candy bar no añadido. Puedes añadir productos o ir directamente al pago.'}
+          </p>
         ) : (
           <>
             <div className="order-summary__row">
-              <span>Candy bar · opcional</span>
+              <span>{candyOnly ? 'Productos seleccionados' : 'Candy bar · opcional'}</span>
               <strong>${money(totalCandy)}</strong>
             </div>
             <ul className="order-summary__candy">

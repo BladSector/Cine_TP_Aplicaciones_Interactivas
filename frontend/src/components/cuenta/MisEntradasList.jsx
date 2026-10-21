@@ -21,13 +21,31 @@ export default function MisEntradasList() {
         <div className="ticket-list">
           {myTickets.map((ticket) => {
             const first = ticket.entradas?.[0]
+            const items = ticket.itemsConsumo || []
+            const candyOnly = !first && items.length > 0
+            const candyQuantity = items.reduce(
+              (total, item) => total + Number(item.cantidad || 0),
+              0,
+            )
+            const candySummary = items
+              .map((item) => `${item.cantidad} × ${item.producto}`)
+              .join(' · ')
             return (
               <button key={ticket.id} type="button" className="ticket-list-item" onClick={() => setSelected(ticket)}>
                 <div>
                   <p className="eyebrow">Ticket #{ticket.id}</p>
-                  <h3>{first?.pelicula || 'Entrada'}</h3>
-                  <p>{formatDateShort(first?.fecha)} · {shortTime(first?.horario)}</p>
-                  <p>{first?.sala} · {(ticket.entradas || []).map((e) => e.butaca).join(', ')}</p>
+                  <h3>{candyOnly ? 'Compra de Candy' : first?.pelicula || 'Compra'}</h3>
+                  {candyOnly ? (
+                    <>
+                      <p>{candyQuantity} consumible{candyQuantity !== 1 ? 's' : ''}</p>
+                      <p>{candySummary}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>{formatDateShort(first?.fecha)} · {shortTime(first?.horario)}</p>
+                      <p>{first?.sala} · {(ticket.entradas || []).map((e) => e.butaca).join(', ')}</p>
+                    </>
+                  )}
                 </div>
                 <div className="ticket-list-item__summary">
                   <span className={`status-pill status-pill--${String(ticket.estado).toLowerCase()}`}>{String(ticket.estado).replaceAll('_', ' ')}</span>

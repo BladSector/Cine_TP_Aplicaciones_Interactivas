@@ -75,11 +75,7 @@ public class CompraService {
                           List<Integer> butacasIds, List<ItemCompra> items) {
         validarButacasSolicitadas(butacasIds);
 
-        Espectador espectador = espectadorRepository.findById(espectadorId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe un espectador con ese id."));
-        if (!espectador.isEmailVerificado()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe verificar el email antes de comprar.");
-        }
+        Espectador espectador = buscarEspectadorVerificado(espectadorId);
 
         Funcion funcion = funcionRepository.findById(funcionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe una funcion con ese id."));
@@ -118,6 +114,23 @@ public class CompraService {
         return ticketGuardado;
     }
 
+    @Transactional
+    public Ticket comprarConsumibles(int espectadorId, int metodoDePagoId, List<ItemCompra> items) {
+        validarItemsSolicitados(items);
+
+        Espectador espectador = buscarEspectadorVerificado(espectadorId);
+        MetodoDePago metodoDePago = metodoDePagoService.validarParaCompra(metodoDePagoId, espectador);
+        Ticket ticket = ticketService.crearTicket(espectador, metodoDePago);
+
+        for (ItemCompra itemCompra : items) {
+            agregarItem(ticket, itemCompra);
+        }
+
+        Ticket ticketGuardado = ticketRepository.save(ticket);
+        eventPublisher.publishEvent(new TicketCompradoEvent(ticketGuardado.getId()));
+        return ticketGuardado;
+    }
+
     private void agregarItem(Ticket ticket, ItemCompra itemCompra) {
         if (itemCompra == null || itemCompra.cantidad() <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La cantidad de cada consumible debe ser mayor a 0.");
@@ -137,6 +150,45 @@ public class CompraService {
         if (idsUnicos.size() != butacasIds.size()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede seleccionar dos veces la misma butaca.");
         }
+    }
+
+    private void validarItemsSolicitados(List<ItemCompra> items) {
+        if (items == null || items.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Debe seleccionar al menos un producto del Candy."
+            );
+        }
+        Set<Integer> productosUnicos = new HashSet<>();
+        for (ItemCompra item : items) {
+            if (item == null || item.cantidad() <= 0) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "La cantidad de cada consumible debe ser mayor a 0."
+                );
+            }
+            if (!productosUnicos.add(item.productoId())) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "No se puede incluir dos veces el mismo producto."
+                );
+            }
+        }
+    }
+
+    private Espectador buscarEspectadorVerificado(int espectadorId) {
+        Espectador espectador = espectadorRepository.findById(espectadorId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No existe un espectador con ese id."
+                ));
+        if (!espectador.isEmailVerificado()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Debe verificar el email antes de comprar."
+            );
+        }
+        return espectador;
     }
 
     public record ItemCompra(int productoId, int cantidad) {

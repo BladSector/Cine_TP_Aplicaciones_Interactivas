@@ -9,7 +9,13 @@ const EMPTY_FORM = {
   contraseniaConfirmacion: '',
 }
 
-export default function PurchaseAuthDrawer({ open, onClose, onComplete, purchase = true }) {
+export default function PurchaseAuthDrawer({
+  open,
+  onClose,
+  onComplete,
+  purchase = true,
+  purchaseDescription,
+}) {
   const {
     spectator,
     isSpectator,
@@ -122,7 +128,7 @@ export default function PurchaseAuthDrawer({ open, onClose, onComplete, purchase
             <>
               <p className="muted">
                 {purchase
-                  ? 'Necesitás una cuenta para reservar tus butacas.'
+                  ? purchaseDescription || 'Necesitás una cuenta para reservar tus butacas.'
                   : 'Ingresá para consultar tus entradas, tarjetas y datos personales.'}
               </p>
               <div className="auth-tabs">

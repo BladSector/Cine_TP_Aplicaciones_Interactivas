@@ -8,6 +8,7 @@ import CompraButacasPage from './pages/compra/CompraButacasPage'
 import CompraCandyPage from './pages/compra/CompraCandyPage'
 import CompraPagoPage from './pages/compra/CompraPagoPage'
 import CuentaPage from './pages/CuentaPage'
+import CandyPage from './pages/CandyPage'
 import PlaceholderPage from './pages/PlaceholderPage'
 
 function ScrollToTop() {
@@ -28,6 +29,8 @@ export default function App() {
         <Route element={<SiteLayout />}>
           <Route index element={<CarteleraPage />} />
           <Route path="pelicula/:id" element={<PeliculaPage />} />
+          <Route path="candy" element={<CandyPage />} />
+          <Route path="candy/pago" element={<CompraPagoPage candyOnly />} />
           <Route path="compra/:movieId/acceso" element={<CompraAccesoPage />} />
           <Route path="compra/:movieId/butacas" element={<CompraButacasPage />} />
           <Route path="compra/:movieId/candy" element={<CompraCandyPage />} />

@@ -67,6 +67,7 @@ export const api = {
   getTicket: (id) => request(`/tickets/${id}`),
   getTicketPdf: (id) => download(`/tickets/${id}/pdf`),
   comprar: (body) => request('/compras', { method: 'POST', body }),
+  comprarCandy: (body) => request('/compras/candy', { method: 'POST', body }),
   loginEspectador: (body) => request('/espectadores/login', { method: 'POST', body }),
   registrarEspectador: (body) => request('/espectadores', { method: 'POST', body }),
   verificarMail: (id) => request(`/espectadores/${id}/verificar-mail`, { method: 'PUT' }),

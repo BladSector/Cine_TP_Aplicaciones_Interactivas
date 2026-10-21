@@ -57,22 +57,24 @@ public class TicketPdfService {
                 contenido.drawImage(imagenQr, 410, pagina.getMediaBox().getHeight() - 175, 120, 120);
 
                 y -= 34;
-                escribir(contenido, negrita, 15, MARGEN, y, "Entradas");
-                y -= 22;
-                for (Entrada entrada : ticket.getEntradas()) {
-                    escribir(contenido, negrita, 11, MARGEN, y,
-                            recortar(entrada.getFuncion().getPelicula().getTitulo(), 70));
-                    y -= INTERLINEADO;
-                    escribir(contenido, normal, 10, MARGEN + 12, y,
-                            entrada.getFuncion().getFecha() + " " + entrada.getFuncion().getHorario()
-                                    + " | " + entrada.getFuncion().getFormato()
-                                    + " | " + entrada.getFuncion().getIdioma());
-                    y -= INTERLINEADO;
-                    escribir(contenido, normal, 10, MARGEN + 12, y,
-                            "Sala " + entrada.getFuncion().getSala().getNombre()
-                                    + " | Butaca " + entrada.getButaca().getFila() + entrada.getButaca().getNumero()
-                                    + " | $" + formatoPrecio(entrada.getPrecio()));
-                    y -= 24;
+                if (!ticket.getEntradas().isEmpty()) {
+                    escribir(contenido, negrita, 15, MARGEN, y, "Entradas");
+                    y -= 22;
+                    for (Entrada entrada : ticket.getEntradas()) {
+                        escribir(contenido, negrita, 11, MARGEN, y,
+                                recortar(entrada.getFuncion().getPelicula().getTitulo(), 70));
+                        y -= INTERLINEADO;
+                        escribir(contenido, normal, 10, MARGEN + 12, y,
+                                entrada.getFuncion().getFecha() + " " + entrada.getFuncion().getHorario()
+                                        + " | " + entrada.getFuncion().getFormato()
+                                        + " | " + entrada.getFuncion().getIdioma());
+                        y -= INTERLINEADO;
+                        escribir(contenido, normal, 10, MARGEN + 12, y,
+                                "Sala " + entrada.getFuncion().getSala().getNombre()
+                                        + " | Butaca " + entrada.getButaca().getFila() + entrada.getButaca().getNumero()
+                                        + " | $" + formatoPrecio(entrada.getPrecio()));
+                        y -= 24;
+                    }
                 }
 
                 if (!ticket.getItemsConsumo().isEmpty()) {
@@ -92,7 +94,9 @@ public class TicketPdfService {
                 escribir(contenido, negrita, 16, MARGEN, y, "TOTAL: $" + formatoPrecio(total));
                 y -= 30;
                 escribir(contenido, normal, 9, MARGEN, y,
-                        "Presenta este codigo QR al ingresar y para retirar tus consumos.");
+                        ticket.getEntradas().isEmpty()
+                                ? "Presenta este codigo QR para retirar tus consumos."
+                                : "Presenta este codigo QR al ingresar y para retirar tus consumos.");
             }
 
             documento.save(salida);

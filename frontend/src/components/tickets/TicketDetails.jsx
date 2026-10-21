@@ -30,7 +30,10 @@ export default function TicketDetails({ ticket }) {
       <div className="ticket-detail__heading">
         <div>
           <p className="eyebrow">Ticket #{ticket.id}</p>
-          <h3>{ticket.entradas?.[0]?.pelicula || 'Compra de cine'}</h3>
+          <h3>
+            {ticket.entradas?.[0]?.pelicula
+              || ((ticket.itemsConsumo || []).length > 0 ? 'Compra de Candy' : 'Compra de cine')}
+          </h3>
           <span className={`status-pill status-pill--${String(ticket.estado).toLowerCase()}`}>
             {String(ticket.estado).replaceAll('_', ' ')}
           </span>

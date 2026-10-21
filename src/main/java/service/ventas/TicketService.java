@@ -273,6 +273,12 @@ public class TicketService {
 
     // El estado se deriva de entradas y consumos para no duplicar información persistida.
     public EstadoTicket calcularEstado(Ticket ticket) {
+        if (ticket.getEntradas().isEmpty() && !ticket.getItemsConsumo().isEmpty()) {
+            boolean consumosPendientes = ticket.getItemsConsumo().stream()
+                    .anyMatch(item -> item.getEstado() == EstadoConsumo.PENDIENTE);
+            return consumosPendientes ? EstadoTicket.CONSUMOS_PENDIENTES : EstadoTicket.PROCESADO;
+        }
+
         boolean todasReembolsadas = ticket.getEntradas().stream()
                 .allMatch(entrada -> entrada.getEstado() == EstadoEntrada.REEMBOLSADA);
         if (!ticket.getEntradas().isEmpty() && todasReembolsadas) {
