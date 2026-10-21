@@ -40,7 +40,9 @@ export default function SiteLayout() {
           </NavLink>
 
           <nav className="site-nav" aria-label="Principal">
-            <NavLink to="/" end>Cartelera</NavLink>
+              <div className= "destacar_cartelera">
+                  <NavLink to="/" end>Cartelera</NavLink>
+              </div>
             <NavLink to="/proximamente">Próximamente</NavLink>
             <NavLink to="/experiencias">Experiencias</NavLink>
             <NavLink to="/club">Club Film Zone</NavLink>
@@ -93,9 +95,9 @@ export default function SiteLayout() {
               </div>
             ) : (
               // Si el usuario NO ESTÁ logueado, mostramos el botón de iniciar sesión
-              <button type="button" className="secondary-button" onClick={() => setIsAuthOpen(true)}>
+              <NavLink to="/cuenta" className="secondary-button">
                 Iniciar sesión
-              </button>
+              </NavLink>
             )}
           </div>
 

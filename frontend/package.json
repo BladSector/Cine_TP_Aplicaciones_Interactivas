@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "gsap": "^3.15.0",
-    "lucide-react": "^1.57.0",
+    "lucide-react": "^1.60.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

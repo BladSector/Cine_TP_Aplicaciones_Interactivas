@@ -207,10 +207,6 @@ export default function CuentaPage() {
           <h1>Hola, {spectator.nombre}</h1>
           <p className="muted">{spectator.email}</p>
         </div>
-        <div className="summary-actions">
-          <Link to="/" className="secondary-button">Ir a cartelera</Link>
-          <button type="button" className="text-button" onClick={logout}>Cerrar sesión</button>
-        </div>
       </div>
 
       {!spectator.emailVerificado && (
