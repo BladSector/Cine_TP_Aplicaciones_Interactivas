@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import DateStrip from '../components/cartelera/DateStrip'
 import PurchaseAuthDrawer from '../components/cuenta/PurchaseAuthDrawer'
@@ -22,7 +22,7 @@ export default function PeliculaPage() {
   const { peliculas, funciones, loading } = useCatalog()
   const { spectator, isSpectator } = useAuth()
   const { setDraft } = usePurchase()
-  const [selectedDate, setSelectedDate] = useState(todayValue())
+  const [selectedDate, setSelectedDate] = useState(location.state?.selectedDate || todayValue())
   const [selectedFunctionId, setSelectedFunctionId] = useState(null)
   const [authOpen, setAuthOpen] = useState(Boolean(location.state?.openPurchaseAuth))
 
@@ -41,6 +41,11 @@ export default function PeliculaPage() {
   )
 
   const selected = dayFunctions.find((fn) => fn.id === selectedFunctionId) || dayFunctions[0]
+
+  useEffect(() => {
+    setSelectedDate(location.state?.selectedDate || todayValue())
+    setSelectedFunctionId(null)
+  }, [movieId, location.state?.selectedDate])
 
   function continueToSeats() {
     if (!selected) return
