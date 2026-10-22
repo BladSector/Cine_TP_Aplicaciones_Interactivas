@@ -21,7 +21,37 @@ export default function OrderSummary({
   total,
   footer,
   candyOnly = false,
+  membership = null,
 }) {
+  if (membership) {
+    return (
+      <aside className="order-summary">
+        <div>
+          <p className="eyebrow">Tu membresía</p>
+          <h2>{membership.nombre}</h2>
+          <p className="muted">{membership.descripcion}</p>
+        </div>
+        <div className="order-summary__block">
+          <div className="order-summary__row">
+            <span>Precio mensual</span>
+            <strong>${money(membership.precioMensual)}</strong>
+          </div>
+          <ul className="order-summary__candy">
+            {membership.beneficios.map((beneficio) => (
+              <li key={beneficio}>{beneficio}</li>
+            ))}
+          </ul>
+        </div>
+        <div className="order-summary__total">
+          <span>Total de este mes</span>
+          <strong>${money(total)}</strong>
+        </div>
+        <p className="muted tiny">IVA incluido · Vigencia de un mes</p>
+        {footer}
+      </aside>
+    )
+  }
+
   const selectedProducts = Object.entries(consumptions || {})
     .map(([id, qty]) => {
       const product = products.find((item) => item.id === Number(id))

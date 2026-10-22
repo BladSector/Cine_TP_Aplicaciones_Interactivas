@@ -11,7 +11,7 @@ import { api, errorMessage } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
-import { functionHasStarted, money, nextMonthValue, paymentIsExpired } from '../../utils/format'
+import { formatDateShort, functionHasStarted, money, nextMonthValue, paymentIsExpired } from '../../utils/format'
 import useSeatReservationHeartbeat from '../../hooks/useSeatReservationHeartbeat'
 
 function formatCardNumber(value) {
@@ -33,11 +33,14 @@ function cardPreviewNumber(value) {
   return formatCardNumber(value).padEnd(19, '•')
 }
 
-export default function CompraPagoPage({ candyOnly = false }) {
+export default function CompraPagoPage({ candyOnly = false, membershipOnly = false }) {
   const { movieId } = useParams()
   const navigate = useNavigate()
   const { spectator, isSpectator, refreshSpectator } = useAuth()
   const { peliculas, funciones, productos, reload } = useCatalog()
+  const [membresias, setMembresias] = useState([])
+  const [membresiasLoading, setMembresiasLoading] = useState(membershipOnly)
+  const [planVigente, setPlanVigente] = useState(null)
   const { draft, clearConsumptions, expireSeatReservation } = usePurchase()
   const [accepted, setAccepted] = useState(false)
   const [methodMode, setMethodMode] = useState('saved')
@@ -51,16 +54,55 @@ export default function CompraPagoPage({ candyOnly = false }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [ticket, setTicket] = useState(null)
+  const [suscripcion, setSuscripcion] = useState(null)
   const [calculatedTickets, setCalculatedTickets] = useState(null)
   const { reservationError, remainingSeconds, expired } = useSeatReservationHeartbeat(
     draft.functionId,
     draft.selectedSeats,
-    !candyOnly && !ticket,
+    !candyOnly && !membershipOnly && !ticket,
   )
+
+  useEffect(() => {
+    if (!membershipOnly) return undefined
+    let cancelled = false
+    api.getMembresias()
+      .then((data) => {
+        if (!cancelled) setMembresias(data || [])
+      })
+      .catch(() => {
+        if (!cancelled) setMembresias([])
+      })
+      .finally(() => {
+        if (!cancelled) setMembresiasLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [membershipOnly])
+
+  useEffect(() => {
+    if (!membershipOnly) return undefined
+    let cancelled = false
+    api.getMembresiaActual()
+      .then((data) => {
+        if (!cancelled) setPlanVigente(data)
+      })
+      .catch(() => {
+        if (!cancelled) setPlanVigente(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [membershipOnly])
 
   const movie = peliculas.find((item) => item.id === Number(movieId))
   const funcion = funciones.find((item) => item.id === draft.functionId)
+  const membresia = membresias.find((item) => item.id === Number(draft.membershipId))
+  const reemplazaPlan = Boolean(
+    planVigente && membresia && planVigente.membresiaId !== membresia.id,
+  )
   const metodos = spectator?.metodosDePago || []
+  const sinFuncion = candyOnly || membershipOnly
 
   useEffect(() => {
     const firstValid = metodos.find((metodo) => !paymentIsExpired(metodo.fechaVencimiento))
@@ -68,29 +110,29 @@ export default function CompraPagoPage({ candyOnly = false }) {
   }, [metodos, selectedMethodId])
 
   useEffect(() => {
-    if (candyOnly || !funcion || !spectator || draft.selectedSeats.length === 0) return
+    if (sinFuncion || !funcion || !spectator || draft.selectedSeats.length === 0) return
     api.calcularPrecio(
       funcion.id,
       spectator.id,
       funcion.precioEntrada,
       draft.selectedSeats.length,
     ).then((response) => setCalculatedTickets(response.total)).catch(() => setCalculatedTickets(null))
-  }, [candyOnly, funcion, spectator, draft.selectedSeats.length])
+  }, [sinFuncion, funcion, spectator, draft.selectedSeats.length])
 
   useEffect(() => {
-    if (ticket) {
+    if (ticket || suscripcion) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
-  }, [ticket])
+  }, [ticket, suscripcion])
 
   useEffect(() => {
-    if (candyOnly || !expired || loading || ticket) return
+    if (sinFuncion || !expired || loading || ticket) return
     expireSeatReservation()
     navigate(`/compra/${movieId}/butacas`, {
       replace: true,
       state: { reservationExpired: true },
     })
-  }, [candyOnly, expired, expireSeatReservation, loading, movieId, navigate, ticket])
+  }, [sinFuncion, expired, expireSeatReservation, loading, movieId, navigate, ticket])
 
   const candyItemCount = Object.values(draft.consumptions).reduce(
     (sum, quantity) => sum + Number(quantity),
@@ -98,9 +140,22 @@ export default function CompraPagoPage({ candyOnly = false }) {
   )
 
   if (!isSpectator) {
-    return <Navigate to={candyOnly ? '/candy' : `/compra/${movieId}/acceso`} replace />
+    return (
+      <Navigate
+        to={membershipOnly ? '/club' : candyOnly ? '/candy' : `/compra/${movieId}/acceso`}
+        replace
+      />
+    )
   }
-  if (candyOnly) {
+  if (membershipOnly) {
+    if (!suscripcion && (draft.purchaseType !== 'membership' || !draft.membershipId)) {
+      return <Navigate to="/club" replace />
+    }
+    if (!suscripcion && !membresia) {
+      if (membresiasLoading) return <Loader />
+      return <Navigate to="/club" replace />
+    }
+  } else if (candyOnly) {
     if (!ticket && (draft.purchaseType !== 'candy' || candyItemCount === 0)) {
       return <Navigate to="/candy" replace />
     }
@@ -113,14 +168,16 @@ export default function CompraPagoPage({ candyOnly = false }) {
     }
   }
 
-  const totalTickets = candyOnly
+  const totalTickets = sinFuncion
     ? 0
     : calculatedTickets ?? draft.selectedSeats.length * funcion.precioEntrada
-  const totalCandy = Object.entries(draft.consumptions).reduce((sum, [id, qty]) => {
-    const product = productos.find((item) => item.id === Number(id))
-    return sum + (product ? product.precio * qty : 0)
-  }, 0)
-  const total = totalTickets + totalCandy
+  const totalCandy = membershipOnly
+    ? 0
+    : Object.entries(draft.consumptions).reduce((sum, [id, qty]) => {
+        const product = productos.find((item) => item.id === Number(id))
+        return sum + (product ? product.precio * qty : 0)
+      }, 0)
+  const total = membershipOnly ? membresia?.precioMensual || 0 : totalTickets + totalCandy
 
   async function ensurePaymentMethod() {
     if (methodMode === 'saved' && selectedMethodId) {
@@ -150,7 +207,7 @@ export default function CompraPagoPage({ candyOnly = false }) {
 
   async function handlePay(event) {
     event.preventDefault()
-    if (!candyOnly && functionHasStarted(funcion)) {
+    if (!sinFuncion && functionHasStarted(funcion)) {
       setError('La función seleccionada ya comenzó. Elegí otro horario para continuar.')
       return
     }
@@ -174,29 +231,72 @@ export default function CompraPagoPage({ candyOnly = false }) {
         }))
         .filter((item) => item.cantidad > 0)
 
-      const result = candyOnly
-        ? await api.comprarCandy({
+      const result = membershipOnly
+        ? await api.comprarMembresia({
             espectadorId: spectator.id,
             metodoDePagoId,
-            items,
+            membresiaId: membresia.id,
           })
-        : await api.comprar({
-            espectadorId: spectator.id,
-            metodoDePagoId,
-            funcionId: funcion.id,
-            butacasIds: draft.selectedSeats.map((seat) => seat.id),
-            items,
-          })
+        : candyOnly
+          ? await api.comprarCandy({
+              espectadorId: spectator.id,
+              metodoDePagoId,
+              items,
+            })
+          : await api.comprar({
+              espectadorId: spectator.id,
+              metodoDePagoId,
+              funcionId: funcion.id,
+              butacasIds: draft.selectedSeats.map((seat) => seat.id),
+              items,
+            })
 
+      if (membershipOnly) {
+        setSuscripcion(result)
+        window.dispatchEvent(new CustomEvent('filmzone:membresia', { detail: result }))
+      }
+      else setTicket(result)
+      if (candyOnly) clearConsumptions()
       await reload()
       await refreshSpectator(spectator.id)
-      setTicket(result)
-      if (candyOnly) clearConsumptions()
     } catch (err) {
       setError(errorMessage(err))
     } finally {
       setLoading(false)
     }
+  }
+
+  if (suscripcion) {
+    return (
+      <div className="purchase-page">
+        <section className="success-panel">
+          <p className="eyebrow">Membresía confirmada</p>
+          <h1>Ya sos parte del Club Film Zone</h1>
+          <p>
+            Enviamos la confirmación a <strong>{spectator.email}</strong>.{' '}
+            {reemplazaPlan && (
+              <>
+                Dimos de baja <strong>{planVigente.nombre}</strong>.{' '}
+              </>
+            )}
+            Tu plan <strong>{suscripcion.nombre}</strong> está activo hasta el{' '}
+            {formatDateShort(suscripcion.fechaFin)}.
+          </p>
+          <ul className="membership-success__benefits">
+            {suscripcion.beneficios.map((beneficio) => (
+              <li key={beneficio}>
+                <Check size={16} aria-hidden="true" />
+                <span>{beneficio}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="muted">Pagaste ${money(suscripcion.precioCobrado)} por este mes.</p>
+          <Link to="/club" className="primary-button">
+            Volver al club
+          </Link>
+        </section>
+      </div>
+    )
   }
 
   if (ticket) {
@@ -223,23 +323,34 @@ export default function CompraPagoPage({ candyOnly = false }) {
 
   return (
     <div className="purchase-page">
-      <Link to={candyOnly ? '/candy' : `/compra/${movieId}/candy`} className="back-link">
-        {candyOnly ? 'Volver al Candy' : 'Volver al candy bar'}
+      <Link
+        to={membershipOnly ? '/club' : candyOnly ? '/candy' : `/compra/${movieId}/candy`}
+        className="back-link"
+      >
+        {membershipOnly ? 'Volver al club' : candyOnly ? 'Volver al Candy' : 'Volver al candy bar'}
       </Link>
-      {!candyOnly && <PurchaseStepper current="pago" />}
+      {!sinFuncion && <PurchaseStepper current="pago" />}
 
       <div className="purchase-grid purchase-grid--wide">
         <section className="purchase-panel">
           <p className="eyebrow">
-            {candyOnly ? 'Confirmá tu pedido' : 'El último paso antes de la gran pantalla'}
+            {membershipOnly
+              ? 'Confirmá tu membresía'
+              : candyOnly
+                ? 'Confirmá tu pedido'
+                : 'El último paso antes de la gran pantalla'}
           </p>
-          <h1>{candyOnly ? 'Completá el pago' : 'Todo listo para tu noche'}</h1>
+          <h1>{sinFuncion ? 'Completá el pago' : 'Todo listo para tu noche'}</h1>
           <p>
-            {candyOnly
-              ? 'Elegí cómo pagar tus productos. Enviaremos el QR a tu correo.'
-              : 'Revisá tu pedido y completá el pago. Enviaremos las entradas a tu correo.'}
+            {membershipOnly
+              ? reemplazaPlan
+                ? `Al pagar se da de baja ${planVigente.nombre} y empieza ${membresia.nombre} por un mes.`
+                : `Vas a abonar el mes de ${membresia.nombre}. La membresía queda activa por un mes y te enviamos la confirmación por correo.`
+              : candyOnly
+                ? 'Elegí cómo pagar tus productos. Enviaremos el QR a tu correo.'
+                : 'Revisá tu pedido y completá el pago. Enviaremos las entradas a tu correo.'}
           </p>
-          {!candyOnly && <SeatReservationTimer remainingSeconds={remainingSeconds} />}
+          {!sinFuncion && <SeatReservationTimer remainingSeconds={remainingSeconds} />}
 
           <form className="stack-form" onSubmit={handlePay}>
             <div className="checkout-customer">
@@ -406,7 +517,7 @@ export default function CompraPagoPage({ candyOnly = false }) {
             <button
               type="submit"
               className="primary-button"
-              disabled={loading || (!candyOnly && functionHasStarted(funcion))}
+              disabled={loading || (!sinFuncion && functionHasStarted(funcion)) || (membershipOnly && !membresia)}
             >
               {loading ? 'Procesando…' : `Pagar $${money(total)}`}
             </button>
@@ -416,13 +527,14 @@ export default function CompraPagoPage({ candyOnly = false }) {
 
         <OrderSummary
           candyOnly={candyOnly}
+          membership={membershipOnly ? membresia : null}
           movie={movie}
           funcion={funcion}
           seats={draft.selectedSeats}
           products={productos}
           consumptions={draft.consumptions}
           onClearCandy={clearConsumptions}
-          editSeatsTo={candyOnly ? undefined : `/compra/${movieId}/butacas`}
+          editSeatsTo={sinFuncion ? undefined : `/compra/${movieId}/butacas`}
           totalTickets={totalTickets}
           totalCandy={totalCandy}
           total={total}

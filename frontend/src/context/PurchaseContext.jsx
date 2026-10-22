@@ -10,6 +10,7 @@ const initialState = {
   consumptions: {},
   candyVisited: false,
   returnPath: null,
+  membershipId: null,
 }
 
 export function PurchaseProvider({ children }) {
@@ -31,6 +32,14 @@ export function PurchaseProvider({ children }) {
       ...initialState,
       purchaseType: 'candy',
       candyVisited: true,
+    })
+  }, [])
+
+  const startMembership = useCallback((membershipId) => {
+    setDraft({
+      ...initialState,
+      purchaseType: 'membership',
+      membershipId,
     })
   }, [])
 
@@ -89,6 +98,7 @@ export function PurchaseProvider({ children }) {
       reset,
       startFromMovie,
       startCandyOnly,
+      startMembership,
       selectFunction,
       toggleSeat,
       setConsumption,
@@ -102,6 +112,7 @@ export function PurchaseProvider({ children }) {
       reset,
       startFromMovie,
       startCandyOnly,
+      startMembership,
       selectFunction,
       toggleSeat,
       setConsumption,

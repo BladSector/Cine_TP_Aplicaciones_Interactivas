@@ -1,6 +1,6 @@
 -- Seed base para MySQL 8.
 -- Crea el esquema y carga los datos estables: categorías, películas, salas,
--- butacas y productos de confitería.
+-- butacas, productos de confitería y membresías del Club Film Zone.
 -- No crea espectadores ni empleados de prueba.
 -- Las funciones se cargan por separado con completar_funciones_2_semanas.sql.
 -- ATENCIÓN: elimina por completo la base tp_cine_api antes de recrearla.
@@ -133,6 +133,29 @@ CREATE TABLE item_consumo (
     estado VARCHAR(30) NOT NULL DEFAULT 'PENDIENTE',
     CONSTRAINT fk_item_consumo_producto FOREIGN KEY (producto_id) REFERENCES producto_confiteria(id),
     CONSTRAINT fk_item_consumo_ticket FOREIGN KEY (ticket_id) REFERENCES ticket(id)
+);
+
+CREATE TABLE membresia (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(80) NOT NULL,
+    precio_mensual DOUBLE NOT NULL,
+    descripcion VARCHAR(400) NOT NULL,
+    beneficios TEXT NOT NULL,
+    destacada BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE suscripcion (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    espectador_id INT NOT NULL,
+    membresia_id INT NOT NULL,
+    metodo_pago_id INT NOT NULL,
+    precio_cobrado DOUBLE NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    activa BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT fk_suscripcion_espectador FOREIGN KEY (espectador_id) REFERENCES espectador(id),
+    CONSTRAINT fk_suscripcion_membresia FOREIGN KEY (membresia_id) REFERENCES membresia(id),
+    CONSTRAINT fk_suscripcion_metodo_pago FOREIGN KEY (metodo_pago_id) REFERENCES metodo_pago(id)
 );
 
 CREATE TABLE empleado (
@@ -288,6 +311,27 @@ SET imagen_url = CASE tipo
     ELSE NULL
 END;
 
+INSERT INTO membresia (id, nombre, precio_mensual, descripcion, beneficios, destacada) VALUES
+(1, 'Luneta', 7900, 'Para sumar cine al mes sin pensarlo demasiado.', CONCAT_WS('\n',
+    '2 entradas 2D por mes',
+    '10% de descuento en el Candy',
+    'Preventa con 48 horas de anticipación'
+), FALSE),
+(2, 'Platea', 13500, 'La butaca que elegís vos, con un combo incluido.', CONCAT_WS('\n',
+    '4 entradas 2D por mes',
+    '1 combo clásico por mes',
+    '20% de descuento en el Candy',
+    'Preventa con 4 días de anticipación',
+    'Upgrade a butaca central cuando hay lugar'
+), TRUE),
+(3, 'Palco', 21900, 'Estrenos, invitados y la noche completa.', CONCAT_WS('\n',
+    'Entradas 2D ilimitadas de lunes a jueves',
+    '2 entradas de invitado por mes',
+    'Candy bonificado en cada función',
+    'Preventa de una semana y avant premiere',
+    'Estacionamiento incluido'
+), FALSE);
+
 DROP TEMPORARY TABLE IF EXISTS seed_numeros;
 DROP TEMPORARY TABLE IF EXISTS seed_filas;
 
@@ -296,4 +340,5 @@ SELECT
     (SELECT COUNT(*) FROM pelicula) AS peliculas,
     (SELECT COUNT(*) FROM sala) AS salas,
     (SELECT COUNT(*) FROM butaca) AS butacas,
-    (SELECT COUNT(*) FROM producto_confiteria) AS productos_confiteria;
+    (SELECT COUNT(*) FROM producto_confiteria) AS productos_confiteria,
+    (SELECT COUNT(*) FROM membresia) AS membresias;

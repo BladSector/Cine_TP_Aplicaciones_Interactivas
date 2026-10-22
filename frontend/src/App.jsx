@@ -10,6 +10,7 @@ import CompraPagoPage from './pages/compra/CompraPagoPage'
 import CuentaPage from './pages/CuentaPage'
 import CandyPage from './pages/CandyPage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import ClubPage from './pages/ClubPage'
 import LegalPage from './pages/LegalPage'
 import AboutPage from './pages/AboutPage'
 
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="pelicula/:id" element={<PeliculaPage />} />
           <Route path="candy" element={<CandyPage />} />
           <Route path="candy/pago" element={<CompraPagoPage candyOnly />} />
+          <Route path="club/pago" element={<CompraPagoPage membershipOnly />} />
           <Route path="compra/:movieId/acceso" element={<CompraAccesoPage />} />
           <Route path="compra/:movieId/butacas" element={<CompraButacasPage />} />
           <Route path="compra/:movieId/candy" element={<CompraCandyPage />} />
@@ -59,15 +61,7 @@ export default function App() {
               />
             }
           />
-          <Route
-            path="club"
-            element={
-              <PlaceholderPage
-                title="Club Noche"
-                subtitle="Beneficios, preventas y noches exclusivas para socios."
-              />
-            }
-          />
+          <Route path="club" element={<ClubPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

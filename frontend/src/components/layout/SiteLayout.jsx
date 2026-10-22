@@ -1,7 +1,8 @@
 import { ArrowUpRight, Moon, Search, Sun, X } from 'lucide-react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import PurchaseAuthDrawer from '../cuenta/PurchaseAuthDrawer'
 import ConfirmDialog from '../common/ConfirmDialog'
+import { api } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import {
@@ -26,6 +27,8 @@ export default function SiteLayout() {
   const { spectator, isSpectator, logout } = useAuth()
   const { peliculas, funciones, loading } = useCatalog()
   const navigate = useNavigate()
+  const location = useLocation()
+  const [suscripcion, setSuscripcion] = useState(null)
 
   const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || 'light')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -66,6 +69,32 @@ export default function SiteLayout() {
     document.documentElement.dataset.theme = theme
     localStorage.setItem('film-zone-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    if (!isSpectator) {
+      setSuscripcion(null)
+      return undefined
+    }
+    let cancelled = false
+    api.getMembresiaActual()
+      .then((data) => {
+        if (!cancelled) setSuscripcion(data)
+      })
+      .catch(() => {
+        if (!cancelled) setSuscripcion(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isSpectator, spectator?.id, location.pathname])
+
+  useEffect(() => {
+    function handleMembresia(event) {
+      setSuscripcion(event.detail ?? null)
+    }
+    window.addEventListener('filmzone:membresia', handleMembresia)
+    return () => window.removeEventListener('filmzone:membresia', handleMembresia)
+  }, [])
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -236,7 +265,15 @@ export default function SiteLayout() {
                     <button
                       type="button"
                       className={`user-icon-button ${isMenuOpen ? 'is-active' : ''}`}
-                      onClick={() => setIsMenuOpen(!isMenuOpen)}
+                      onClick={() => {
+                        const next = !isMenuOpen
+                        setIsMenuOpen(next)
+                        if (next && isSpectator) {
+                          api.getMembresiaActual()
+                            .then((data) => setSuscripcion(data))
+                            .catch(() => setSuscripcion(null))
+                        }
+                      }}
                       title="Mi cuenta"
                     >
                       {/* Icono de usuario SVG */}
@@ -255,6 +292,12 @@ export default function SiteLayout() {
                         <NavLink to="/cuenta#entradas" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
                           Mis tickets
                         </NavLink>
+
+                        {suscripcion && (
+                          <NavLink to="/cuenta#membresia" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
+                            Membresía
+                          </NavLink>
+                        )}
 
                         <NavLink to="/cuenta#perfil" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
                           Editar Perfil

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { api, errorMessage } from '../api/client'
 import Modal from '../components/common/Modal'
+import MembresiaPanel from '../components/cuenta/MembresiaPanel'
 import MetodosPagoList from '../components/cuenta/MetodosPagoList'
 import MisEntradasList from '../components/cuenta/MisEntradasList'
 import PerfilForm from '../components/cuenta/PerfilForm'
@@ -216,6 +217,7 @@ export default function CuentaPage() {
       )}
       {notice && <div className="info-box">{notice}</div>}
       {activeSection === '#entradas' && <MisEntradasList />}
+      {activeSection === '#membresia' && <MembresiaPanel />}
       {activeSection === '#perfil' && <div className="account-grid account-grid--profile"><PerfilForm /></div>}
       {activeSection === '#pagos' && <div className="account-grid account-grid--wallet"><MetodosPagoList /></div>}
 

@@ -17,6 +17,7 @@ export default defineConfig({
       '/entradas': 'http://localhost:8080',
       '/tickets': 'http://localhost:8080',
       '/compras': 'http://localhost:8080',
+      '/membresias': 'http://localhost:8080',
       '/productos-confiteria': 'http://localhost:8080',
       '/sesion': 'http://localhost:8080',
       '/precios': 'http://localhost:8080',

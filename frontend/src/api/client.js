@@ -12,9 +12,12 @@ async function request(url, options = {}) {
 
   const response = await fetch(url, config)
   const contentType = response.headers.get('content-type') || ''
-  const data = contentType.includes('application/json')
-    ? await response.json()
-    : await response.text()
+  const raw = await response.text()
+  const data = raw
+    ? contentType.includes('application/json')
+      ? JSON.parse(raw)
+      : raw
+    : null
 
   if (!response.ok) {
     const message =
@@ -62,6 +65,10 @@ export const api = {
       method: 'DELETE',
     }),
   getProductos: () => request('/productos-confiteria'),
+  getMembresias: () => request('/membresias'),
+  getMembresiaActual: () => request('/membresias/actual'),
+  darDeBajaMembresia: () => request('/membresias/actual', { method: 'DELETE' }),
+  comprarMembresia: (body) => request('/compras/membresia', { method: 'POST', body }),
   getEntradas: () => request('/entradas'),
   getTickets: () => request('/tickets'),
   getTicket: (id) => request(`/tickets/${id}`),

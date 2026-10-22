@@ -3,6 +3,7 @@ package service.comunicacion;
 import modelo.entidades.Entrada;
 import modelo.entidades.Espectador;
 import modelo.entidades.ItemConsumo;
+import modelo.entidades.Suscripcion;
 import modelo.entidades.Ticket;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -14,6 +15,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.time.format.DateTimeFormatter;
 import java.util.StringJoiner;
 
 @Service
@@ -76,6 +78,24 @@ public class EmailService {
                 cuerpo.toString(),
                 "ticket-" + ticket.getId() + ".pdf",
                 pdf
+        );
+    }
+
+    public void enviarConfirmacionMembresia(Suscripcion suscripcion) {
+        DateTimeFormatter fecha = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        StringJoiner cuerpo = new StringJoiner(System.lineSeparator());
+        cuerpo.add("Hola " + suscripcion.getEspectador().getNombre() + ",");
+        cuerpo.add("Tu membresía " + suscripcion.getMembresia().getNombre() + " ya está activa.");
+        cuerpo.add("Precio mensual: $" + suscripcion.getPrecioCobrado());
+        cuerpo.add("Vigente hasta el " + fecha.format(suscripcion.getFechaFin()) + ".");
+        cuerpo.add("Incluye:");
+        for (String beneficio : suscripcion.getMembresia().listarBeneficios()) {
+            cuerpo.add("- " + beneficio);
+        }
+        enviar(
+                suscripcion.getEspectador().getEmail(),
+                "Tu membresía de Film Zone",
+                cuerpo.toString()
         );
     }
 
