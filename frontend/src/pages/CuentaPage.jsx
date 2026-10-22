@@ -141,7 +141,7 @@ export default function CuentaPage() {
       <section className="account-gate">
         <p className="eyebrow">Mi cuenta</p>
         <h1>Tu cine, en un solo lugar</h1>
-        <p className="muted">Ingresá para comprar, administrar tus tarjetas y consultar tus tickets.</p>
+        <p className="muted">Ingresá para comprar, administrar tus tarjetas y consultar tus entradas.</p>
         <div className="auth-tabs">
           <button type="button" className={mode === 'login' ? 'is-active' : ''} onClick={() => changeMode('login')}>Iniciar sesión</button>
           <button type="button" className={mode === 'register' ? 'is-active' : ''} onClick={() => changeMode('register')}>Nueva cuenta</button>

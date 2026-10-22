@@ -56,6 +56,13 @@
   box-sizing: border-box;
 }
 
+html {
+  /* Le avisa al navegador cuánto mide tu header para que frene antes */
+  scroll-padding-top: 120px;
+
+  /* De paso, hace que el movimiento hacia abajo sea un deslizamiento suave y no un salto brusco */
+  scroll-behavior: smooth;
+}
 html,
 body,
 #root {
@@ -450,6 +457,7 @@ h2 {
 .site-main {
   flex: 1;
   padding-bottom: 4rem;
+  padding-top: 40px !important;
 }
 
 .site-footer {
@@ -1969,7 +1977,7 @@ textarea {
   justify-content: space-between;
   gap: 1rem;
   align-items: start;
-  margin: 2rem 0 1.5rem;
+  margin: 0 0 1.5rem;
 }
 
 .account-grid {
@@ -2396,17 +2404,19 @@ textarea {
 /* La caja flotante del menú */
 .dropdown-menu {
   position: absolute;
-  top: calc(100% + 0.5rem);
+  top: calc(100% + 10px);
   right: 0;
+  z-index: 100;
   background: var(--surface-raised);
   border: 1px solid var(--line);
   border-radius: 14px;
   box-shadow: var(--shadow);
   min-width: 230px;
   padding: 0.5rem 0;
-  z-index: 50;
   display: flex;
   flex-direction: column;
+  transform-origin: top right;
+  animation: dropdownSlideIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 .dropdown-header {
@@ -2440,6 +2450,17 @@ textarea {
   border: none;
   border-top: 1px solid var(--line);
   margin: 0.5rem 0;
+}
+
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95); /* Sube un poquito y se achica */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1); /* Posición final normal */
+  }
 }
 
 /* Estilo especial para cerrar sesión */
