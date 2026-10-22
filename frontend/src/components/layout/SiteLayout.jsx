@@ -118,9 +118,8 @@ export default function SiteLayout() {
           </NavLink>
 
           <nav className="site-nav" aria-label="Principal">
-            <div className="destacar_cartelera">
-              <NavLink to="/" end>Cartelera</NavLink>
-            </div>
+
+            <NavLink to="/" className= "btn-cartelera" end>Cartelera</NavLink>
             <NavLink to="/candy">Candy</NavLink>
             <NavLink to="/proximamente">Próximamente</NavLink>
             <NavLink to="/experiencias">Experiencias</NavLink>

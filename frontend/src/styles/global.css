@@ -204,6 +204,20 @@ h2 {
   color: var(--accent);
 }
 
+/* BOTON PARA RESALTAR CARTELERA */
+.site-nav a.btn-cartelera {
+  background-color: var(--accent);
+  color: #ffffff;
+  border-radius: 24px;
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  border: none;
+}
+
+.site-nav a.btn-cartelera:hover {
+  filter: brightness(1.1); /* Lo hace brillar un poquito */
+}
+
 .header-utility {
   display: flex;
   align-items: center;
@@ -2847,4 +2861,12 @@ textarea {
   pointer-events: none; /* Evita que el usuario haga clic por accidente aunque no se vea */
 }
 
-
+.destacar_cartelera{
+  border: 0;
+  cursor: pointer;
+  font-weight: 700;
+  min-height: 48px;
+  padding: 0.8rem 1.25rem;
+  border-radius: 999px;
+  background: var(--accent);
+}
