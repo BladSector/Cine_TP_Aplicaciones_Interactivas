@@ -22,7 +22,7 @@ import java.util.List;
 
 @Service
 public class ReservaButacaService {
-    private static final int MINUTOS_RESERVA = 5;
+    private static final int MINUTOS_RESERVA = 10;
 
     private final ReservaButacaRepository reservaRepository;
     private final ButacaRepository butacaRepository;
@@ -51,14 +51,9 @@ public class ReservaButacaService {
 
         validarReserva(funcion, butaca);
         LocalDateTime ahora = LocalDateTime.now();
+        reservaRepository.deleteByVenceEnLessThanEqual(ahora);
         ReservaButaca existente = reservaRepository.findByFuncionIdAndButacaId(funcionId, butacaId)
                 .orElse(null);
-
-        if (existente != null && existente.estaVencida(ahora)) {
-            reservaRepository.delete(existente);
-            reservaRepository.flush();
-            existente = null;
-        }
 
         if (existente != null) {
             if (existente.getEspectador().getId() != espectadorId) {
@@ -67,16 +62,21 @@ public class ReservaButacaService {
                         "La butaca acaba de ser reservada por otro espectador."
                 );
             }
-            existente.renovar(ahora.plusMinutes(MINUTOS_RESERVA));
-            return reservaRepository.save(existente);
+            return existente;
         }
+
+        LocalDateTime vencimientoCompra = reservaRepository.findByFuncionIdOrderByButacaId(funcionId).stream()
+                .filter(reserva -> reserva.getEspectador().getId() == espectadorId)
+                .map(ReservaButaca::getVenceEn)
+                .min(LocalDateTime::compareTo)
+                .orElse(ahora.plusMinutes(MINUTOS_RESERVA));
 
         try {
             return reservaRepository.saveAndFlush(new ReservaButaca(
                     funcion,
                     butaca,
                     espectador,
-                    ahora.plusMinutes(MINUTOS_RESERVA)
+                    vencimientoCompra
             ));
         } catch (DataIntegrityViolationException exception) {
             throw new ResponseStatusException(
@@ -115,10 +115,12 @@ public class ReservaButacaService {
             ReservaButaca reserva = reservaRepository
                     .findByFuncionIdAndButacaId(funcion.getId(), butaca.getId())
                     .orElse(null);
-            if (reserva == null) continue;
-            if (reserva.estaVencida(ahora)) {
-                reservaRepository.delete(reserva);
-                continue;
+            if (reserva == null || reserva.estaVencida(ahora)) {
+                if (reserva != null) reservaRepository.delete(reserva);
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "La reserva de una de las butacas venció. Debe seleccionarlas nuevamente."
+                );
             }
             if (reserva.getEspectador().getId() != espectador.getId()) {
                 throw new ResponseStatusException(

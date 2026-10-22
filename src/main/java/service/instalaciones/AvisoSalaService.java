@@ -1,6 +1,7 @@
 package service.instalaciones;
 
 import modelo.entidades.AvisoSala;
+import modelo.entidades.Butaca;
 import modelo.entidades.Empleado;
 import modelo.enums.EstadoSala;
 import modelo.entidades.Sala;
@@ -67,6 +68,27 @@ public class AvisoSalaService {
                 ))
                 .toList();
         avisoSalaRepository.saveAll(avisos);
+    }
+
+    @Transactional
+    public void notificarButacaFueraDeServicio(Butaca butaca, String comentario,
+                                                Integer creadoPorEmpleadoId,
+                                                Integer destinatarioEmpleadoId) {
+        StringBuilder descripcion = new StringBuilder()
+                .append("Butaca ")
+                .append(butaca.getFila())
+                .append(butaca.getNumero())
+                .append(" marcada fuera de servicio.");
+        if (comentario != null && !comentario.isBlank()) {
+            descripcion.append(" Comentario: ").append(comentario.trim());
+        }
+        notificarCambio(
+                butaca.getSala(),
+                EstadoSala.PROBLEMA_PARTICULAR,
+                descripcion.toString(),
+                creadoPorEmpleadoId,
+                destinatarioEmpleadoId
+        );
     }
 
     public List<AvisoSala> listarPendientes(int empleadoId) {

@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import CandyCatalog from '../../components/compra/CandyCatalog'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
+import SeatReservationTimer from '../../components/compra/SeatReservationTimer'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
@@ -14,7 +15,13 @@ export default function CompraCandyPage() {
   const navigate = useNavigate()
   const { isSpectator } = useAuth()
   const { peliculas, funciones, productos } = useCatalog()
-  const { draft, setConsumption, clearConsumptions, markCandyVisited } = usePurchase()
+  const {
+    draft,
+    setConsumption,
+    clearConsumptions,
+    markCandyVisited,
+    expireSeatReservation,
+  } = usePurchase()
 
   useEffect(() => {
     markCandyVisited()
@@ -22,7 +29,19 @@ export default function CompraCandyPage() {
 
   const movie = peliculas.find((item) => item.id === Number(movieId))
   const funcion = funciones.find((item) => item.id === draft.functionId)
-  const reservationError = useSeatReservationHeartbeat(draft.functionId, draft.selectedSeats)
+  const { reservationError, remainingSeconds, expired } = useSeatReservationHeartbeat(
+    draft.functionId,
+    draft.selectedSeats,
+  )
+
+  useEffect(() => {
+    if (!expired) return
+    expireSeatReservation()
+    navigate(`/compra/${movieId}/butacas`, {
+      replace: true,
+      state: { reservationExpired: true },
+    })
+  }, [expired, expireSeatReservation, movieId, navigate])
 
   if (!isSpectator) return <Navigate to={`/compra/${movieId}/acceso`} replace />
   if (!funcion || !movie || draft.selectedSeats.length === 0) {
@@ -47,7 +66,10 @@ export default function CompraCandyPage() {
           <p className="eyebrow">Un extra para tu película · opcional</p>
           <h1>El cine sabe mejor así</h1>
           <p>Añade tus favoritos o continúa al pago solo con tus entradas. Tú eliges.</p>
-          {reservationError && <div className="info-box info-box--error">{reservationError}</div>}
+          <SeatReservationTimer remainingSeconds={remainingSeconds} />
+          {reservationError && !expired && (
+            <div className="info-box info-box--error">{reservationError}</div>
+          )}
 
           <CandyCatalog
             products={productos}

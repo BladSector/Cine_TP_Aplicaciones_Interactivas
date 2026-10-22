@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { api, errorMessage } from '../../api/client'
 import { formatDateShort, formatFunction, formatLanguage, money, shortTime } from '../../utils/format'
 
-export default function TicketDetails({ ticket }) {
+export default function TicketDetails({ ticket, movie }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -28,15 +28,24 @@ export default function TicketDetails({ ticket }) {
   return (
     <div className="ticket-detail">
       <div className="ticket-detail__heading">
-        <div>
-          <p className="eyebrow">Ticket #{ticket.id}</p>
-          <h3>
-            {ticket.entradas?.[0]?.pelicula
-              || ((ticket.itemsConsumo || []).length > 0 ? 'Compra de Candy' : 'Compra de cine')}
-          </h3>
-          <span className={`status-pill status-pill--${String(ticket.estado).toLowerCase()}`}>
-            {String(ticket.estado).replaceAll('_', ' ')}
-          </span>
+        <div className={`ticket-detail__movie${movie?.portadaUrl ? '' : ' ticket-detail__movie--without-poster'}`}>
+          {movie?.portadaUrl && (
+            <img
+              className="ticket-detail__poster"
+              src={movie.portadaUrl}
+              alt={`Portada de ${movie.titulo}`}
+            />
+          )}
+          <div>
+            <p className="eyebrow">Ticket #{ticket.id}</p>
+            <h3>
+              {ticket.entradas?.[0]?.pelicula
+                || ((ticket.itemsConsumo || []).length > 0 ? 'Compra de Candy' : 'Compra de cine')}
+            </h3>
+            <span className={`status-pill status-pill--${String(ticket.estado).toLowerCase()}`}>
+              {String(ticket.estado).replaceAll('_', ' ')}
+            </span>
+          </div>
         </div>
         <div className="ticket-qr">
           <QRCodeSVG value={ticket.codigoQR} size={136} level="M" includeMargin />
@@ -62,7 +71,7 @@ export default function TicketDetails({ ticket }) {
           {ticket.itemsConsumo.map((item) => (
             <p key={item.id}>
               <span>{item.cantidad} × {item.producto}</span>
-              <span>${money(item.subtotal)} · {String(item.estado).replaceAll('_', ' ')}</span>
+              <span>${money(item.subtotal)}</span>
             </p>
           ))}
         </div>

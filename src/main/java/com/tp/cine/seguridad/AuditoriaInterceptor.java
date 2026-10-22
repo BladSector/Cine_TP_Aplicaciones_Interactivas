@@ -115,6 +115,9 @@ public class AuditoriaInterceptor implements HandlerInterceptor {
         if (ruta.matches("/butacas/\\d+/fuera-de-servicio")) {
             return "MARCAR_BUTACA_FUERA_DE_SERVICIO";
         }
+        if (ruta.matches("/butacas/\\d+/habilitar")) {
+            return "HABILITAR_BUTACA";
+        }
         if (ruta.matches("/tickets/\\d+/validar-entradas")
                 || ruta.matches("/entradas/\\d+/escanear")) {
             return "VALIDAR_ENTRADAS";

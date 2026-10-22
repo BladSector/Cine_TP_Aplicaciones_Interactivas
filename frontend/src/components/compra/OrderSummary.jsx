@@ -31,19 +31,34 @@ export default function OrderSummary({
 
   return (
     <aside className="order-summary">
-      <p className="eyebrow">{candyOnly ? 'Tu pedido' : 'Tu noche de cine'}</p>
-      <h2>{candyOnly ? 'Candy bar' : movie?.titulo}</h2>
-      {!candyOnly && (
-        <p className="muted">
-          {movie?.duracion} min
-          {funcion && (
-            <>
-              {' · '}
-              {formatFunction(funcion.formato)} · {formatLanguage(funcion.idioma)}
-            </>
+      <div
+        className={!candyOnly
+          ? `order-summary__movie${movie?.portadaUrl ? '' : ' order-summary__movie--without-poster'}`
+          : undefined}
+      >
+        {!candyOnly && movie?.portadaUrl && (
+          <img
+            className="order-summary__poster"
+            src={movie.portadaUrl}
+            alt={`Portada de ${movie.titulo}`}
+          />
+        )}
+        <div>
+          <p className="eyebrow">{candyOnly ? 'Tu pedido' : 'Tu noche de cine'}</p>
+          <h2>{candyOnly ? 'Candy bar' : movie?.titulo}</h2>
+          {!candyOnly && (
+            <p className="muted">
+              {movie?.duracion} min
+              {funcion && (
+                <>
+                  {' · '}
+                  {formatFunction(funcion.formato)} · {formatLanguage(funcion.idioma)}
+                </>
+              )}
+            </p>
           )}
-        </p>
-      )}
+        </div>
+      </div>
 
       {funcion && (
         <div className="order-summary__block">

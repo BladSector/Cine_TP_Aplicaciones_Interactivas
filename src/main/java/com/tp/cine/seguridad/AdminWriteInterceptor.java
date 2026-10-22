@@ -39,7 +39,7 @@ public class AdminWriteInterceptor implements HandlerInterceptor {
     private Permiso permisoRequerido(HttpServletRequest request) {
         String ruta = request.getRequestURI();
         if ("PUT".equals(request.getMethod()) && (ruta.matches("/salas/\\d+/estado")
-                || ruta.matches("/butacas/\\d+/(ocupar|liberar|fuera-de-servicio)"))) {
+                || ruta.matches("/butacas/\\d+/(fuera-de-servicio|habilitar)"))) {
             return Permiso.GESTIONAR_SALAS;
         }
         if ("PUT".equals(request.getMethod()) && (ruta.matches("/entradas/\\d+/escanear")

@@ -1,5 +1,6 @@
 package controller.instalaciones;
 
+import jakarta.servlet.http.HttpSession;
 import modelo.entidades.Butaca;
 import modelo.enums.EstadoButaca;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import service.instalaciones.ButacaService;
+import service.usuarios.SesionService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,9 +23,11 @@ import java.util.List;
 @RequestMapping("/butacas")
 public class ButacaController {
     private final ButacaService butacaService;
+    private final SesionService sesionService;
 
-    public ButacaController(ButacaService butacaService) {
+    public ButacaController(ButacaService butacaService, SesionService sesionService) {
         this.butacaService = butacaService;
+        this.sesionService = sesionService;
     }
 
     @GetMapping
@@ -65,8 +69,23 @@ public class ButacaController {
     }
 
     @PutMapping("/{id}/fuera-de-servicio")
-    public ButacaResponse marcarFueraDeServicio(@PathVariable int id) {
-        return ButacaResponse.desde(butacaService.marcarFueraDeServicio(id));
+    public ButacaResponse marcarFueraDeServicio(
+            @PathVariable int id,
+            @RequestBody(required = false) EstadoButacaRequest request,
+            HttpSession sesion) {
+        String descripcion = request == null ? null : request.descripcion();
+        Integer destinatarioEmpleadoId = request == null ? null : request.destinatarioEmpleadoId();
+        return ButacaResponse.desde(butacaService.marcarFueraDeServicio(
+                id,
+                descripcion,
+                sesionService.obtenerEmpleadoId(sesion),
+                destinatarioEmpleadoId
+        ));
+    }
+
+    @PutMapping("/{id}/habilitar")
+    public ButacaResponse habilitar(@PathVariable int id) {
+        return ButacaResponse.desde(butacaService.habilitarFueraDeServicio(id));
     }
 
     @DeleteMapping("/{id}")
@@ -79,6 +98,9 @@ public class ButacaController {
     }
 
     public record BloqueoRequest(int minutos) {
+    }
+
+    public record EstadoButacaRequest(String descripcion, Integer destinatarioEmpleadoId) {
     }
 
     public record ButacaResponse(int id, String fila, int numero, String butacaNombre,

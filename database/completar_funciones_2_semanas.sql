@@ -1,6 +1,8 @@
 USE tp_cine_api;
 
--- Completa los próximos 14 días sin borrar funciones, compras ni usuarios.
+-- Actualiza la cartelera de los próximos 14 días.
+-- Se puede volver a ejecutar: solo agrega funciones que todavía no existen y
+-- evita superposiciones con funciones ya cargadas en la misma sala.
 CREATE TEMPORARY TABLE completar_dias (n INT PRIMARY KEY);
 INSERT INTO completar_dias (n) VALUES
 (0), (1), (2), (3), (4), (5), (6),
@@ -63,8 +65,7 @@ SELECT DATE_ADD(CURDATE(), INTERVAL d.n DAY),
        v.idioma,
        c.precio_base + v.recargo
 FROM completar_dias d
--- La base activa comenzó su rotación un día antes de este complemento.
-JOIN completar_cartelera c ON c.dia_modulo = MOD(d.n + 1, 6)
+JOIN completar_cartelera c ON c.dia_modulo = MOD(d.n, 6)
 JOIN completar_variantes v ON v.orden_pelicula = c.orden_pelicula
 JOIN pelicula nueva_pelicula ON nueva_pelicula.id = c.pelicula_id
 WHERE NOT EXISTS (

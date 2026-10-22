@@ -4,6 +4,7 @@ import { api, errorMessage } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { nextMonthValue, paymentIsExpired } from '../../utils/format'
 import Modal from '../common/Modal'
+import ConfirmDialog from '../common/ConfirmDialog'
 
 const EMPTY_CARD = {
   numero: '',
@@ -38,6 +39,7 @@ export default function MetodosPagoList() {
   const [showCardForm, setShowCardForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [card, setCard] = useState(EMPTY_CARD)
+  const [cardToDelete, setCardToDelete] = useState(null)
 
   function updateCard(event) {
     const { name, value } = event.target
@@ -79,16 +81,21 @@ export default function MetodosPagoList() {
     }
   }
 
-  async function handleDeleteCard(id) {
-    if (!window.confirm('¿Querés eliminar esta tarjeta de tus métodos de pago?')) return
+  async function handleDeleteCard() {
+    if (!cardToDelete) return
     setError('')
     setMessage('')
+    setSubmitting(true)
     try {
-      await api.eliminarMetodoPago(id)
+      await api.eliminarMetodoPago(cardToDelete.id)
       await refreshSpectator(spectator.id)
+      setCardToDelete(null)
       setMessage('Tarjeta eliminada.')
     } catch (err) {
+      setCardToDelete(null)
       setError(errorMessage(err))
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -136,7 +143,7 @@ export default function MetodosPagoList() {
                 <button
                   type="button"
                   className="payment-card__delete"
-                  onClick={() => handleDeleteCard(metodo.id)}
+                  onClick={() => setCardToDelete(metodo)}
                   aria-label={`Eliminar tarjeta terminada en ${metodo.ultimosNumeros}`}
                   title="Eliminar tarjeta"
                 >
@@ -201,6 +208,18 @@ export default function MetodosPagoList() {
             </button>
           </form>
         </Modal>
+      )}
+
+      {cardToDelete && (
+        <ConfirmDialog
+          title="Eliminar tarjeta"
+          message={`¿Querés eliminar la tarjeta terminada en ${cardToDelete.ultimosNumeros}?`}
+          confirmLabel="Eliminar"
+          danger
+          loading={submitting}
+          onConfirm={handleDeleteCard}
+          onCancel={() => setCardToDelete(null)}
+        />
       )}
     </section>
   )

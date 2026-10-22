@@ -5,7 +5,7 @@ import { useCatalog } from '../../context/CatalogContext'
 import { formatDateShort, money, shortTime } from '../../utils/format'
 
 export default function MisEntradasList() {
-  const { tickets } = useCatalog()
+  const { tickets, peliculas } = useCatalog()
   const [selected, setSelected] = useState(null)
   const myTickets = [...(tickets || [])].sort((a, b) => b.id - a.id)
 
@@ -59,7 +59,12 @@ export default function MisEntradasList() {
       )}
       {selected && (
         <Modal title="Detalle de la compra" onClose={() => setSelected(null)}>
-          <TicketDetails ticket={selected} />
+          <TicketDetails
+            ticket={selected}
+            movie={(peliculas || []).find(
+              (movie) => movie.titulo === selected.entradas?.[0]?.pelicula,
+            )}
+          />
         </Modal>
       )}
     </section>

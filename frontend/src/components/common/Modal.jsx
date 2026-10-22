@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-export default function Modal({ title, children, onClose, actions }) {
+export default function Modal({ title, children, onClose, actions, compact = false }) {
   useEffect(() => {
     function handleKey(event) {
       if (event.key === 'Escape') onClose()
@@ -12,7 +12,7 @@ export default function Modal({ title, children, onClose, actions }) {
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <section
-        className="modal-panel"
+        className={`modal-panel${compact ? ' modal-panel--compact' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}

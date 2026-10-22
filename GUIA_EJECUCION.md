@@ -14,9 +14,13 @@
 2. Abrir MySQL Workbench.
 3. Abrir `database/seed_demo.sql`.
 4. Ejecutar el script completo con el botón del rayo.
+5. Abrir `database/completar_funciones_2_semanas.sql`.
+6. Ejecutar el segundo script completo con el botón del rayo.
 
-El script crea la base `tp_cine_api` y carga películas, salas, butacas,
-funciones para 14 días, productos de confitería y tickets de prueba.
+El primer script crea la base `tp_cine_api` y carga categorías, películas,
+salas, butacas y productos de confitería. El segundo carga las funciones de
+los próximos 14 días y puede volver a ejecutarse más adelante para completar
+la cartelera con fechas actuales.
 
 ## 2. Iniciar el backend
 

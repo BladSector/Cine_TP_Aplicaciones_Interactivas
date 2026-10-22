@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Check, CreditCard } from 'lucide-react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
 import ExpiryMonthPicker from '../../components/compra/ExpiryMonthPicker'
+import CheckoutMoviePreview from '../../components/compra/CheckoutMoviePreview'
+import SeatReservationTimer from '../../components/compra/SeatReservationTimer'
 import TicketDetails from '../../components/tickets/TicketDetails'
 import { api, errorMessage } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
@@ -33,9 +35,10 @@ function cardPreviewNumber(value) {
 
 export default function CompraPagoPage({ candyOnly = false }) {
   const { movieId } = useParams()
+  const navigate = useNavigate()
   const { spectator, isSpectator, refreshSpectator } = useAuth()
   const { peliculas, funciones, productos, reload } = useCatalog()
-  const { draft, clearConsumptions } = usePurchase()
+  const { draft, clearConsumptions, expireSeatReservation } = usePurchase()
   const [accepted, setAccepted] = useState(false)
   const [methodMode, setMethodMode] = useState('saved')
   const [selectedMethodId, setSelectedMethodId] = useState('')
@@ -49,7 +52,7 @@ export default function CompraPagoPage({ candyOnly = false }) {
   const [error, setError] = useState('')
   const [ticket, setTicket] = useState(null)
   const [calculatedTickets, setCalculatedTickets] = useState(null)
-  const reservationError = useSeatReservationHeartbeat(
+  const { reservationError, remainingSeconds, expired } = useSeatReservationHeartbeat(
     draft.functionId,
     draft.selectedSeats,
     !candyOnly && !ticket,
@@ -79,6 +82,15 @@ export default function CompraPagoPage({ candyOnly = false }) {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }, [ticket])
+
+  useEffect(() => {
+    if (candyOnly || !expired || loading || ticket) return
+    expireSeatReservation()
+    navigate(`/compra/${movieId}/butacas`, {
+      replace: true,
+      state: { reservationExpired: true },
+    })
+  }, [candyOnly, expired, expireSeatReservation, loading, movieId, navigate, ticket])
 
   const candyItemCount = Object.values(draft.consumptions).reduce(
     (sum, quantity) => sum + Number(quantity),
@@ -143,7 +155,7 @@ export default function CompraPagoPage({ candyOnly = false }) {
       return
     }
     if (!accepted) {
-      setError('Debés aceptar las condiciones de compra.')
+      setError('Debés aceptar la política de privacidad y las normas del cine.')
       return
     }
     if (!spectator.emailVerificado) {
@@ -199,7 +211,10 @@ export default function CompraPagoPage({ candyOnly = false }) {
               ? 'Presentá el QR en el Candy para retirar tus productos.'
               : 'También podés verlo en Mi cuenta.'}
           </p>
-          <TicketDetails ticket={ticket} />
+          {!candyOnly && (
+            <CheckoutMoviePreview movie={movie} funcion={funcion} confirmed />
+          )}
+          <TicketDetails ticket={ticket} movie={movie} />
         </section>
       </div>
     )
@@ -223,6 +238,7 @@ export default function CompraPagoPage({ candyOnly = false }) {
               ? 'Elegí cómo pagar tus productos. Enviaremos el QR a tu correo.'
               : 'Revisá tu pedido y completá el pago. Enviaremos las entradas a tu correo.'}
           </p>
+          {!candyOnly && <SeatReservationTimer remainingSeconds={remainingSeconds} />}
 
           <form className="stack-form" onSubmit={handlePay}>
             <div className="checkout-customer">
@@ -370,10 +386,19 @@ export default function CompraPagoPage({ candyOnly = false }) {
                 checked={accepted}
                 onChange={(e) => setAccepted(e.target.checked)}
               />
-              He leído y acepto las condiciones de compra y la política de privacidad.
+              <span>
+                He leído y acepto la{' '}
+                <Link to="/privacidad" target="_blank" rel="noreferrer">
+                  Política de privacidad
+                </Link>{' '}
+                y las{' '}
+                <Link to="/normas" target="_blank" rel="noreferrer">
+                  Normas del cine
+                </Link>.
+              </span>
             </label>
 
-            {(error || reservationError) && (
+            {(error || reservationError) && !expired && (
               <div className="info-box info-box--error">{error || reservationError}</div>
             )}
 

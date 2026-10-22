@@ -2,8 +2,10 @@ package service.instalaciones;
 
 import modelo.entidades.Butaca;
 import modelo.entidades.Sala;
+import modelo.enums.EstadoButaca;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import repository.instalaciones.ButacaRepository;
 import repository.instalaciones.SalaRepository;
@@ -15,10 +17,13 @@ import java.time.LocalDateTime;
 public class ButacaService {
     private final ButacaRepository butacaRepository;
     private final SalaRepository salaRepository;
+    private final AvisoSalaService avisoSalaService;
 
-    public ButacaService(ButacaRepository butacaRepository, SalaRepository salaRepository) {
+    public ButacaService(ButacaRepository butacaRepository, SalaRepository salaRepository,
+                         AvisoSalaService avisoSalaService) {
         this.butacaRepository = butacaRepository;
         this.salaRepository = salaRepository;
+        this.avisoSalaService = avisoSalaService;
     }
 
     public List<Butaca> listar() {
@@ -78,9 +83,31 @@ public class ButacaService {
         return butacaRepository.save(butaca);
     }
 
-    public Butaca marcarFueraDeServicio(int id) {
+    @Transactional
+    public Butaca marcarFueraDeServicio(int id, String descripcion,
+                                         Integer creadoPorEmpleadoId,
+                                         Integer destinatarioEmpleadoId) {
         Butaca butaca = buscarPorId(id);
         butaca.marcarFueraDeServicio();
+        Butaca actualizada = butacaRepository.save(butaca);
+        avisoSalaService.notificarButacaFueraDeServicio(
+                actualizada,
+                descripcion,
+                creadoPorEmpleadoId,
+                destinatarioEmpleadoId
+        );
+        return actualizada;
+    }
+
+    public Butaca habilitarFueraDeServicio(int id) {
+        Butaca butaca = buscarPorId(id);
+        if (butaca.getEstado() != EstadoButaca.FUERA_DE_SERVICIO) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Solo se puede habilitar una butaca fuera de servicio."
+            );
+        }
+        butaca.liberarButaca();
         return butacaRepository.save(butaca);
     }
 

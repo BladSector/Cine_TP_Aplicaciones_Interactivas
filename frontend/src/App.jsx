@@ -10,6 +10,8 @@ import CompraPagoPage from './pages/compra/CompraPagoPage'
 import CuentaPage from './pages/CuentaPage'
 import CandyPage from './pages/CandyPage'
 import PlaceholderPage from './pages/PlaceholderPage'
+import LegalPage from './pages/LegalPage'
+import AboutPage from './pages/AboutPage'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -36,6 +38,9 @@ export default function App() {
           <Route path="compra/:movieId/candy" element={<CompraCandyPage />} />
           <Route path="compra/:movieId/pago" element={<CompraPagoPage />} />
           <Route path="cuenta" element={<CuentaPage />} />
+          <Route path="privacidad" element={<LegalPage type="privacidad" />} />
+          <Route path="normas" element={<LegalPage type="normas" />} />
+          <Route path="nosotros" element={<AboutPage />} />
           <Route
             path="proximamente"
             element={

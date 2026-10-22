@@ -7,6 +7,13 @@ import { CatalogProvider } from './context/CatalogContext'
 import { PurchaseProvider } from './context/PurchaseContext'
 import './styles/global.css'
 
+const savedTheme = localStorage.getItem('film-zone-theme')
+const initialTheme = savedTheme === 'dark' || savedTheme === 'light'
+  ? savedTheme
+  : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+
+document.documentElement.dataset.theme = initialTheme
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>

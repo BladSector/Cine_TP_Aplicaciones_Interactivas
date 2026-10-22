@@ -205,7 +205,6 @@ export default function CuentaPage() {
         <div>
           <p className="eyebrow">Mi cuenta</p>
           <h1>Hola, {spectator.nombre}</h1>
-          <p className="muted">{spectator.email}</p>
         </div>
       </div>
 

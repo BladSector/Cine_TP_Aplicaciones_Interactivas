@@ -90,7 +90,8 @@ public class PrincipalFrame extends JFrame {
             "ID", "Producto", "Cantidad", "Ticket", "Estado", "Subtotal"
     );
     private final DefaultTableModel ticketsModel = modelo(
-            "ID", "Espectador", "Estado", "Entradas", "Consumos", "Total", "Código QR"
+            "ID", "Espectador", "Película", "Fecha", "Horario", "Sala",
+            "Estado", "Entradas", "Consumos", "Total", "Código QR"
     );
     private final DefaultTableModel empleadosModel = modelo("ID", "Nombre", "Apellido", "Usuario", "Activo");
     private final DefaultTableModel auditoriasModel = modelo(
@@ -341,6 +342,11 @@ public class PrincipalFrame extends JFrame {
     private JPanel crearPanelSalas() {
         JPanel panel = panelConTabla("Salas del cine", salasTabla);
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        if (esEmpleado()) {
+            JButton cambiarEstado = new JButton("Cambiar estado");
+            cambiarEstado.addActionListener(event -> mostrarSelectorEstadoSala());
+            acciones.add(cambiarEstado);
+        }
         JButton actualizar = new JButton("Recargar");
         actualizar.addActionListener(event -> cargarSalas());
         acciones.add(actualizar);
@@ -386,19 +392,28 @@ public class PrincipalFrame extends JFrame {
         JButton ocupar = new JButton("Ocupar");
         JButton liberar = new JButton("Liberar");
         JButton fueraServicio = new JButton("Fuera de servicio");
+        JButton volverHabilitar = new JButton("Volver a habilitar");
         ocupar.addActionListener(event -> cambiarEstadoButaca("ocupar"));
         liberar.addActionListener(event -> cambiarEstadoButaca("liberar"));
-        fueraServicio.addActionListener(event -> cambiarEstadoButaca("fuera-de-servicio"));
+        fueraServicio.addActionListener(event -> mostrarFormularioButacaFueraServicio());
+        volverHabilitar.addActionListener(event -> habilitarButacaFueraServicio());
         acciones.add(resumenButacas);
         acciones.add(Box.createHorizontalStrut(18));
-        acciones.add(ocupar);
-        acciones.add(liberar);
+        if (!esEmpleado()) {
+            acciones.add(ocupar);
+            acciones.add(liberar);
+        }
         acciones.add(fueraServicio);
+        if (esEmpleado()) {
+            acciones.add(volverHabilitar);
+        }
 
         JPanel encabezado = new JPanel(new BorderLayout(0, 4));
         encabezado.add(superior, BorderLayout.NORTH);
         encabezado.add(etiquetaAyuda(
-                "Seleccioná una butaca en el plano y usá los botones inferiores para cambiar su estado."),
+                esEmpleado()
+                        ? "Seleccioná una butaca para marcarla fuera de servicio o volver a habilitarla."
+                        : "Seleccioná una butaca en el plano y usá los botones inferiores para cambiar su estado."),
                 BorderLayout.SOUTH);
 
         panel.add(encabezado, BorderLayout.NORTH);
@@ -420,7 +435,7 @@ public class PrincipalFrame extends JFrame {
         encabezado.add(indicacion);
 
         JPanel busqueda = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        JButton buscar = new JButton(esEmpleado() ? "Validar QR" : "Buscar QR");
+        JButton buscar = new JButton("Validar por QR");
         buscar.addActionListener(event -> leerQrAcceso());
         codigoQr.addActionListener(event -> leerQrAcceso());
         busqueda.add(new JLabel("Código QR:"));
@@ -445,26 +460,15 @@ public class PrincipalFrame extends JFrame {
         tablaPanel.setBorder(BorderFactory.createEmptyBorder());
 
         JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton procesar = new JButton("Procesar ingreso");
         JButton validar = new JButton("Validar entradas manualmente");
-        JButton entregar = new JButton("Entregar consumos");
         JButton reembolsar = new JButton("Reembolsar ticket");
-        JButton recargar = new JButton("Recargar tickets");
-        JButton limpiar = new JButton("Limpiar");
-        procesar.addActionListener(event -> procesarIngreso());
+        JButton recargar = new JButton("Recargar");
         validar.addActionListener(event -> validarEntradasManualmente());
-        entregar.addActionListener(event -> entregarConsumosTicketSeleccionado());
         reembolsar.addActionListener(event -> reembolsarTicket());
         recargar.addActionListener(event -> cargarTickets());
-        limpiar.addActionListener(event -> limpiarControlAcceso());
-        if (!esEmpleado()) {
-            acciones.add(procesar);
-            acciones.add(entregar);
-        }
         acciones.add(validar);
         acciones.add(reembolsar);
         acciones.add(recargar);
-        acciones.add(limpiar);
 
         panel.add(superior, BorderLayout.NORTH);
         panel.add(tablaPanel, BorderLayout.CENTER);
@@ -487,7 +491,7 @@ public class PrincipalFrame extends JFrame {
         encabezado.add(indicacion);
 
         JPanel lectorQr = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        JButton entregarQr = new JButton("Entregar consumos");
+        JButton entregarQr = new JButton("Validar con QR");
         entregarQr.addActionListener(event -> entregarConsumosPorQr());
         codigoQrConsumo.addActionListener(event -> entregarConsumosPorQr());
         lectorQr.add(new JLabel("Código QR:"));
@@ -976,6 +980,10 @@ public class PrincipalFrame extends JFrame {
                 ticketsModel.addRow(new Object[]{
                         id,
                         ticket.path("espectadorNombre").asText(),
+                        valoresEntradas(ticket, "pelicula"),
+                        valoresEntradas(ticket, "fecha"),
+                        valoresEntradas(ticket, "horario"),
+                        valoresEntradas(ticket, "sala"),
                         nombreEstadoTicket(ticket.path("estado").asText()),
                         ticket.path("entradas").size(),
                         ticket.path("itemsConsumo").size(),
@@ -984,6 +992,17 @@ public class PrincipalFrame extends JFrame {
                 });
             });
         });
+    }
+
+    private static String valoresEntradas(JsonNode ticket, String campo) {
+        List<String> valores = new ArrayList<>();
+        ticket.path("entradas").forEach(entrada -> {
+            String valor = entrada.path(campo).asText("").trim();
+            if (!valor.isEmpty() && !valores.contains(valor)) {
+                valores.add(valor);
+            }
+        });
+        return valores.isEmpty() ? "-" : String.join(", ", valores);
     }
 
     private void cargarEmpleados() {
@@ -1093,6 +1112,7 @@ public class PrincipalFrame extends JFrame {
             case "OCUPAR_BUTACA" -> "Marcó una butaca como ocupada";
             case "LIBERAR_BUTACA" -> "Liberó una butaca";
             case "MARCAR_BUTACA_FUERA_DE_SERVICIO" -> "Marcó una butaca fuera de servicio";
+            case "HABILITAR_BUTACA" -> "Volvió a habilitar una butaca";
             case "VALIDAR_ENTRADAS" -> "Validó las entradas de un ticket";
             case "ENTREGAR_CONSUMOS" -> "Entregó los consumos de un ticket";
             case "PROCESAR_INGRESO" -> "Procesó el ingreso de un ticket";
@@ -1317,9 +1337,103 @@ public class PrincipalFrame extends JFrame {
             mostrarAviso("Seleccioná una butaca del plano.");
             return;
         }
+        if (esEmpleado()) {
+            mostrarAviso("Los empleados solo pueden marcar butacas fuera de servicio.");
+            return;
+        }
         int id = butacaSeleccionadaId;
         ejecutar("Actualizando butaca...", () -> apiClient.put("/butacas/" + id + "/" + operacion, null),
                 respuesta -> cargarButacas());
+    }
+
+    private void mostrarFormularioButacaFueraServicio() {
+        if (butacaSeleccionadaId == null) {
+            mostrarAviso("Seleccioná una butaca del plano.");
+            return;
+        }
+        ejecutar(
+                "Cargando empleados...",
+                () -> apiClient.get("/empleados/activos"),
+                this::mostrarFormularioAvisoButaca
+        );
+    }
+
+    private void habilitarButacaFueraServicio() {
+        if (butacaSeleccionadaId == null) {
+            mostrarAviso("Seleccioná una butaca del plano.");
+            return;
+        }
+        JsonNode butaca = butacasActuales.stream()
+                .filter(item -> item.path("id").asInt() == butacaSeleccionadaId)
+                .findFirst()
+                .orElse(null);
+        if (butaca == null || !"FUERA_DE_SERVICIO".equals(butaca.path("estado").asText())) {
+            mostrarAviso("Solo se puede volver a habilitar una butaca fuera de servicio.");
+            return;
+        }
+
+        int id = butacaSeleccionadaId;
+        ejecutar(
+                "Habilitando butaca...",
+                () -> apiClient.put("/butacas/" + id + "/habilitar", null),
+                respuesta -> cargarButacas()
+        );
+    }
+
+    private void mostrarFormularioAvisoButaca(JsonNode empleados) {
+        JsonNode butaca = butacasActuales.stream()
+                .filter(item -> item.path("id").asInt() == butacaSeleccionadaId)
+                .findFirst()
+                .orElse(null);
+        if (butaca == null) {
+            mostrarAviso("No se encontró la butaca seleccionada.");
+            return;
+        }
+
+        JTextArea comentario = new JTextArea(4, 24);
+        comentario.setLineWrap(true);
+        comentario.setWrapStyleWord(true);
+
+        JComboBox<EmpleadoOpcion> destinatario = new JComboBox<>();
+        destinatario.addItem(new EmpleadoOpcion(0, "Todos los empleados"));
+        empleados.forEach(empleado -> destinatario.addItem(new EmpleadoOpcion(
+                empleado.path("id").asInt(),
+                empleado.path("nombre").asText() + " (" + empleado.path("usuario").asText() + ")"
+        )));
+
+        JPanel formulario = new JPanel(new GridLayout(0, 2, 8, 8));
+        formulario.add(new JLabel("Butaca"));
+        formulario.add(new JLabel(butaca.path("salaNombre").asText() + " - "
+                + butaca.path("butacaNombre").asText()));
+        formulario.add(new JLabel("Comentario (opcional)"));
+        formulario.add(new JScrollPane(comentario));
+        formulario.add(new JLabel("Avisar a"));
+        formulario.add(destinatario);
+
+        int opcion = JOptionPane.showConfirmDialog(
+                this,
+                formulario,
+                "Marcar butaca fuera de servicio",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+        if (opcion != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        Map<String, Object> cuerpo = new LinkedHashMap<>();
+        cuerpo.put("descripcion", comentario.getText().trim());
+        EmpleadoOpcion destino = (EmpleadoOpcion) destinatario.getSelectedItem();
+        if (destino != null && destino.id() != 0) {
+            cuerpo.put("destinatarioEmpleadoId", destino.id());
+        }
+
+        int id = butacaSeleccionadaId;
+        ejecutar(
+                "Actualizando butaca y enviando aviso...",
+                () -> apiClient.put("/butacas/" + id + "/fuera-de-servicio", cuerpo),
+                respuesta -> cargarButacas()
+        );
     }
 
     private void actualizarMapaButacas() {
@@ -1554,11 +1668,6 @@ public class PrincipalFrame extends JFrame {
     }
 
     private void leerQrAcceso() {
-        if (!esEmpleado()) {
-            buscarTicket();
-            return;
-        }
-
         String codigo = codigoQr.getText().trim();
         if (codigo.isBlank()) {
             mostrarAviso("Ingresá el código del Ticket.");
@@ -1580,17 +1689,6 @@ public class PrincipalFrame extends JFrame {
         ejecutar("Consultando ticket...",
                 () -> apiClient.get("/tickets/qr/" + codigoCodificado),
                 ticket -> entregarConsumosTicket(ticket.path("id").asInt(), true));
-    }
-
-    private void buscarTicket() {
-        String codigo = codigoQr.getText().trim();
-        if (codigo.isBlank()) {
-            mostrarAviso("Ingresá el código del Ticket.");
-            return;
-        }
-        String codigoCodificado = URLEncoder.encode(codigo, StandardCharsets.UTF_8).replace("+", "%20");
-        ejecutar("Buscando ticket...", () -> apiClient.get("/tickets/qr/" + codigoCodificado),
-                this::actualizarDetalleTicket);
     }
 
     private void validarEntradasManualmente() {
@@ -1676,14 +1774,6 @@ public class PrincipalFrame extends JFrame {
                 });
     }
 
-    private void entregarConsumosTicketSeleccionado() {
-        if (ticketActualId == null) {
-            mostrarAviso("Seleccioná un ticket de la tabla para entregar sus consumos.");
-            return;
-        }
-        confirmarEntregaManual(ticketActualId);
-    }
-
     private void entregarConsumosManualmente() {
         int filaVista = consumosTabla.getSelectedRow();
         if (filaVista < 0) {
@@ -1742,39 +1832,6 @@ public class PrincipalFrame extends JFrame {
                 });
     }
 
-    private void procesarIngreso() {
-        if (ticketActualId == null) {
-            mostrarAviso("Primero escaneá o buscá el código QR del Ticket.");
-            return;
-        }
-        int confirmacion = JOptionPane.showConfirmDialog(
-                this,
-                "Se validarán las entradas y se entregarán los consumos pendientes. ¿Continuar?",
-                "Procesar ingreso",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE
-        );
-        if (confirmacion != JOptionPane.YES_OPTION) {
-            return;
-        }
-
-        ejecutar("Procesando ingreso...",
-                () -> apiClient.put("/tickets/" + ticketActualId + "/procesar-ingreso", null),
-                respuesta -> {
-                    actualizarDetalleTicket(respuesta);
-                    cargarConsumos();
-                    cargarTickets();
-                    JOptionPane.showMessageDialog(
-                            this,
-                            "Ingreso procesado correctamente.",
-                            "Ticket validado",
-                            JOptionPane.INFORMATION_MESSAGE
-                    );
-                    codigoQr.requestFocusInWindow();
-                    codigoQr.selectAll();
-                });
-    }
-
     private void reembolsarTicket() {
         if (ticketActualId == null) {
             mostrarAviso("Seleccioná un ticket de la tabla o buscalo mediante su QR.");
@@ -1809,13 +1866,6 @@ public class PrincipalFrame extends JFrame {
 
     private void actualizarDetalleTicket(JsonNode ticket) {
         ticketActualId = ticket.path("id").asInt();
-    }
-
-    private void limpiarControlAcceso() {
-        ticketActualId = null;
-        codigoQr.setText("");
-        ticketsTabla.clearSelection();
-        codigoQr.requestFocusInWindow();
     }
 
     private void operarConsumo(String operacion) {

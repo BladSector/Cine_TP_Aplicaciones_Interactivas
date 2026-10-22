@@ -74,6 +74,15 @@ export function PurchaseProvider({ children }) {
     setDraft((prev) => ({ ...prev, candyVisited: true }))
   }, [])
 
+  const expireSeatReservation = useCallback(() => {
+    setDraft((prev) => ({
+      ...prev,
+      selectedSeats: [],
+      consumptions: {},
+      candyVisited: false,
+    }))
+  }, [])
+
   const value = useMemo(
     () => ({
       draft,
@@ -85,6 +94,7 @@ export function PurchaseProvider({ children }) {
       setConsumption,
       clearConsumptions,
       markCandyVisited,
+      expireSeatReservation,
       setDraft,
     }),
     [
@@ -97,6 +107,7 @@ export function PurchaseProvider({ children }) {
       setConsumption,
       clearConsumptions,
       markCandyVisited,
+      expireSeatReservation,
     ],
   )
 

@@ -1,6 +1,7 @@
-import { Search, X } from 'lucide-react'
+import { ArrowUpRight, Moon, Search, Sun, X } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import PurchaseAuthDrawer from '../cuenta/PurchaseAuthDrawer'
+import ConfirmDialog from '../common/ConfirmDialog'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import {
@@ -26,11 +27,14 @@ export default function SiteLayout() {
   const { peliculas, funciones, loading } = useCatalog()
   const navigate = useNavigate()
 
+  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || 'light')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const menuRef = useRef(null)
   const searchRef = useRef(null)
   const searchInputRef = useRef(null)
@@ -59,6 +63,11 @@ export default function SiteLayout() {
   }, [peliculas, funciones, searchQuery])
 
   useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('film-zone-theme', theme)
+  }, [theme])
+
+  useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false)
@@ -79,10 +88,15 @@ export default function SiteLayout() {
   }, [isSearchExpanded])
 
   async function handleLogout() {
-    if (!window.confirm('¿Querés cerrar la sesión?')) return
-    await logout()
-    setIsMenuOpen(false) // Cerramos el menú al salir
-    navigate('/')
+    setIsLoggingOut(true)
+    try {
+      await logout()
+      setShowLogoutConfirm(false)
+      setIsMenuOpen(false)
+      navigate('/')
+    } finally {
+      setIsLoggingOut(false)
+    }
   }
 
   function openMovieResult(result) {
@@ -113,7 +127,8 @@ export default function SiteLayout() {
             <NavLink to="/club">Club Film Zone</NavLink>
           </nav>
 
-          <div className="header-search" ref={searchRef}>
+          <div className={`header-utility ${isSearchExpanded ? 'is-searching' : ''}`}>
+            <div className="header-search" ref={searchRef}>
             {!isSearchExpanded ? (
               <button
                 type="button"
@@ -200,11 +215,11 @@ export default function SiteLayout() {
                 )}
               </div>
             )}
-          </div>
+            </div>
 
-          <div className="header-actions">
-            {isSpectator ? (
-              <div className="user-menu-container" ref={menuRef}>
+            <div className="header-actions">
+              {isSpectator ? (
+                <div className="user-menu-container" ref={menuRef}>
                 <button
                   type="button"
                   className={`user-icon-button ${isMenuOpen ? 'is-active' : ''}`}
@@ -238,17 +253,37 @@ export default function SiteLayout() {
 
                     <hr className="dropdown-divider" />
 
-                    <button type="button" className="dropdown-item text-danger" onClick={handleLogout}>
+                    <button
+                      type="button"
+                      className="dropdown-item text-danger"
+                      onClick={() => {
+                        setIsMenuOpen(false)
+                        setShowLogoutConfirm(true)
+                      }}
+                    >
                       Cerrar sesión
                     </button>
                   </div>
                 )}
-              </div>
-            ) : (
-              <button type="button" className="secondary-button" onClick={() => setIsAuthOpen(true)}>
-                Iniciar sesión
-              </button>
-            )}
+                </div>
+              ) : (
+                <button type="button" className="secondary-button" onClick={() => setIsAuthOpen(true)}>
+                  Iniciar sesión
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="theme-toggle"
+              aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
+              title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+              onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
+            >
+              {theme === 'dark'
+                ? <Sun size={20} aria-hidden="true" />
+                : <Moon size={20} aria-hidden="true" />}
+            </button>
           </div>
 
         </div>
@@ -266,9 +301,17 @@ export default function SiteLayout() {
           </div>
           <p className="site-footer__tagline">La vida se ve mejor en pantalla grande.</p>
           <div className="site-footer__links">
-            <span>Nuestros cines</span>
-            <span>Preguntas frecuentes</span>
-            <span>Contacto</span>
+            <div className="site-footer__links-row">
+              <span>Nuestros cines</span>
+              <span>Preguntas frecuentes</span>
+              <span>Contacto</span>
+              <NavLink to="/privacidad">Política de privacidad</NavLink>
+              <NavLink to="/normas">Normas del cine</NavLink>
+            </div>
+            <NavLink to="/nosotros" className="site-footer__about-link">
+              Sobre nosotros
+              <ArrowUpRight size={16} aria-hidden="true" />
+            </NavLink>
           </div>
           <p className="site-footer__copy">
             © {new Date().getFullYear()} Film Zone. Todos los derechos reservados.
@@ -282,6 +325,18 @@ export default function SiteLayout() {
         onClose={() => setIsAuthOpen(false)}
         onComplete={() => setIsAuthOpen(false)}
       />
+
+      {showLogoutConfirm && (
+        <ConfirmDialog
+          title="Cerrar sesión"
+          message="¿Querés cerrar tu sesión en Film Zone?"
+          confirmLabel="Cerrar sesión"
+          danger
+          loading={isLoggingOut}
+          onConfirm={handleLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
+      )}
     </div>
   )
 }

@@ -1,5 +1,8 @@
--- Script de instalación y datos de prueba para MySQL 8.
--- Carga una cartelera de 14 días consecutivos desde la fecha de ejecución.
+-- Seed base para MySQL 8.
+-- Crea el esquema y carga los datos estables: categorías, películas, salas,
+-- butacas y productos de confitería.
+-- No crea espectadores ni empleados de prueba.
+-- Las funciones se cargan por separado con completar_funciones_2_semanas.sql.
 -- ATENCIÓN: elimina por completo la base tp_cine_api antes de recrearla.
 DROP DATABASE IF EXISTS tp_cine_api;
 CREATE DATABASE tp_cine_api CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -256,72 +259,6 @@ FROM seed_filas f
 JOIN seed_numeros n
 WHERE f.orden <= 5 AND n.numero <= 8;
 
-CREATE TEMPORARY TABLE seed_dias (n INT);
-INSERT INTO seed_dias (n) VALUES
-(0), (1), (2), (3), (4), (5), (6),
-(7), (8), (9), (10), (11), (12), (13);
-
-CREATE TEMPORARY TABLE seed_cartelera (
-    dia_modulo INT,
-    pelicula_id INT,
-    orden_pelicula INT,
-    precio_base DOUBLE
-);
-
-INSERT INTO seed_cartelera (dia_modulo, pelicula_id, orden_pelicula, precio_base) VALUES
-(0, 1, 1, 8200), (0, 2, 2, 7800), (0, 3, 3, 8400),
-(0, 4, 4, 8100), (0, 5, 5, 8300), (0, 6, 6, 8000),
-(1, 4, 1, 8100), (1, 5, 2, 8300), (1, 6, 3, 8000),
-(1, 7, 4, 7400), (1, 8, 5, 7200), (1, 9, 6, 7600),
-(2, 7, 1, 7400), (2, 8, 2, 7200), (2, 9, 3, 7600),
-(2, 10, 4, 7900), (2, 11, 5, 7300), (2, 12, 6, 8100),
-(3, 10, 1, 7900), (3, 11, 2, 7300), (3, 12, 3, 8100),
-(3, 13, 4, 8500), (3, 14, 5, 8900), (3, 15, 6, 8000),
-(4, 13, 1, 8500), (4, 14, 2, 8900), (4, 15, 3, 8000),
-(4, 16, 4, 7500), (4, 17, 5, 8400), (4, 18, 6, 8200),
-(5, 16, 1, 7500), (5, 17, 2, 8400), (5, 18, 3, 8200),
-(5, 1, 4, 8200), (5, 2, 5, 7800), (5, 3, 6, 8400);
-
-CREATE TEMPORARY TABLE seed_variantes (
-    orden_pelicula INT,
-    sala_id INT,
-    horario TIME,
-    formato VARCHAR(30),
-    idioma VARCHAR(30),
-    recargo DOUBLE
-);
-
-INSERT INTO seed_variantes (orden_pelicula, sala_id, horario, formato, idioma, recargo) VALUES
-(1, 1, '13:00:00', 'DOS_D', 'ESPANIOL', 0),
-(1, 2, '19:45:00', 'DOS_D', 'SUBTITULADA', 300),
-(1, 3, '16:45:00', 'TRES_D', 'ESPANIOL', 1200),
-(1, 4, '13:45:00', 'TRES_D', 'SUBTITULADA', 1500),
-(2, 1, '16:15:00', 'DOS_D', 'ESPANIOL', 0),
-(2, 2, '13:15:00', 'DOS_D', 'SUBTITULADA', 300),
-(2, 3, '20:00:00', 'TRES_D', 'ESPANIOL', 1200),
-(2, 4, '17:00:00', 'TRES_D', 'SUBTITULADA', 1500),
-(3, 1, '19:30:00', 'DOS_D', 'ESPANIOL', 0),
-(3, 2, '16:30:00', 'DOS_D', 'SUBTITULADA', 300),
-(3, 3, '13:30:00', 'TRES_D', 'ESPANIOL', 1200),
-(3, 4, '20:15:00', 'TRES_D', 'SUBTITULADA', 1500),
-(4, 1, '23:20:00', 'DOS_D', 'ESPANIOL', 0),
-(4, 2, '23:20:00', 'DOS_D', 'SUBTITULADA', 300),
-(5, 3, '23:20:00', 'TRES_D', 'ESPANIOL', 1200),
-(6, 4, '23:20:00', 'TRES_D', 'SUBTITULADA', 1500);
-
-INSERT INTO funcion (fecha, horario, pelicula_id, sala_id, formato, idioma, precio_entrada)
-SELECT DATE_ADD(CURDATE(), INTERVAL d.n DAY),
-       v.horario,
-       c.pelicula_id,
-       v.sala_id,
-       v.formato,
-       v.idioma,
-       c.precio_base + v.recargo
-FROM seed_dias d
-JOIN seed_cartelera c ON c.dia_modulo = MOD(d.n, 6)
-JOIN seed_variantes v ON v.orden_pelicula = c.orden_pelicula
-ORDER BY d.n, v.sala_id, v.horario;
-
 INSERT INTO producto_confiteria (id, nombre, precio, tipo, tamano) VALUES
 (1, 'Pochoclos salados chicos', 2600, 'POCHOCLOS', 'CHICO'),
 (2, 'Pochoclos salados medianos', 3400, 'POCHOCLOS', 'MEDIANO'),
@@ -351,66 +288,12 @@ SET imagen_url = CASE tipo
     ELSE NULL
 END;
 
--- Cuenta y medio de pago técnicos para probar tickets desde las interfaces.
-INSERT INTO espectador (
-    id, nombre, apellido, email, contrasenia, email_verificado,
-    token_verificacion_email, token_recuperacion_contrasenia
-) VALUES (
-    1, 'Cliente', 'Demostración', 'cliente.demo@cine.test',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
-    TRUE, NULL, NULL
-);
-
-INSERT INTO metodo_pago (
-    id, numero, fecha_vencimiento, nombre, apellido, cvv, activa, espectador_id
-) VALUES (
-    1, '4500123412345678', '2028-12', 'Cliente', 'Demostración', '123', TRUE, 1
-);
-
-INSERT INTO ticket (
-    id, espectador_id, metodo_pago_id, metodo_pago_resumen, codigo_qr
-) VALUES
-(1, 1, 1, 'Tarjeta terminada en 5678', 'TCK-DEMO-PENDIENTE'),
-(2, 1, 1, 'Tarjeta terminada en 5678', 'TCK-DEMO-CONSUMOS'),
-(3, 1, 1, 'Tarjeta terminada en 5678', 'TCK-DEMO-PROCESADO'),
-(4, 1, 1, 'Tarjeta terminada en 5678', 'TCK-DEMO-REEMBOLSADO');
-
--- Ticket 1: dos entradas pagadas y consumos pendientes.
-INSERT INTO entrada (precio, espectador_id, ticket_id, funcion_id, butaca_id, horario, estado)
-SELECT f.precio_entrada, 1, 1, f.id, b.id, TIMESTAMP(f.fecha, f.horario), 'PAGADA'
-FROM funcion f
-JOIN butaca b ON b.sala_id = f.sala_id
-WHERE f.id = 17 AND b.fila = 'A' AND b.numero IN (1, 2);
-
--- Ticket 2: entrada validada y consumo pendiente de entrega.
-INSERT INTO entrada (precio, espectador_id, ticket_id, funcion_id, butaca_id, horario, estado)
-SELECT f.precio_entrada, 1, 2, f.id, b.id, TIMESTAMP(f.fecha, f.horario), 'ESCANEADA'
-FROM funcion f
-JOIN butaca b ON b.sala_id = f.sala_id
-WHERE f.id = 18 AND b.fila = 'A' AND b.numero = 3;
-
--- Ticket 3: entradas y consumos ya procesados.
-INSERT INTO entrada (precio, espectador_id, ticket_id, funcion_id, butaca_id, horario, estado)
-SELECT f.precio_entrada, 1, 3, f.id, b.id, TIMESTAMP(f.fecha, f.horario), 'ESCANEADA'
-FROM funcion f
-JOIN butaca b ON b.sala_id = f.sala_id
-WHERE f.id = 21 AND b.fila = 'A' AND b.numero IN (1, 2);
-
--- Ticket 4: compra reembolsada.
-INSERT INTO entrada (precio, espectador_id, ticket_id, funcion_id, butaca_id, horario, estado)
-SELECT f.precio_entrada, 1, 4, f.id, b.id, TIMESTAMP(f.fecha, f.horario), 'REEMBOLSADA'
-FROM funcion f
-JOIN butaca b ON b.sala_id = f.sala_id
-WHERE f.id = 22 AND b.fila = 'A' AND b.numero = 3;
-
-INSERT INTO item_consumo (producto_id, ticket_id, cantidad, estado) VALUES
-(15, 1, 1, 'PENDIENTE'),
-(8, 1, 2, 'PENDIENTE'),
-(3, 2, 1, 'PENDIENTE'),
-(16, 3, 1, 'ENTREGADO'),
-(11, 4, 2, 'CANCELADO');
-
-DROP TEMPORARY TABLE IF EXISTS seed_funciones;
-DROP TEMPORARY TABLE IF EXISTS seed_dias;
 DROP TEMPORARY TABLE IF EXISTS seed_numeros;
 DROP TEMPORARY TABLE IF EXISTS seed_filas;
+
+SELECT
+    (SELECT COUNT(*) FROM categoria) AS categorias,
+    (SELECT COUNT(*) FROM pelicula) AS peliculas,
+    (SELECT COUNT(*) FROM sala) AS salas,
+    (SELECT COUNT(*) FROM butaca) AS butacas,
+    (SELECT COUNT(*) FROM producto_confiteria) AS productos_confiteria;
