@@ -7,6 +7,7 @@ import ExpiryMonthPicker from '../../components/compra/ExpiryMonthPicker'
 import CheckoutMoviePreview from '../../components/compra/CheckoutMoviePreview'
 import SeatReservationTimer from '../../components/compra/SeatReservationTimer'
 import TicketDetails from '../../components/tickets/TicketDetails'
+import Loader from '../../components/common/Loader'
 import { api, errorMessage } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
@@ -218,6 +219,10 @@ export default function CompraPagoPage({ candyOnly = false }) {
         </section>
       </div>
     )
+  }
+
+  if (loading) {
+    return <Loader />
   }
 
   return (

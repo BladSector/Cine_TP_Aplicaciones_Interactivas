@@ -9,9 +9,11 @@ import { formatFunction, functionHasStarted, normalizeText, todayValue } from '.
 import AccordionGallery from '../components/cartelera/AccordionGallery'
 import PurchaseAuthDrawer from '../components/cuenta/PurchaseAuthDrawer'
 import { useAuth } from '../context/AuthContext'
+import Loader from '../components/common/Loader'
 
 export default function CarteleraPage() {
   const navigate = useNavigate()
+
   const { peliculas, funciones, categorias, loading, error } = useCatalog()
   const { spectator, isSpectator } = useAuth()
   const { setDraft } = usePurchase()
@@ -22,6 +24,7 @@ export default function CarteleraPage() {
   const [query, setQuery] = useState('')
   const [pendingMovieId, setPendingMovieId] = useState(null)
 
+  // 1. Calculamos las películas destacadas para el carrusel
   const featuredMovies = useMemo(() => {
     const availableMovieIds = new Set(
       funciones
@@ -40,6 +43,7 @@ export default function CarteleraPage() {
       }))
   }, [peliculas, funciones, selectedDate])
 
+  // 2. Calculamos la lista principal de películas filtradas
   const moviesWithSessions = useMemo(() => {
     return peliculas
       .map((movie) => {
@@ -60,7 +64,6 @@ export default function CarteleraPage() {
 
   function handleSelectFunction(movie, fn) {
     setDraft({
-      purchaseType: 'movie',
       movieId: movie.id,
       functionId: fn.id,
       selectedSeats: [],
@@ -75,6 +78,13 @@ export default function CarteleraPage() {
     navigate(`/compra/${movie.id}/butacas`)
   }
 
+  // 3. LA BARRERA DEL HÁMSTER
+  // Si los datos están cargando, detenemos el renderizado normal y mostramos la pantalla completa
+  if (loading) {
+    return <Loader />
+  }
+
+  // 4. Si ya cargó todo, mostramos la página normal
   return (
     <div className="cartelera-page">
       <section className="hero">
@@ -155,9 +165,8 @@ export default function CarteleraPage() {
           <span className="count-pill">{moviesWithSessions.length} películas</span>
         </div>
 
-        {loading && <div className="info-box">Cargando cartelera…</div>}
         {error && <div className="info-box info-box--error">{error}</div>}
-        {!loading && !error && moviesWithSessions.length === 0 && (
+        {!error && moviesWithSessions.length === 0 && (
           <div className="info-box">No hay funciones para los filtros seleccionados.</div>
         )}
 
