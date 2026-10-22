@@ -2764,6 +2764,132 @@ textarea {
   max-width: 110px;
 }
 
+.ticket-receipt__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.ticket-receipt__identity h3 {
+  margin-bottom: 0.35rem;
+  font-size: 1.65rem;
+  line-height: 1.15;
+}
+
+.ticket-receipt__number {
+  margin-bottom: 0.75rem;
+  font-weight: 800;
+}
+
+.ticket-receipt__label {
+  margin: 0 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ticket-receipt__function {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.ticket-receipt__section {
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.ticket-receipt__function .ticket-receipt__section {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.ticket-receipt__highlight {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.1rem 0 0.2rem;
+}
+
+.ticket-receipt__highlight span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ticket-receipt__highlight strong {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 4vw, 3.4rem);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 0.9;
+}
+
+.ticket-receipt__when {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+}
+
+.ticket-receipt__when span:first-child {
+  font-weight: 700;
+}
+
+.ticket-receipt__section h4 {
+  margin: 0;
+  color: #16181f;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+:root[data-theme='dark'] .ticket-receipt__section h4 {
+  color: var(--ink);
+}
+
+.ticket-receipt__rows {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.ticket-receipt__row {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.ticket-receipt__row dt,
+.ticket-receipt__row dd {
+  margin: 0;
+}
+
+.ticket-receipt__row dt {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.ticket-receipt__row dd {
+  font-weight: 700;
+}
+
+.ticket-receipt__empty {
+  margin: 0;
+}
+
 .ticket-qr {
   display: grid;
   justify-items: center;
@@ -2848,7 +2974,10 @@ textarea {
 
   .form-grid--two,
   .ticket-detail__heading,
-  .ticket-entry {
+  .ticket-entry,
+  .ticket-receipt__hero,
+  .ticket-receipt__function,
+  .ticket-receipt__row {
     grid-template-columns: 1fr;
   }
 

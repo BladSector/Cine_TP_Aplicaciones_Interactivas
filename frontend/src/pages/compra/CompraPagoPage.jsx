@@ -4,7 +4,6 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
 import ExpiryMonthPicker from '../../components/compra/ExpiryMonthPicker'
-import CheckoutMoviePreview from '../../components/compra/CheckoutMoviePreview'
 import SeatReservationTimer from '../../components/compra/SeatReservationTimer'
 import TicketDetails from '../../components/tickets/TicketDetails'
 import Loader from '../../components/common/Loader'
@@ -212,9 +211,6 @@ export default function CompraPagoPage({ candyOnly = false }) {
               ? 'Presentá el QR en el Candy para retirar tus productos.'
               : 'También podés verlo en Mi cuenta.'}
           </p>
-          {!candyOnly && (
-            <CheckoutMoviePreview movie={movie} funcion={funcion} confirmed />
-          )}
           <TicketDetails ticket={ticket} movie={movie} />
         </section>
       </div>
