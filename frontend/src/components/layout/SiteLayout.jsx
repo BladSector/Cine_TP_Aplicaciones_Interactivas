@@ -217,61 +217,7 @@ export default function SiteLayout() {
             )}
             </div>
 
-            <div className="header-actions">
-              {isSpectator ? (
-                <div className="user-menu-container" ref={menuRef}>
-                <button
-                  type="button"
-                  className={`user-icon-button ${isMenuOpen ? 'is-active' : ''}`}
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  title="Mi cuenta"
-                >
-                  {/* Icono de usuario SVG */}
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                  </svg>
-                </button>
 
-                {isMenuOpen && (
-                  <div className="dropdown-menu">
-                    <div className="dropdown-header">
-                      Hola, <strong>{spectator.nombre}</strong>
-                    </div>
-
-                    <NavLink to="/cuenta#entradas" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
-                      Mis tickets
-                    </NavLink>
-
-                    <NavLink to="/cuenta#perfil" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
-                      Editar Perfil
-                    </NavLink>
-
-                    <NavLink to="/cuenta#pagos" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
-                      Métodos de Pago
-                    </NavLink>
-
-                    <hr className="dropdown-divider" />
-
-                    <button
-                      type="button"
-                      className="dropdown-item text-danger"
-                      onClick={() => {
-                        setIsMenuOpen(false)
-                        setShowLogoutConfirm(true)
-                      }}
-                    >
-                      Cerrar sesión
-                    </button>
-                  </div>
-                )}
-                </div>
-              ) : (
-                <button type="button" className="secondary-button" onClick={() => setIsAuthOpen(true)}>
-                  Iniciar sesión
-                </button>
-              )}
-            </div>
 
             <button
               type="button"
@@ -284,6 +230,62 @@ export default function SiteLayout() {
                 ? <Sun size={20} aria-hidden="true" />
                 : <Moon size={20} aria-hidden="true" />}
             </button>
+
+            <div className="header-actions">
+                  {isSpectator ? (
+                    <div className="user-menu-container" ref={menuRef}>
+                    <button
+                      type="button"
+                      className={`user-icon-button ${isMenuOpen ? 'is-active' : ''}`}
+                      onClick={() => setIsMenuOpen(!isMenuOpen)}
+                      title="Mi cuenta"
+                    >
+                      {/* Icono de usuario SVG */}
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    </button>
+
+                    {isMenuOpen && (
+                      <div className="dropdown-menu">
+                        <div className="dropdown-header">
+                          Hola, <strong>{spectator.nombre}</strong>
+                        </div>
+
+                        <NavLink to="/cuenta#entradas" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
+                          Mis tickets
+                        </NavLink>
+
+                        <NavLink to="/cuenta#perfil" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
+                          Editar Perfil
+                        </NavLink>
+
+                        <NavLink to="/cuenta#pagos" className="dropdown-item" onClick={() => setIsMenuOpen(false)}>
+                          Métodos de Pago
+                        </NavLink>
+
+                        <hr className="dropdown-divider" />
+
+                        <button
+                          type="button"
+                          className="dropdown-item text-danger"
+                          onClick={() => {
+                            setIsMenuOpen(false)
+                            setShowLogoutConfirm(true)
+                          }}
+                        >
+                          Cerrar sesión
+                        </button>
+                      </div>
+                    )}
+                    </div>
+                  ) : (
+                    <button type="button" className="secondary-button" onClick={() => setIsAuthOpen(true)}>
+                      Iniciar sesión
+                    </button>
+                  )}
+              </div>
           </div>
 
         </div>

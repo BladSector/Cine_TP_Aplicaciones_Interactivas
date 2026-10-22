@@ -211,13 +211,9 @@ h2 {
   margin-left: auto;
 }
 
-.header-utility.is-searching .header-actions {
-  display: none;
-}
 
 .header-search {
   position: relative;
-  order: 2;
   flex: 0 0 42px;
   width: 42px;
   height: 42px;
@@ -225,7 +221,6 @@ h2 {
 }
 
 .header-actions {
-  order: 1;
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -233,7 +228,6 @@ h2 {
 }
 
 .theme-toggle {
-  order: 3;
   display: grid;
   width: 42px;
   height: 42px;
@@ -284,6 +278,8 @@ h2 {
   z-index: 3;
   width: 240px;
   transform: translateY(-50%);
+  transform-origin: right center;
+  animation: expandLeft 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 .header-search__field input {
@@ -295,11 +291,14 @@ h2 {
   background: var(--surface-translucent);
   color: var(--ink);
   font: inherit;
+  outline: none;
 }
 
 .header-search__field input:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline: none; /* Aseguramos que no haya outline cuadrado */
+  border-color: var(--accent);
+  /* Usamos box-shadow para engrosar el borde manteniendo la curva perfecta */
+  box-shadow: 0 0 0 1px var(--accent);
   background: var(--surface-raised);
 }
 
@@ -313,6 +312,17 @@ h2 {
   display: none;
 }
 
+/* 1. Creamos la instrucción de movimiento y crecimiento */
+@keyframes expandLeft {
+  0% {
+    width: 42px; /* Empieza del tamaño del botón redondo original */
+    opacity: 0;
+  }
+  100% {
+    width: 250px; /* El ancho final que necesites para tu barra */
+    opacity: 1;
+  }
+}
 .header-search__icon,
 .header-search__clear {
   position: absolute;
@@ -2823,4 +2833,18 @@ textarea {
     width: min(400px, 92vw);
   }
 }
+
+/* la barra de busqueda cuando se abre tapa a Club */
+/* 1. Le damos una transición suave al menú para que no desaparezca de golpe */
+.site-nav {
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+/* 2. Si el buscador está activo (.is-searching), ocultamos el menú */
+.site-header:has(.is-searching) .site-nav {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none; /* Evita que el usuario haga clic por accidente aunque no se vea */
+}
+
 
