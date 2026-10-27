@@ -58,6 +58,14 @@ export default function ClubPage() {
   }, [spectator?.id])
 
   useEffect(() => {
+    function handleMembresia(event) {
+      setSuscripcion(event.detail ?? null)
+    }
+    window.addEventListener('filmzone:membresia', handleMembresia)
+    return () => window.removeEventListener('filmzone:membresia', handleMembresia)
+  }, [])
+
+  useEffect(() => {
     const grid = gridRef.current
     if (!grid || membresias.length === 0) return undefined
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches

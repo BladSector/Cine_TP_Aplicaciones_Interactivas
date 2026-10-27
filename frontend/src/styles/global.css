@@ -3145,6 +3145,29 @@ textarea {
   margin: 1rem 0 1.25rem;
 }
 
+.membership-account .section-heading {
+  align-items: flex-start;
+}
+
+.membership-account__cancel {
+  flex: none;
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--danger);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--danger);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.membership-account__cancel:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
 .membership-account__body h3 {
   margin-bottom: 0.35rem;
   font-size: 2.4rem;
