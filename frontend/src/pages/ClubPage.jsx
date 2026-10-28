@@ -162,7 +162,8 @@ export default function ClubPage() {
           <strong>¿Querés cambiar de plan?</strong>
           <span>
             Durante los primeros 7 días, una mejora se cobra solo por la diferencia.
-            Después de ese plazo, o si elegís un plan menor, el cambio comienza al vencer el actual.
+            Después de ese plazo, se cobra el precio completo y el plan superior se activa en el momento.
+            Si elegís un plan menor, el cambio comienza al vencer el actual.
           </span>
         </div>
       )}

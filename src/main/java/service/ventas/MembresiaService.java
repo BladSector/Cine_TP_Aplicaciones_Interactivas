@@ -85,10 +85,12 @@ public class MembresiaService {
 
         LocalDate inicio = LocalDate.now();
         LocalDate fin = inicio.plusMonths(1);
-        if (cotizacion.tipo() == TipoOperacion.MEJORA_INMEDIATA) {
+        if (cotizacion.tipo() == TipoOperacion.MEJORA_INMEDIATA_DIFERENCIA) {
             vigente.desactivar();
             inicio = vigente.getFechaInicio();
             fin = vigente.getFechaFin();
+        } else if (cotizacion.tipo() == TipoOperacion.MEJORA_INMEDIATA_COMPLETA) {
+            vigente.desactivar();
         }
 
         Suscripcion suscripcion = suscripcionRepository.save(new Suscripcion(
@@ -165,7 +167,7 @@ public class MembresiaService {
             double diferencia = nuevaMembresia.getPrecioMensual()
                     - vigente.getMembresia().getPrecioMensual();
             return new Cotizacion(
-                    TipoOperacion.MEJORA_INMEDIATA,
+                    TipoOperacion.MEJORA_INMEDIATA_DIFERENCIA,
                     diferencia,
                     nuevaMembresia.getPrecioMensual(),
                     vigente.getFechaInicio(),
@@ -174,17 +176,27 @@ public class MembresiaService {
             );
         }
 
+        if (esMejora) {
+            return new Cotizacion(
+                    TipoOperacion.MEJORA_INMEDIATA_COMPLETA,
+                    nuevaMembresia.getPrecioMensual(),
+                    nuevaMembresia.getPrecioMensual(),
+                    hoy,
+                    hoy.plusMonths(1),
+                    "Ya pasaron los 7 días para pagar solo la diferencia. "
+                            + "Se cobrará el precio completo y el plan superior se activará ahora."
+            );
+        }
+
         LocalDate inicioProgramado = vigente.getFechaFin().plusDays(1);
-        String motivo = esMejora
-                ? "Ya pasaron los 7 días para pagar solo la diferencia."
-                : "Los cambios a un plan de menor precio no generan reintegros.";
         return new Cotizacion(
                 TipoOperacion.CAMBIO_PROGRAMADO,
                 0,
                 nuevaMembresia.getPrecioMensual(),
                 inicioProgramado,
                 inicioProgramado.plusMonths(1),
-                motivo + " El cambio se aplicará cuando termine tu plan actual."
+                "Los cambios a un plan de menor precio no generan reintegros. "
+                        + "El cambio se aplicará cuando termine tu plan actual."
         );
     }
 
@@ -231,7 +243,8 @@ public class MembresiaService {
 
     public enum TipoOperacion {
         NUEVA,
-        MEJORA_INMEDIATA,
+        MEJORA_INMEDIATA_DIFERENCIA,
+        MEJORA_INMEDIATA_COMPLETA,
         CAMBIO_PROGRAMADO
     }
 

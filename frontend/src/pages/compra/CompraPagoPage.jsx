@@ -120,7 +120,9 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
   const movie = peliculas.find((item) => item.id === Number(movieId))
   const funcion = funciones.find((item) => item.id === draft.functionId)
   const membresia = membresias.find((item) => item.id === Number(draft.membershipId))
-  const esMejoraInmediata = membershipQuote?.tipo === 'MEJORA_INMEDIATA'
+  const esMejoraPorDiferencia = membershipQuote?.tipo === 'MEJORA_INMEDIATA_DIFERENCIA'
+  const esMejoraPrecioCompleto = membershipQuote?.tipo === 'MEJORA_INMEDIATA_COMPLETA'
+  const esMejoraInmediata = esMejoraPorDiferencia || esMejoraPrecioCompleto
   const esCambioProgramado = membershipQuote?.tipo === 'CAMBIO_PROGRAMADO'
   const metodos = spectator?.metodosDePago || []
   const sinFuncion = candyOnly || membershipOnly
@@ -319,8 +321,10 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
           <p className="muted">
             {tieneCambioProgramado
               ? 'Hoy no se realizó ningún cobro.'
-              : esMejoraInmediata
+              : esMejoraPorDiferencia
                 ? `Pagaste $${money(suscripcion.precioCobrado)} correspondientes a la diferencia entre planes.`
+                : esMejoraPrecioCompleto
+                  ? `Pagaste $${money(suscripcion.precioCobrado)} por el nuevo mes de membresía.`
                 : `Pagaste $${money(suscripcion.precioCobrado)} por este mes.`}
           </p>
           <Link to="/club" className="primary-button">
@@ -412,8 +416,9 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
                 <>
                   <strong>Hoy pagás ${money(membershipQuote.importeAhora)}.</strong>
                   <span>
-                    El plan cambia inmediatamente y conserva el vencimiento del{' '}
-                    {formatDateShort(membershipQuote.fechaFin)}.
+                    {esMejoraPorDiferencia
+                      ? `El plan cambia inmediatamente y conserva el vencimiento del ${formatDateShort(membershipQuote.fechaFin)}.`
+                      : `El plan superior se activa inmediatamente y tendrá vigencia hasta el ${formatDateShort(membershipQuote.fechaFin)}.`}
                   </span>
                 </>
               ) : (

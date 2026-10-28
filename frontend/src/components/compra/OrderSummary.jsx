@@ -58,8 +58,10 @@ export default function OrderSummary({
           </div>
         )}
         <p className="muted tiny">
-          {membershipQuote?.tipo === 'MEJORA_INMEDIATA'
+          {membershipQuote?.tipo === 'MEJORA_INMEDIATA_DIFERENCIA'
             ? 'Importe correspondiente a la diferencia entre planes'
+            : membershipQuote?.tipo === 'MEJORA_INMEDIATA_COMPLETA'
+              ? 'El plan superior se activa hoy por un nuevo mes'
             : membershipQuote?.tipo === 'CAMBIO_PROGRAMADO'
               ? 'El plan actual continúa vigente hasta su vencimiento'
               : 'IVA incluido · Vigencia de un mes'}
