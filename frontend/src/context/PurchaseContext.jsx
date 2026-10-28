@@ -67,11 +67,12 @@ export function PurchaseProvider({ children }) {
   }, [])
 
   const startCandyOnly = useCallback(() => {
-    setDraft({
+    setDraft((prev) => ({
       ...initialState,
       purchaseType: 'candy',
+      consumptions: prev.consumptions,
       candyVisited: true,
-    })
+    }))
   }, [])
 
   const startMembership = useCallback((membershipId) => {

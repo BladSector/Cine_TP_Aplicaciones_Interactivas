@@ -72,16 +72,16 @@ export default function CarteleraPage() {
   }, [peliculas, funciones, selectedDate, categoryId, formato, idioma, query])
 
   function beginPurchase(movie, fn) {
-    setDraft({
+    setDraft((prev) => ({
       purchaseType: 'movie',
       movieId: movie.id,
       functionId: fn.id,
       selectedSeats: [],
-      consumptions: {},
+      consumptions: prev.consumptions,
       candyVisited: false,
       returnPath: null,
       membershipId: null,
-    })
+    }))
     if (!isSpectator || !spectator.emailVerificado) {
       setPendingMovieId(movie.id)
       return
