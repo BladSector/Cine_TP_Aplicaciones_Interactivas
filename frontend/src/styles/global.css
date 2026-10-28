@@ -3078,6 +3078,11 @@ textarea {
   margin-bottom: 0.3rem;
 }
 
+.ticket-list-item__title--candy,
+.ticket-receipt__identity--candy h3 {
+  white-space: nowrap;
+}
+
 .ticket-list-item__summary {
   display: grid;
   justify-items: end;
@@ -3123,15 +3128,6 @@ textarea {
 .ticket-receipt__number {
   margin-bottom: 0.75rem;
   font-weight: 800;
-}
-
-.ticket-receipt__label {
-  margin: 0 0 0.35rem;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .ticket-receipt__function {
@@ -3274,10 +3270,29 @@ textarea {
   font-size: 1.2rem;
 }
 
+.ticket-cancellation-note {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  border-left: 3px solid var(--gold);
+  background: rgba(201, 162, 39, 0.1);
+}
+
+.ticket-cancellation-note span,
+.ticket-cancellation-unavailable {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.ticket-cancellation-unavailable {
+  margin: 0;
+}
+
 .status-pill {
   display: inline-flex;
   width: fit-content;
   align-items: center;
+  justify-content: center;
   min-height: 28px;
   padding: 0.2rem 0.65rem;
   border-radius: 999px;
@@ -3285,7 +3300,10 @@ textarea {
   color: var(--focus);
   font-size: 0.75rem;
   font-weight: 800;
+  line-height: 1;
+  text-align: center;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .status-pill--reembolsado,

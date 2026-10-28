@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { api, errorMessage } from '../../api/client'
 import { formatFunction, formatLanguage, money, shortTime } from '../../utils/format'
+import ConfirmDialog from '../common/ConfirmDialog'
 
 function weekdayName(value) {
   if (!value) return ''
@@ -20,6 +21,17 @@ function dateNumber(value) {
 
 function statusLabel(value) {
   return String(value || '').replaceAll('_', ' ')
+}
+
+function cancellationDeadline(value) {
+  if (!value) return ''
+  return new Date(value).toLocaleString('es-AR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 function groupEntradas(entradas) {
@@ -63,9 +75,12 @@ function ReceiptRow({ label, value }) {
   )
 }
 
-export default function TicketDetails({ ticket, movie }) {
+export default function TicketDetails({ ticket, movie, allowCancellation = false, onCancelled }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [notice, setNotice] = useState('')
 
   async function downloadPdf() {
     setLoading(true)
@@ -85,6 +100,22 @@ export default function TicketDetails({ ticket, movie }) {
     }
   }
 
+  async function cancelPurchase() {
+    setCancelLoading(true)
+    setError('')
+    try {
+      const updatedTicket = await api.cancelarCompra(ticket.id)
+      setShowCancelConfirm(false)
+      setNotice('La compra fue cancelada correctamente.')
+      await onCancelled?.(updatedTicket)
+    } catch (err) {
+      setError(errorMessage(err))
+      setShowCancelConfirm(false)
+    } finally {
+      setCancelLoading(false)
+    }
+  }
+
   const entradas = ticket.entradas || []
   const consumos = ticket.itemsConsumo || []
   const funciones = groupEntradas(entradas)
@@ -92,6 +123,8 @@ export default function TicketDetails({ ticket, movie }) {
     || entradas[0]?.pelicula
     || (consumos.length > 0 ? 'Compra de Candy' : 'Compra de cine')
   const tienePelicula = funciones.length > 0
+  const compraSoloCandy = !tienePelicula && consumos.length > 0
+  const limite = cancellationDeadline(ticket.limiteCancelacion)
 
   return (
     <div className="ticket-detail ticket-receipt">
@@ -104,11 +137,10 @@ export default function TicketDetails({ ticket, movie }) {
               alt={`Portada de ${titulo}`}
             />
           )}
-          <div className="ticket-receipt__identity">
+          <div className={`ticket-receipt__identity${compraSoloCandy ? ' ticket-receipt__identity--candy' : ''}`}>
             <p className="eyebrow">{tienePelicula ? 'Película confirmada' : 'Pedido confirmado'}</p>
             <h3>{titulo}</h3>
             <p className="ticket-receipt__number">Ticket #{ticket.id}</p>
-            <p className="ticket-receipt__label">Estado de ingreso</p>
             <span className={`status-pill status-pill--${String(ticket.estado).toLowerCase()}`}>
               {statusLabel(ticket.estado)}
             </span>
@@ -171,12 +203,45 @@ export default function TicketDetails({ ticket, movie }) {
         <span>Total a pagar</span>
         <strong>${money(ticket.total)}</strong>
       </div>
+      {notice && <div className="info-box">{notice}</div>}
       {error && <div className="info-box info-box--error">{error}</div>}
+      {allowCancellation && ticket.cancelacionPermitida ? (
+        <div className="ticket-cancellation-note">
+          <strong>Podés cancelar esta compra.</strong>
+          <span>
+            {compraSoloCandy
+              ? 'La opción estará disponible mientras el pedido no haya sido entregado.'
+              : `Tenés tiempo hasta ${limite} (2 horas antes de la función).`}
+          </span>
+        </div>
+      ) : allowCancellation && ticket.motivoCancelacion ? (
+        <p className="muted ticket-cancellation-unavailable">{ticket.motivoCancelacion}</p>
+      ) : null}
       <div className="summary-actions">
         <button type="button" className="primary-button" onClick={downloadPdf} disabled={loading}>
           {loading ? 'Descargando…' : 'Descargar PDF'}
         </button>
+        {allowCancellation && ticket.cancelacionPermitida && (
+          <button type="button" className="danger-button" onClick={() => setShowCancelConfirm(true)}>
+            {compraSoloCandy ? 'Cancelar compra de Candy' : 'Cancelar compra'}
+          </button>
+        )}
       </div>
+
+      {allowCancellation && showCancelConfirm && (
+        <ConfirmDialog
+          title="Cancelar compra"
+          message={compraSoloCandy
+            ? 'Se cancelarán todos los consumibles pendientes de este ticket.'
+            : 'Se reembolsarán las entradas, se liberarán las butacas y se cancelarán los consumibles pendientes asociados.'}
+          confirmLabel="Sí, cancelar compra"
+          cancelLabel="Conservar compra"
+          danger
+          loading={cancelLoading}
+          onConfirm={cancelPurchase}
+          onCancel={() => setShowCancelConfirm(false)}
+        />
+      )}
     </div>
   )
 }

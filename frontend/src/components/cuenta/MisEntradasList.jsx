@@ -5,7 +5,7 @@ import { useCatalog } from '../../context/CatalogContext'
 import { formatDateShort, money, shortTime } from '../../utils/format'
 
 export default function MisEntradasList() {
-  const { tickets, peliculas } = useCatalog()
+  const { tickets, peliculas, reload } = useCatalog()
   const [selected, setSelected] = useState(null)
   const myTickets = [...(tickets || [])].sort((a, b) => b.id - a.id)
 
@@ -34,7 +34,9 @@ export default function MisEntradasList() {
               <button key={ticket.id} type="button" className="ticket-list-item" onClick={() => setSelected(ticket)}>
                 <div>
                   <p className="eyebrow">Ticket #{ticket.id}</p>
-                  <h3>{candyOnly ? 'Compra de Candy' : first?.pelicula || 'Compra'}</h3>
+                  <h3 className={candyOnly ? 'ticket-list-item__title--candy' : undefined}>
+                    {candyOnly ? 'Compra de Candy' : first?.pelicula || 'Compra'}
+                  </h3>
                   {candyOnly ? (
                     <>
                       <p>{candyQuantity} consumible{candyQuantity !== 1 ? 's' : ''}</p>
@@ -61,9 +63,14 @@ export default function MisEntradasList() {
         <Modal title="Detalle de la compra" onClose={() => setSelected(null)}>
           <TicketDetails
             ticket={selected}
+            allowCancellation
             movie={(peliculas || []).find(
               (movie) => movie.titulo === selected.entradas?.[0]?.pelicula,
             )}
+            onCancelled={async (updatedTicket) => {
+              setSelected(updatedTicket)
+              await reload()
+            }}
           />
         </Modal>
       )}

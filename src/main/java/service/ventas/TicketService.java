@@ -20,6 +20,7 @@ import repository.usuarios.EspectadorRepository;
 import repository.ventas.ItemConsumoRepository;
 import repository.ventas.TicketRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -164,35 +165,107 @@ public class TicketService {
     @Transactional
     public Ticket reembolsar(int id) {
         Ticket ticket = buscarPorId(id);
+        validarEstadosParaCancelacion(ticket);
+        cancelarContenido(ticket);
+        return ticket;
+    }
+
+    @Transactional
+    public Ticket cancelarPorEspectador(int id, int espectadorId) {
+        Ticket ticket = buscarPorId(id);
+        if (ticket.getEspectador().getId() != espectadorId) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "El ticket pertenece a otro espectador.");
+        }
+
+        EvaluacionCancelacion evaluacion = evaluarCancelacion(ticket);
+        if (!evaluacion.permitida()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, evaluacion.motivo());
+        }
+
+        cancelarContenido(ticket);
+        return ticket;
+    }
+
+    public EvaluacionCancelacion evaluarCancelacion(Ticket ticket) {
+        String problemaEstado = obtenerProblemaDeEstado(ticket);
+        if (problemaEstado != null) {
+            return new EvaluacionCancelacion(false, null, problemaEstado);
+        }
+
         if (ticket.getEntradas().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El ticket no contiene entradas.");
-        }
-        if (ticket.getEntradas().stream().allMatch(
-                entrada -> entrada.getEstado() == EstadoEntrada.REEMBOLSADA)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El ticket ya fue reembolsado.");
-        }
-        if (ticket.getEntradas().stream().anyMatch(
-                entrada -> entrada.getEstado() == EstadoEntrada.ESCANEADA)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "No se puede reembolsar un ticket con entradas ya validadas."
-            );
-        }
-        if (ticket.getItemsConsumo().stream().anyMatch(
-                item -> item.getEstado() == EstadoConsumo.ENTREGADO)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "No se puede reembolsar un ticket con consumos ya entregados."
+            return new EvaluacionCancelacion(
+                    true,
+                    null,
+                    "Podés cancelar la compra mientras los consumos no hayan sido entregados."
             );
         }
 
+        LocalDateTime limite = ticket.getEntradas().stream()
+                .map(entrada -> LocalDateTime.of(
+                        entrada.getFuncion().getFecha(),
+                        entrada.getFuncion().getHorario()
+                ).minusHours(2))
+                .min(LocalDateTime::compareTo)
+                .orElse(null);
+
+        if (limite == null || !LocalDateTime.now().isBefore(limite)) {
+            return new EvaluacionCancelacion(
+                    false,
+                    limite,
+                    "La compra solo puede cancelarse hasta 2 horas antes de la función."
+            );
+        }
+
+        return new EvaluacionCancelacion(
+                true,
+                limite,
+                "Podés cancelar la compra hasta 2 horas antes de la función."
+        );
+    }
+
+    private void validarEstadosParaCancelacion(Ticket ticket) {
+        String problema = obtenerProblemaDeEstado(ticket);
+        if (problema != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, problema);
+        }
+    }
+
+    private String obtenerProblemaDeEstado(Ticket ticket) {
+        if (ticket.getEntradas().isEmpty() && ticket.getItemsConsumo().isEmpty()) {
+            return "El ticket no contiene compras para cancelar.";
+        }
+
+        boolean tieneEntradaActiva = ticket.getEntradas().stream().anyMatch(
+                entrada -> entrada.getEstado() != EstadoEntrada.REEMBOLSADA
+                        && entrada.getEstado() != EstadoEntrada.CANCELADA
+        );
+        boolean tieneConsumoPendiente = ticket.getItemsConsumo().stream().anyMatch(
+                item -> item.getEstado() == EstadoConsumo.PENDIENTE
+        );
+        if (!tieneEntradaActiva && !tieneConsumoPendiente) {
+            return "La compra ya fue cancelada o procesada.";
+        }
+
+        if (ticket.getEntradas().stream().anyMatch(
+                entrada -> entrada.getEstado() == EstadoEntrada.ESCANEADA)) {
+            return "No se puede cancelar una compra con entradas ya validadas.";
+        }
+        if (ticket.getItemsConsumo().stream().anyMatch(
+                item -> item.getEstado() == EstadoConsumo.ENTREGADO)) {
+            return "No se puede cancelar una compra con consumos ya entregados.";
+        }
+
+        return null;
+    }
+
+    private void cancelarContenido(Ticket ticket) {
         ticket.getEntradas().stream()
-                .filter(entrada -> entrada.getEstado() != EstadoEntrada.REEMBOLSADA)
+                .filter(entrada -> entrada.getEstado() != EstadoEntrada.REEMBOLSADA
+                        && entrada.getEstado() != EstadoEntrada.CANCELADA)
                 .forEach(entrada -> entradaService.reembolsar(entrada.getId()));
         ticket.getItemsConsumo().stream()
                 .filter(item -> item.getEstado() == EstadoConsumo.PENDIENTE)
                 .forEach(item -> itemConsumoService.cancelar(item.getId()));
-        return ticket;
     }
 
     public Ticket guardar(int espectadorId) {
@@ -274,6 +347,11 @@ public class TicketService {
     // El estado se deriva de entradas y consumos para no duplicar información persistida.
     public EstadoTicket calcularEstado(Ticket ticket) {
         if (ticket.getEntradas().isEmpty() && !ticket.getItemsConsumo().isEmpty()) {
+            boolean todosCancelados = ticket.getItemsConsumo().stream()
+                    .allMatch(item -> item.getEstado() == EstadoConsumo.CANCELADO);
+            if (todosCancelados) {
+                return EstadoTicket.REEMBOLSADO;
+            }
             boolean consumosPendientes = ticket.getItemsConsumo().stream()
                     .anyMatch(item -> item.getEstado() == EstadoConsumo.PENDIENTE);
             return consumosPendientes ? EstadoTicket.CONSUMOS_PENDIENTES : EstadoTicket.PROCESADO;
@@ -309,5 +387,8 @@ public class TicketService {
         if (!espectador.isEmailVerificado()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe verificar el email antes de comprar.");
         }
+    }
+
+    public record EvaluacionCancelacion(boolean permitida, LocalDateTime limite, String motivo) {
     }
 }

@@ -21,6 +21,9 @@ public class AdminWriteInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         if (METODOS_DE_ESCRITURA.contains(request.getMethod())) {
+            if (esCancelacionDelEspectador(request)) {
+                return true;
+            }
             var sesion = request.getSession(false);
             if (sesionService.esDuenio(sesion)) {
                 return true;
@@ -33,6 +36,12 @@ public class AdminWriteInterceptor implements HandlerInterceptor {
             sesionService.validarDuenio(sesion);
         }
         return true;
+    }
+
+    // El controlador y el servicio validan la sesión del espectador y la propiedad del ticket.
+    private boolean esCancelacionDelEspectador(HttpServletRequest request) {
+        return "PUT".equals(request.getMethod())
+                && request.getRequestURI().matches("/tickets/\\d+/cancelar-compra");
     }
 
     // Solo estas operaciones se delegan al empleado; las demás escrituras quedan reservadas al dueño.

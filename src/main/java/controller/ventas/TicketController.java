@@ -100,6 +100,11 @@ public class TicketController {
         return crearResponse(ticketService.reembolsar(id));
     }
 
+    @PutMapping("/{id}/cancelar-compra")
+    public TicketResponse cancelarCompra(@PathVariable int id, HttpSession sesion) {
+        return crearResponse(ticketService.cancelarPorEspectador(id, requerirEspectador(sesion)));
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public TicketResponse guardar(@RequestBody TicketRequest request) {
@@ -126,11 +131,13 @@ public class TicketController {
         List<ItemConsumoDetalle> items = ticket.getItemsConsumo().stream()
                 .map(item -> ItemConsumoDetalle.desde(item, ticketService.calcularSubtotal(item)))
                 .toList();
+        TicketService.EvaluacionCancelacion cancelacion = ticketService.evaluarCancelacion(ticket);
         return TicketResponse.desde(
                 ticket,
                 ticketService.calcularEstado(ticket),
                 ticketService.calcularTotal(ticket),
-                items
+                items,
+                cancelacion
         );
     }
 
@@ -159,9 +166,12 @@ public class TicketController {
     public record TicketResponse(int id, int espectadorId, String espectadorNombre, String codigoQR,
                                  Integer metodoDePagoId, String metodoDePagoResumen,
                                  EstadoTicket estado, List<EntradaDetalle> entradas,
-                                 List<ItemConsumoDetalle> itemsConsumo, double total) {
+                                 List<ItemConsumoDetalle> itemsConsumo, double total,
+                                 boolean cancelacionPermitida, String limiteCancelacion,
+                                 String motivoCancelacion) {
         public static TicketResponse desde(Ticket ticket, EstadoTicket estado, double total,
-                                            List<ItemConsumoDetalle> itemsConsumo) {
+                                            List<ItemConsumoDetalle> itemsConsumo,
+                                            TicketService.EvaluacionCancelacion cancelacion) {
             return new TicketResponse(
                     ticket.getId(),
                     ticket.getEspectador().getId(),
@@ -172,7 +182,10 @@ public class TicketController {
                     estado,
                     ticket.getEntradas().stream().map(EntradaDetalle::desde).toList(),
                     itemsConsumo,
-                    total
+                    total,
+                    cancelacion.permitida(),
+                    cancelacion.limite() == null ? null : cancelacion.limite().toString(),
+                    cancelacion.motivo()
             );
         }
     }
