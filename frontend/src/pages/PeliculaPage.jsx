@@ -58,16 +58,16 @@ export default function PeliculaPage() {
 
   function beginSelectedPurchase() {
     if (!selected) return
-    setDraft({
+    setDraft((prev) => ({
       purchaseType: 'movie',
       movieId,
       functionId: selected.id,
       selectedSeats: [],
-      consumptions: {},
+      consumptions: prev.consumptions,
       candyVisited: false,
       returnPath: null,
       membershipId: null,
-    })
+    }))
     if (!isSpectator || !spectator.emailVerificado) {
       setAuthOpen(true)
       return

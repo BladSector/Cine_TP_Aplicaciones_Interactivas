@@ -70,7 +70,9 @@ public class AdministracionPanel extends JPanel {
     private final DefaultTableModel funcionesModel = modelo(
             "ID", "Fecha", "Horario", "Película ID", "Película", "Sala ID", "Sala", "Formato", "Idioma", "Precio"
     );
-    private final DefaultTableModel productosModel = modelo("ID", "Nombre", "Precio", "Tipo", "Tamaño", "Imagen");
+    private final DefaultTableModel productosModel = modelo(
+            "ID", "Nombre", "Precio", "Tipo", "Tamaño", "Descripción", "Imagen"
+    );
 
     private final JTable categoriasTabla = tabla(categoriasModel);
     private final JTable peliculasTabla = tabla(peliculasModel);
@@ -781,6 +783,11 @@ public class AdministracionPanel extends JPanel {
             return;
         }
         JTextField nombre = new JTextField(edicion ? valor(productosModel, fila, 1) : "");
+        JTextArea descripcion = new JTextArea(edicion ? valor(productosModel, fila, 5) : "", 3, 22);
+        descripcion.setLineWrap(true);
+        descripcion.setWrapStyleWord(true);
+        JScrollPane descripcionScroll = new JScrollPane(descripcion);
+        descripcionScroll.setPreferredSize(new Dimension(320, 72));
         JSpinner precio = new JSpinner(new SpinnerNumberModel(
                 edicion ? decimal(productosModel, fila, 2) : 1000.0, 0.01, 10000000.0, 100.0));
         JComboBox<String> tipo = new JComboBox<>(new String[]{"POCHOCLOS", "BEBIDA", "DULCE", "COMBO"});
@@ -801,12 +808,13 @@ public class AdministracionPanel extends JPanel {
         controlImagen.add(vistaPrevia, BorderLayout.CENTER);
         controlImagen.add(elegirImagen, BorderLayout.SOUTH);
         if (!confirmarFormulario("Producto de confitería", formulario(
-                new String[]{"Nombre", "Precio", "Tipo", "Tamaño", "Imagen"},
-                nombre, precio, tipo, tamano, controlImagen))) {
+                new String[]{"Nombre", "Descripción", "Precio", "Tipo", "Tamaño", "Imagen"},
+                nombre, descripcionScroll, precio, tipo, tamano, controlImagen))) {
             return;
         }
         Map<String, Object> cuerpo = Map.of(
                 "nombre", nombre.getText().trim(),
+                "descripcion", descripcion.getText().trim(),
                 "precio", precio.getValue(),
                 "tipo", tipo.getSelectedItem(),
                 "tamano", tamano.getSelectedItem(),
@@ -908,6 +916,7 @@ public class AdministracionPanel extends JPanel {
             productosModel.addRow(new Object[]{
                     productoId, item.path("nombre").asText(), item.path("precio").asDouble(),
                     item.path("tipo").asText(), item.path("tamano").asText(),
+                    item.path("descripcion").asText(""),
                     imagen.isBlank() ? "Sin imagen" : "Cargada"
             });
         });

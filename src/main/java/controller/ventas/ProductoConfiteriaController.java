@@ -43,6 +43,7 @@ public class ProductoConfiteriaController {
     public ProductoConfiteriaResponse guardar(@RequestBody ProductoConfiteriaRequest request) {
         return ProductoConfiteriaResponse.desde(productoConfiteriaService.guardar(
                 request.nombre(),
+                request.descripcion(),
                 request.precio(),
                 request.tipo(),
                 request.tamano(),
@@ -55,6 +56,7 @@ public class ProductoConfiteriaController {
         return ProductoConfiteriaResponse.desde(productoConfiteriaService.actualizar(
                 id,
                 request.nombre(),
+                request.descripcion(),
                 request.precio(),
                 request.tipo(),
                 request.tamano(),
@@ -68,13 +70,13 @@ public class ProductoConfiteriaController {
         productoConfiteriaService.eliminar(id);
     }
 
-    public record ProductoConfiteriaRequest(String nombre, double precio,
+    public record ProductoConfiteriaRequest(String nombre, String descripcion, double precio,
                                             TipoProductoConfiteria tipo,
                                             TamanoProductoConfiteria tamano,
                                             String imagenUrl) {
     }
 
-    public record ProductoConfiteriaResponse(int id, String nombre, double precio,
+    public record ProductoConfiteriaResponse(int id, String nombre, String descripcion, double precio,
                                              TipoProductoConfiteria tipo,
                                              TamanoProductoConfiteria tamano,
                                              String imagenUrl) {
@@ -82,6 +84,7 @@ public class ProductoConfiteriaController {
             return new ProductoConfiteriaResponse(
                     producto.getId(),
                     producto.getNombre(),
+                    producto.getDescripcion(),
                     producto.getPrecio(),
                     producto.getTipo(),
                     producto.getTamano(),

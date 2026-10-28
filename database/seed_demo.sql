@@ -119,6 +119,7 @@ CREATE TABLE reserva_butaca (
 CREATE TABLE producto_confiteria (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(120) NOT NULL,
+    descripcion VARCHAR(500) NULL,
     precio DOUBLE NOT NULL,
     tipo VARCHAR(30) NOT NULL,
     tamano VARCHAR(30) NOT NULL,
@@ -287,25 +288,26 @@ FROM seed_filas f
 JOIN seed_numeros n
 WHERE f.orden <= 5 AND n.numero <= 8;
 
-INSERT INTO producto_confiteria (id, nombre, precio, tipo, tamano) VALUES
-(1, 'Pochoclos salados chicos', 2600, 'POCHOCLOS', 'CHICO'),
-(2, 'Pochoclos salados medianos', 3400, 'POCHOCLOS', 'MEDIANO'),
-(3, 'Pochoclos salados grandes', 4300, 'POCHOCLOS', 'GRANDE'),
-(4, 'Pochoclos dulces medianos', 3600, 'POCHOCLOS', 'MEDIANO'),
-(5, 'Pochoclos mixtos grandes', 4600, 'POCHOCLOS', 'GRANDE'),
-(6, 'Gaseosa chica', 1900, 'BEBIDA', 'CHICO'),
-(7, 'Gaseosa mediana', 2500, 'BEBIDA', 'MEDIANO'),
-(8, 'Gaseosa grande', 3100, 'BEBIDA', 'GRANDE'),
-(9, 'Agua mineral', 1700, 'BEBIDA', 'UNICO'),
-(10, 'Café americano', 1800, 'BEBIDA', 'UNICO'),
-(11, 'Chocolate confitado', 2100, 'DULCE', 'UNICO'),
-(12, 'Gomitas surtidas', 1900, 'DULCE', 'UNICO'),
-(13, 'Alfajor de chocolate', 1600, 'DULCE', 'UNICO'),
-(14, 'Tableta de chocolate', 2300, 'DULCE', 'UNICO'),
-(15, 'Combo clásico', 6200, 'COMBO', 'UNICO'),
-(16, 'Combo pareja', 9800, 'COMBO', 'UNICO'),
-(17, 'Combo familiar', 14500, 'COMBO', 'UNICO'),
-(18, 'Combo infantil', 5600, 'COMBO', 'UNICO');
+INSERT INTO producto_confiteria (id, nombre, descripcion, precio, tipo, tamano) VALUES
+(1, 'Pochoclos salados chicos', NULL, 2600, 'POCHOCLOS', 'CHICO'),
+(2, 'Pochoclos salados medianos', NULL, 3400, 'POCHOCLOS', 'MEDIANO'),
+(3, 'Pochoclos salados grandes', NULL, 4300, 'POCHOCLOS', 'GRANDE'),
+(4, 'Pochoclos dulces medianos', NULL, 3600, 'POCHOCLOS', 'MEDIANO'),
+(5, 'Pochoclos dulces grandes', NULL, 4600, 'POCHOCLOS', 'GRANDE'),
+(6, 'Gaseosa chica', NULL, 1900, 'BEBIDA', 'CHICO'),
+(7, 'Gaseosa mediana', NULL, 2500, 'BEBIDA', 'MEDIANO'),
+(8, 'Gaseosa grande', NULL, 3100, 'BEBIDA', 'GRANDE'),
+(9, 'Agua mineral', NULL, 1700, 'BEBIDA', 'UNICO'),
+(10, 'Café americano', NULL, 1800, 'BEBIDA', 'UNICO'),
+(11, 'Chocolate confitado', NULL, 2100, 'DULCE', 'UNICO'),
+(12, 'Gomitas surtidas', NULL, 1900, 'DULCE', 'UNICO'),
+(13, 'Alfajor de chocolate', NULL, 1600, 'DULCE', 'UNICO'),
+(14, 'Tableta de chocolate', NULL, 2300, 'DULCE', 'UNICO'),
+(15, 'Combo clásico', 'Pochoclos medianos y una gaseosa mediana.', 6200, 'COMBO', 'UNICO'),
+(16, 'Combo pareja', 'Pochoclos grandes y dos gaseosas medianas.', 9800, 'COMBO', 'UNICO'),
+(17, 'Combo familiar', 'Dos pochoclos grandes y cuatro gaseosas medianas.', 14500, 'COMBO', 'UNICO'),
+(18, 'Combo infantil', 'Pochoclos chicos, gaseosa chica y una golosina.', 5600, 'COMBO', 'UNICO'),
+(19, 'Pochoclos dulces chicos', NULL, 2800, 'POCHOCLOS', 'CHICO');
 
 UPDATE producto_confiteria
 SET imagen_url = CASE tipo

@@ -2171,6 +2171,8 @@ textarea {
 }
 
 .consumption-card {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   padding: 0 1rem 1rem;
   border: 1px solid var(--line);
@@ -2198,6 +2200,64 @@ textarea {
 .consumption-card.is-selected {
   border-color: var(--accent);
   box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.consumption-card h3 {
+  min-height: 3.1rem;
+  margin: 0.55rem 0 0;
+  line-height: 1.25;
+}
+
+.consumption-card__description {
+  min-height: 2.7rem;
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.consumption-card__price {
+  margin: auto 0 0;
+  padding-top: 0.8rem;
+}
+
+.flavor-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.flavor-options button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 34px;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.flavor-options button.is-active {
+  border-color: var(--bg-deep);
+  background: var(--bg-deep);
+  color: #fff;
+}
+
+.flavor-options button span {
+  min-width: 1.15rem;
+  height: 1.15rem;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
 }
 
 .quantity-control {
