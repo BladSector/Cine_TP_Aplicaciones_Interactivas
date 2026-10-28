@@ -106,6 +106,10 @@ export default function CompraButacasPage() {
   }
 
   const totalTickets = draft.selectedSeats.length * funcion.precioEntrada
+  const totalCandy = Object.entries(draft.consumptions).reduce((sum, [id, qty]) => {
+    const product = productos.find((item) => item.id === Number(id))
+    return sum + (product ? product.precio * qty : 0)
+  }, 0)
 
   return (
     <div className="purchase-page">
@@ -164,8 +168,8 @@ export default function CompraButacasPage() {
           products={productos}
           consumptions={draft.consumptions}
           totalTickets={totalTickets}
-          totalCandy={0}
-          total={totalTickets}
+          totalCandy={totalCandy}
+          total={totalTickets + totalCandy}
           footer={
             <div className="summary-actions">
               <button
