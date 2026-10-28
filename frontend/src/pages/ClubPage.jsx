@@ -135,10 +135,6 @@ export default function ClubPage() {
       <header className="club-page__heading">
         <p className="eyebrow">Club Film Zone</p>
         <h1>Membresías disponibles</h1>
-        <p>
-          Elegí un plan y pagalo con el mismo checkout que usás para tus entradas.
-          Si ya tenés uno, podés cambiarlo o darlo de baja.
-        </p>
       </header>
 
       {notice && <div className="info-box">{notice}</div>}
@@ -153,7 +149,7 @@ export default function ClubPage() {
               <strong>${money(suscripcion.precioProgramado)}</strong>.
             </>
           ) : (
-            'Elegí otro para reemplazarlo.'
+            'Si ya tenés uno, podés cambiarlo o darlo de baja.'
           )}
         </div>
       )}

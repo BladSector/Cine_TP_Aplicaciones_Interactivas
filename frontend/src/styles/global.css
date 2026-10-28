@@ -60,7 +60,9 @@ html {
   /* Le avisa al navegador cuánto mide tu header para que frene antes */
   scroll-padding-top: 120px;
 
+
   /* De paso, hace que el movimiento hacia abajo sea un deslizamiento suave y no un salto brusco */
+  scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
 }
 html,
