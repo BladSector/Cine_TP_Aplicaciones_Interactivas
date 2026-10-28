@@ -69,7 +69,7 @@ export function formatLanguage(idioma) {
 
 export function labelProductType(tipo) {
   const map = {
-    POCHOCLOS: 'Palomitas',
+    POCHOCLOS: 'Pochoclos',
     BEBIDA: 'Bebidas',
     DULCE: 'Dulces',
     COMBO: 'Combos',

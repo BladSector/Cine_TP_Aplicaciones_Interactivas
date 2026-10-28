@@ -4,6 +4,7 @@ import modelo.enums.TamanoProductoConfiteria;
 import modelo.enums.TipoProductoConfiteria;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
@@ -19,6 +20,8 @@ public class ProductoConfiteria {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     private String nombre;
+    @Column(length = 500)
+    private String descripcion;
     private double precio;
     @Enumerated(EnumType.STRING)
     private TipoProductoConfiteria tipo;
@@ -30,21 +33,23 @@ public class ProductoConfiteria {
     protected ProductoConfiteria() {
     }
 
-    public ProductoConfiteria(String nombre, double precio,
+    public ProductoConfiteria(String nombre, String descripcion, double precio,
                               TipoProductoConfiteria tipo,
                               TamanoProductoConfiteria tamano,
                               String imagenUrl) {
         this.id = 0;
         this.nombre = nombre;
+        this.descripcion = descripcion;
         this.precio = precio;
         this.tipo = tipo;
         this.tamano = tamano;
         this.imagenUrl = imagenUrl;
     }
 
-    public void actualizarDatos(String nombre, double precio, TipoProductoConfiteria tipo,
+    public void actualizarDatos(String nombre, String descripcion, double precio, TipoProductoConfiteria tipo,
                                 TamanoProductoConfiteria tamano, String imagenUrl) {
         this.nombre = nombre;
+        this.descripcion = descripcion;
         this.precio = precio;
         this.tipo = tipo;
         this.tamano = tamano;
@@ -61,6 +66,10 @@ public class ProductoConfiteria {
 
     public String getNombre() {
         return nombre;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
     }
 
     public double getPrecio() {
