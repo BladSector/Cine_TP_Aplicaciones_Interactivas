@@ -67,6 +67,7 @@ export const api = {
   getProductos: () => request('/productos-confiteria'),
   getMembresias: () => request('/membresias'),
   getMembresiaActual: () => request('/membresias/actual'),
+  cotizarMembresia: (id) => request(`/membresias/${id}/cotizacion`),
   darDeBajaMembresia: () => request('/membresias/actual', { method: 'DELETE' }),
   comprarMembresia: (body) => request('/compras/membresia', { method: 'POST', body }),
   getEntradas: () => request('/entradas'),

@@ -12,7 +12,6 @@ import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
 import { formatDateShort, functionHasStarted, money, nextMonthValue, paymentIsExpired } from '../../utils/format'
-import useSeatReservationHeartbeat from '../../hooks/useSeatReservationHeartbeat'
 
 function formatCardNumber(value) {
   return value
@@ -41,7 +40,15 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
   const [membresias, setMembresias] = useState([])
   const [membresiasLoading, setMembresiasLoading] = useState(membershipOnly)
   const [planVigente, setPlanVigente] = useState(null)
-  const { draft, clearConsumptions, expireSeatReservation } = usePurchase()
+  const [membershipQuote, setMembershipQuote] = useState(null)
+  const [membershipQuoteLoading, setMembershipQuoteLoading] = useState(membershipOnly)
+  const {
+    draft,
+    clearConsumptions,
+    reset,
+    reservationError,
+    remainingSeconds,
+  } = usePurchase()
   const [accepted, setAccepted] = useState(false)
   const [methodMode, setMethodMode] = useState('saved')
   const [selectedMethodId, setSelectedMethodId] = useState('')
@@ -56,11 +63,6 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
   const [ticket, setTicket] = useState(null)
   const [suscripcion, setSuscripcion] = useState(null)
   const [calculatedTickets, setCalculatedTickets] = useState(null)
-  const { reservationError, remainingSeconds, expired } = useSeatReservationHeartbeat(
-    draft.functionId,
-    draft.selectedSeats,
-    !candyOnly && !membershipOnly && !ticket,
-  )
 
   useEffect(() => {
     if (!membershipOnly) return undefined
@@ -81,6 +83,26 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
   }, [membershipOnly])
 
   useEffect(() => {
+    if (!membershipOnly || !draft.membershipId || !isSpectator) return undefined
+    let cancelled = false
+    setMembershipQuoteLoading(true)
+    setError('')
+    api.cotizarMembresia(draft.membershipId)
+      .then((data) => {
+        if (!cancelled) setMembershipQuote(data)
+      })
+      .catch((err) => {
+        if (!cancelled) setError(errorMessage(err))
+      })
+      .finally(() => {
+        if (!cancelled) setMembershipQuoteLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [draft.membershipId, isSpectator, membershipOnly])
+
+  useEffect(() => {
     if (!membershipOnly) return undefined
     let cancelled = false
     api.getMembresiaActual()
@@ -98,9 +120,8 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
   const movie = peliculas.find((item) => item.id === Number(movieId))
   const funcion = funciones.find((item) => item.id === draft.functionId)
   const membresia = membresias.find((item) => item.id === Number(draft.membershipId))
-  const reemplazaPlan = Boolean(
-    planVigente && membresia && planVigente.membresiaId !== membresia.id,
-  )
+  const esMejoraInmediata = membershipQuote?.tipo === 'MEJORA_INMEDIATA'
+  const esCambioProgramado = membershipQuote?.tipo === 'CAMBIO_PROGRAMADO'
   const metodos = spectator?.metodosDePago || []
   const sinFuncion = candyOnly || membershipOnly
 
@@ -125,15 +146,6 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
     }
   }, [ticket, suscripcion])
 
-  useEffect(() => {
-    if (sinFuncion || !expired || loading || ticket) return
-    expireSeatReservation()
-    navigate(`/compra/${movieId}/butacas`, {
-      replace: true,
-      state: { reservationExpired: true },
-    })
-  }, [sinFuncion, expired, expireSeatReservation, loading, movieId, navigate, ticket])
-
   const candyItemCount = Object.values(draft.consumptions).reduce(
     (sum, quantity) => sum + Number(quantity),
     0,
@@ -155,29 +167,32 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
       if (membresiasLoading) return <Loader />
       return <Navigate to="/club" replace />
     }
+    if (!suscripcion && membershipQuoteLoading) return <Loader />
   } else if (candyOnly) {
     if (!ticket && (draft.purchaseType !== 'candy' || candyItemCount === 0)) {
       return <Navigate to="/candy" replace />
     }
   } else {
-    if (!funcion || !movie || draft.selectedSeats.length === 0) {
+    if (!ticket && (!funcion || !movie || draft.selectedSeats.length === 0)) {
       return <Navigate to={`/compra/${movieId}/butacas`} replace />
     }
-    if (!draft.candyVisited) {
+    if (!ticket && !draft.candyVisited) {
       return <Navigate to={`/compra/${movieId}/candy`} replace />
     }
   }
 
-  const totalTickets = sinFuncion
+  const totalTickets = sinFuncion || ticket
     ? 0
     : calculatedTickets ?? draft.selectedSeats.length * funcion.precioEntrada
-  const totalCandy = membershipOnly
+  const totalCandy = membershipOnly || ticket
     ? 0
     : Object.entries(draft.consumptions).reduce((sum, [id, qty]) => {
         const product = productos.find((item) => item.id === Number(id))
         return sum + (product ? product.precio * qty : 0)
       }, 0)
-  const total = membershipOnly ? membresia?.precioMensual || 0 : totalTickets + totalCandy
+  const total = membershipOnly
+    ? membershipQuote?.importeAhora ?? 0
+    : totalTickets + totalCandy
 
   async function ensurePaymentMethod() {
     if (methodMode === 'saved' && selectedMethodId) {
@@ -257,6 +272,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
       }
       else setTicket(result)
       if (candyOnly) clearConsumptions()
+      else if (!membershipOnly) reset()
       await reload()
       await refreshSpectator(spectator.id)
     } catch (err) {
@@ -267,30 +283,46 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
   }
 
   if (suscripcion) {
+    const tieneCambioProgramado = Boolean(suscripcion.membresiaProgramadaId)
     return (
       <div className="purchase-page">
         <section className="success-panel">
-          <p className="eyebrow">Membresía confirmada</p>
-          <h1>Ya sos parte del Club Film Zone</h1>
-          <p>
-            Enviamos la confirmación a <strong>{spectator.email}</strong>.{' '}
-            {reemplazaPlan && (
-              <>
-                Dimos de baja <strong>{planVigente.nombre}</strong>.{' '}
-              </>
-            )}
-            Tu plan <strong>{suscripcion.nombre}</strong> está activo hasta el{' '}
-            {formatDateShort(suscripcion.fechaFin)}.
+          <p className="eyebrow">
+            {tieneCambioProgramado ? 'Cambio programado' : 'Membresía confirmada'}
           </p>
+          <h1>
+            {tieneCambioProgramado ? 'Tu próximo plan está confirmado' : 'Ya sos parte del Club Film Zone'}
+          </h1>
+          {tieneCambioProgramado ? (
+            <p>
+              <strong>{suscripcion.nombre}</strong> continúa activo hasta el{' '}
+              {formatDateShort(suscripcion.fechaFin)}. El{' '}
+              {formatDateShort(suscripcion.fechaCambioProgramado)} comenzará{' '}
+              <strong>{suscripcion.membresiaProgramadaNombre}</strong> y se cobrarán{' '}
+              <strong>${money(suscripcion.precioProgramado)}</strong>.
+            </p>
+          ) : (
+            <p>
+              Enviamos la confirmación a <strong>{spectator.email}</strong>.{' '}
+              Tu plan <strong>{suscripcion.nombre}</strong> está activo hasta el{' '}
+              {formatDateShort(suscripcion.fechaFin)}.
+            </p>
+          )}
           <ul className="membership-success__benefits">
-            {suscripcion.beneficios.map((beneficio) => (
+            {(tieneCambioProgramado ? membresia?.beneficios || [] : suscripcion.beneficios).map((beneficio) => (
               <li key={beneficio}>
                 <Check size={16} aria-hidden="true" />
                 <span>{beneficio}</span>
               </li>
             ))}
           </ul>
-          <p className="muted">Pagaste ${money(suscripcion.precioCobrado)} por este mes.</p>
+          <p className="muted">
+            {tieneCambioProgramado
+              ? 'Hoy no se realizó ningún cobro.'
+              : esMejoraInmediata
+                ? `Pagaste $${money(suscripcion.precioCobrado)} correspondientes a la diferencia entre planes.`
+                : `Pagaste $${money(suscripcion.precioCobrado)} por este mes.`}
+          </p>
           <Link to="/club" className="primary-button">
             Volver al club
           </Link>
@@ -340,16 +372,58 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
                 ? 'Confirmá tu pedido'
                 : 'El último paso antes de la gran pantalla'}
           </p>
-          <h1>{sinFuncion ? 'Completá el pago' : 'Todo listo para tu noche'}</h1>
+          <h1>
+            {membershipOnly
+              ? esCambioProgramado
+                ? 'Programá tu próximo plan'
+                : esMejoraInmediata
+                  ? 'Mejorá tu membresía'
+                  : 'Completá el pago'
+              : sinFuncion
+                ? 'Completá el pago'
+                : 'Todo listo para tu noche'}
+          </h1>
           <p>
             {membershipOnly
-              ? reemplazaPlan
-                ? `Al pagar se da de baja ${planVigente.nombre} y empieza ${membresia.nombre} por un mes.`
-                : `Vas a abonar el mes de ${membresia.nombre}. La membresía queda activa por un mes y te enviamos la confirmación por correo.`
+              ? membershipQuote?.mensaje
               : candyOnly
                 ? 'Elegí cómo pagar tus productos. Enviaremos el QR a tu correo.'
                 : 'Revisá tu pedido y completá el pago. Enviaremos las entradas a tu correo.'}
           </p>
+          {membershipOnly && membershipQuote && (
+            <div className="info-box membership-checkout-notice">
+              {esCambioProgramado ? (
+                <>
+                  <strong>Hoy no se realizará ningún cobro.</strong>
+                  <span>
+                    {planVigente?.nombre} continuará hasta el {formatDateShort(planVigente?.fechaFin)}.
+                    {' '}El {formatDateShort(membershipQuote.fechaInicio)} comenzará {membresia.nombre}
+                    {' '}y se cobrarán ${money(membershipQuote.importeRenovacion)}.
+                  </span>
+                  {planVigente?.membresiaProgramadaId
+                    && planVigente.membresiaProgramadaId !== membresia.id && (
+                      <span>
+                        Este cambio reemplazará la programación anterior a{' '}
+                        <strong>{planVigente.membresiaProgramadaNombre}</strong>.
+                      </span>
+                    )}
+                </>
+              ) : esMejoraInmediata ? (
+                <>
+                  <strong>Hoy pagás ${money(membershipQuote.importeAhora)}.</strong>
+                  <span>
+                    El plan cambia inmediatamente y conserva el vencimiento del{' '}
+                    {formatDateShort(membershipQuote.fechaFin)}.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <strong>Hoy pagás ${money(membershipQuote.importeAhora)}.</strong>
+                  <span>La membresía estará activa hasta el {formatDateShort(membershipQuote.fechaFin)}.</span>
+                </>
+              )}
+            </div>
+          )}
           {!sinFuncion && <SeatReservationTimer remainingSeconds={remainingSeconds} />}
 
           <form className="stack-form" onSubmit={handlePay}>
@@ -364,7 +438,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
               </div>
             </div>
 
-            <h2>Método de pago</h2>
+            <h2>{esCambioProgramado ? 'Método de pago para la renovación' : 'Método de pago'}</h2>
             {metodos.length > 0 && (
               <div className="auth-tabs">
                 <button
@@ -510,16 +584,20 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
               </span>
             </label>
 
-            {(error || reservationError) && !expired && (
+            {(error || reservationError) && (
               <div className="info-box info-box--error">{error || reservationError}</div>
             )}
 
             <button
               type="submit"
               className="primary-button"
-              disabled={loading || (!sinFuncion && functionHasStarted(funcion)) || (membershipOnly && !membresia)}
+              disabled={loading || (!sinFuncion && functionHasStarted(funcion)) || (membershipOnly && (!membresia || !membershipQuote))}
             >
-              {loading ? 'Procesando…' : `Pagar $${money(total)}`}
+              {loading
+                ? 'Procesando…'
+                : esCambioProgramado
+                  ? 'Programar cambio'
+                  : `Pagar $${money(total)}`}
             </button>
             <p className="muted tiny">Pago seguro · Datos cifrados</p>
           </form>
@@ -528,6 +606,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
         <OrderSummary
           candyOnly={candyOnly}
           membership={membershipOnly ? membresia : null}
+          membershipQuote={membershipOnly ? membershipQuote : null}
           movie={movie}
           funcion={funcion}
           seats={draft.selectedSeats}
@@ -535,6 +614,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
           consumptions={draft.consumptions}
           onClearCandy={clearConsumptions}
           editSeatsTo={sinFuncion ? undefined : `/compra/${movieId}/butacas`}
+          editCandyTo={membershipOnly ? undefined : candyOnly ? '/candy' : `/compra/${movieId}/candy`}
           totalTickets={totalTickets}
           totalCandy={totalCandy}
           total={total}

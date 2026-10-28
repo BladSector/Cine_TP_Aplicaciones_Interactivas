@@ -16,12 +16,14 @@ export default function OrderSummary({
   consumptions,
   onClearCandy,
   editSeatsTo,
+  editCandyTo,
   totalTickets,
   totalCandy,
   total,
   footer,
   candyOnly = false,
   membership = null,
+  membershipQuote = null,
 }) {
   if (membership) {
     return (
@@ -43,10 +45,25 @@ export default function OrderSummary({
           </ul>
         </div>
         <div className="order-summary__total">
-          <span>Total de este mes</span>
+          <span>
+            {membershipQuote?.tipo === 'CAMBIO_PROGRAMADO' ? 'A cobrar hoy' : 'Total a pagar'}
+          </span>
           <strong>${money(total)}</strong>
         </div>
-        <p className="muted tiny">IVA incluido · Vigencia de un mes</p>
+        {membershipQuote?.tipo === 'CAMBIO_PROGRAMADO' && (
+          <div className="order-summary__scheduled">
+            <span>Próximo cobro</span>
+            <strong>${money(membershipQuote.importeRenovacion)}</strong>
+            <small>{formatDateShort(membershipQuote.fechaInicio)}</small>
+          </div>
+        )}
+        <p className="muted tiny">
+          {membershipQuote?.tipo === 'MEJORA_INMEDIATA'
+            ? 'Importe correspondiente a la diferencia entre planes'
+            : membershipQuote?.tipo === 'CAMBIO_PROGRAMADO'
+              ? 'El plan actual continúa vigente hasta su vencimiento'
+              : 'IVA incluido · Vigencia de un mes'}
+        </p>
         {footer}
       </aside>
     )
@@ -144,10 +161,19 @@ export default function OrderSummary({
                 </li>
               ))}
             </ul>
-            {onClearCandy && (
-              <button type="button" className="text-button" onClick={onClearCandy}>
-                Quitar candy bar
-              </button>
+            {(editCandyTo || onClearCandy) && (
+              <div className="order-summary__candy-actions">
+                {editCandyTo && (
+                  <Link to={editCandyTo} className="text-button">
+                    Editar candy bar
+                  </Link>
+                )}
+                {onClearCandy && (
+                  <button type="button" className="text-button" onClick={onClearCandy}>
+                    Quitar candy bar
+                  </button>
+                )}
+              </div>
             )}
           </>
         )}

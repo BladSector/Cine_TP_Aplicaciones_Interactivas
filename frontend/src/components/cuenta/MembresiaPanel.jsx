@@ -87,10 +87,17 @@ export default function MembresiaPanel() {
             <p className="muted">{suscripcion.descripcion}</p>
           </div>
           <p className="membership-account__price">
-            ${money(suscripcion.precioCobrado)}
+            ${money(suscripcion.precioMensual)}
             <span> / mes</span>
           </p>
           <p>Activa hasta el {formatDateShort(suscripcion.fechaFin)}.</p>
+          {suscripcion.membresiaProgramadaId && (
+            <div className="info-box">
+              El {formatDateShort(suscripcion.fechaCambioProgramado)} cambia a{' '}
+              <strong>{suscripcion.membresiaProgramadaNombre}</strong>. El próximo cobro será de{' '}
+              <strong>${money(suscripcion.precioProgramado)}</strong>.
+            </div>
+          )}
           <ul className="membership-success__benefits">
             {suscripcion.beneficios.map((beneficio) => (
               <li key={beneficio}>
@@ -105,7 +112,9 @@ export default function MembresiaPanel() {
       {bajaConfirm && (
         <ConfirmDialog
           title="Dar de baja la membresía"
-          message={`Se cancela ${suscripcion?.nombre || 'tu plan'} y dejás de tener los beneficios del club.`}
+          message={suscripcion?.membresiaProgramadaId
+            ? `Se cancela ${suscripcion.nombre}, el cambio programado a ${suscripcion.membresiaProgramadaNombre} y los beneficios del club.`
+            : `Se cancela ${suscripcion?.nombre || 'tu plan'} y dejás de tener los beneficios del club.`}
           confirmLabel="Dar de baja"
           danger
           loading={bajaLoading}

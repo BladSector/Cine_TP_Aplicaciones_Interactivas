@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import DateStrip from '../components/cartelera/DateStrip'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 import PurchaseAuthDrawer from '../components/cuenta/PurchaseAuthDrawer'
 import { useAuth } from '../context/AuthContext'
 import { useCatalog } from '../context/CatalogContext'
@@ -21,10 +22,18 @@ export default function PeliculaPage() {
   const movieId = Number(id)
   const { peliculas, funciones, loading } = useCatalog()
   const { spectator, isSpectator } = useAuth()
-  const { setDraft } = usePurchase()
+  const {
+    draft,
+    setDraft,
+    hasActivePurchase,
+    continuePath,
+    cancelActivePurchase,
+  } = usePurchase()
   const [selectedDate, setSelectedDate] = useState(location.state?.selectedDate || todayValue())
   const [selectedFunctionId, setSelectedFunctionId] = useState(null)
   const [authOpen, setAuthOpen] = useState(Boolean(location.state?.openPurchaseAuth))
+  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false)
+  const [replacingPurchase, setReplacingPurchase] = useState(false)
 
   const movie = peliculas.find((item) => item.id === movieId)
   const dayFunctions = useMemo(
@@ -47,7 +56,7 @@ export default function PeliculaPage() {
     setSelectedFunctionId(null)
   }, [movieId, location.state?.selectedDate])
 
-  function continueToSeats() {
+  function beginSelectedPurchase() {
     if (!selected) return
     setDraft({
       purchaseType: 'movie',
@@ -57,12 +66,37 @@ export default function PeliculaPage() {
       consumptions: {},
       candyVisited: false,
       returnPath: null,
+      membershipId: null,
     })
     if (!isSpectator || !spectator.emailVerificado) {
       setAuthOpen(true)
       return
     }
     navigate(`/compra/${movieId}/butacas`)
+  }
+
+  function continueToSeats() {
+    if (!selected) return
+    if (hasActivePurchase && draft.functionId === selected.id) {
+      navigate(continuePath)
+      return
+    }
+    if (hasActivePurchase) {
+      setShowReplaceConfirm(true)
+      return
+    }
+    beginSelectedPurchase()
+  }
+
+  async function replaceActivePurchase() {
+    setReplacingPurchase(true)
+    try {
+      await cancelActivePurchase()
+      setShowReplaceConfirm(false)
+      beginSelectedPurchase()
+    } finally {
+      setReplacingPurchase(false)
+    }
   }
 
   if (loading) return <div className="page-loading">Cargando película…</div>
@@ -147,6 +181,19 @@ export default function PeliculaPage() {
           navigate(`/compra/${movieId}/butacas`)
         }}
       />
+
+      {showReplaceConfirm && (
+        <ConfirmDialog
+          title="Ya tenés una compra en curso"
+          message="Si elegís esta función se cancelará la compra actual y se liberarán sus butacas."
+          confirmLabel="Descartar y continuar"
+          cancelLabel="Conservar compra"
+          danger
+          loading={replacingPurchase}
+          onConfirm={replaceActivePurchase}
+          onCancel={() => setShowReplaceConfirm(false)}
+        />
+      )}
     </div>
   )
 }

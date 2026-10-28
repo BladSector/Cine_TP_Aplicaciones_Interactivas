@@ -8,7 +8,6 @@ import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
 import { money } from '../../utils/format'
-import useSeatReservationHeartbeat from '../../hooks/useSeatReservationHeartbeat'
 
 export default function CompraCandyPage() {
   const { movieId } = useParams()
@@ -20,7 +19,8 @@ export default function CompraCandyPage() {
     setConsumption,
     clearConsumptions,
     markCandyVisited,
-    expireSeatReservation,
+    reservationError,
+    remainingSeconds,
   } = usePurchase()
 
   useEffect(() => {
@@ -29,20 +29,6 @@ export default function CompraCandyPage() {
 
   const movie = peliculas.find((item) => item.id === Number(movieId))
   const funcion = funciones.find((item) => item.id === draft.functionId)
-  const { reservationError, remainingSeconds, expired } = useSeatReservationHeartbeat(
-    draft.functionId,
-    draft.selectedSeats,
-  )
-
-  useEffect(() => {
-    if (!expired) return
-    expireSeatReservation()
-    navigate(`/compra/${movieId}/butacas`, {
-      replace: true,
-      state: { reservationExpired: true },
-    })
-  }, [expired, expireSeatReservation, movieId, navigate])
-
   if (!isSpectator) return <Navigate to={`/compra/${movieId}/acceso`} replace />
   if (!funcion || !movie || draft.selectedSeats.length === 0) {
     return <Navigate to={`/compra/${movieId}/butacas`} replace />
@@ -67,7 +53,7 @@ export default function CompraCandyPage() {
           <h1>El cine sabe mejor así</h1>
           <p>Añade tus favoritos o continúa al pago solo con tus entradas. Tú eliges.</p>
           <SeatReservationTimer remainingSeconds={remainingSeconds} />
-          {reservationError && !expired && (
+          {reservationError && (
             <div className="info-box info-box--error">{reservationError}</div>
           )}
 

@@ -1,6 +1,9 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { api } from '../api/client'
+import useSeatReservationHeartbeat from '../hooks/useSeatReservationHeartbeat'
 
 const PurchaseContext = createContext(null)
+const STORAGE_KEY = 'film-zone-purchase-draft'
 
 const initialState = {
   purchaseType: null,
@@ -13,10 +16,46 @@ const initialState = {
   membershipId: null,
 }
 
-export function PurchaseProvider({ children }) {
-  const [draft, setDraft] = useState(initialState)
+function loadStoredDraft() {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY)
+    if (!stored) return initialState
+    const parsed = JSON.parse(stored)
+    return {
+      ...initialState,
+      ...parsed,
+      selectedSeats: Array.isArray(parsed.selectedSeats) ? parsed.selectedSeats : [],
+      consumptions: parsed.consumptions && typeof parsed.consumptions === 'object'
+        ? parsed.consumptions
+        : {},
+    }
+  } catch {
+    return initialState
+  }
+}
 
-  const reset = useCallback(() => setDraft(initialState), [])
+export function PurchaseProvider({ children }) {
+  const [draft, setDraft] = useState(loadStoredDraft)
+  const [reservationExpiredNotice, setReservationExpiredNotice] = useState(false)
+  const {
+    reservationError,
+    remainingSeconds,
+    expired,
+  } = useSeatReservationHeartbeat(
+    draft.functionId,
+    draft.selectedSeats,
+    draft.purchaseType === 'movie' && draft.selectedSeats.length > 0,
+  )
+
+  const reset = useCallback(() => {
+    setDraft(initialState)
+    setReservationExpiredNotice(false)
+  }, [])
+
+  useEffect(() => {
+    if (draft.purchaseType) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft))
+    else sessionStorage.removeItem(STORAGE_KEY)
+  }, [draft])
 
   const startFromMovie = useCallback((movieId, returnPath = null) => {
     setDraft({
@@ -92,6 +131,40 @@ export function PurchaseProvider({ children }) {
     }))
   }, [])
 
+  useEffect(() => {
+    if (!expired || draft.selectedSeats.length === 0) return
+    setReservationExpiredNotice(true)
+    expireSeatReservation()
+  }, [draft.selectedSeats.length, expired, expireSeatReservation])
+
+  const cancelActivePurchase = useCallback(async () => {
+    const functionId = draft.functionId
+    const selectedSeats = [...draft.selectedSeats]
+
+    if (functionId && selectedSeats.length > 0) {
+      await Promise.allSettled(
+        selectedSeats.map((seat) => api.liberarReservaButaca(functionId, seat.id)),
+      )
+    }
+
+    setDraft(initialState)
+    setReservationExpiredNotice(false)
+  }, [draft.functionId, draft.selectedSeats])
+
+  const hasActivePurchase = draft.purchaseType === 'movie'
+    && Boolean(draft.movieId)
+    && Boolean(draft.functionId)
+    && draft.selectedSeats.length > 0
+
+  const cartItemCount = draft.selectedSeats.length
+    + Object.values(draft.consumptions).reduce((sum, quantity) => sum + Number(quantity), 0)
+
+  const continuePath = hasActivePurchase
+    ? draft.candyVisited
+      ? `/compra/${draft.movieId}/pago`
+      : `/compra/${draft.movieId}/candy`
+    : null
+
   const value = useMemo(
     () => ({
       draft,
@@ -105,6 +178,14 @@ export function PurchaseProvider({ children }) {
       clearConsumptions,
       markCandyVisited,
       expireSeatReservation,
+      cancelActivePurchase,
+      hasActivePurchase,
+      cartItemCount,
+      continuePath,
+      reservationError,
+      remainingSeconds,
+      reservationExpiredNotice,
+      dismissReservationExpiredNotice: () => setReservationExpiredNotice(false),
       setDraft,
     }),
     [
@@ -119,6 +200,13 @@ export function PurchaseProvider({ children }) {
       clearConsumptions,
       markCandyVisited,
       expireSeatReservation,
+      cancelActivePurchase,
+      hasActivePurchase,
+      cartItemCount,
+      continuePath,
+      reservationError,
+      remainingSeconds,
+      reservationExpiredNotice,
     ],
   )
 

@@ -14,17 +14,19 @@ export default function CandyPage() {
   const {
     draft,
     startCandyOnly,
+    hasActivePurchase,
     setConsumption,
     clearConsumptions,
+    markCandyVisited,
   } = usePurchase()
   const [authOpen, setAuthOpen] = useState(false)
   const [selectionError, setSelectionError] = useState('')
 
   useEffect(() => {
-    if (draft.purchaseType !== 'candy') {
+    if (draft.purchaseType !== 'candy' && !hasActivePurchase) {
       startCandyOnly()
     }
-  }, [draft.purchaseType, startCandyOnly])
+  }, [draft.purchaseType, hasActivePurchase, startCandyOnly])
 
   const selectedItems = Object.values(draft.consumptions).reduce(
     (total, quantity) => total + Number(quantity),
@@ -45,7 +47,12 @@ export default function CandyPage() {
       setAuthOpen(true)
       return
     }
-    navigate('/candy/pago')
+    if (hasActivePurchase) {
+      markCandyVisited()
+      navigate(`/compra/${draft.movieId}/pago`)
+    } else {
+      navigate('/candy/pago')
+    }
   }
 
   return (
@@ -58,6 +65,11 @@ export default function CandyPage() {
 
       <div className="purchase-grid purchase-grid--wide">
         <section className="purchase-panel">
+          {hasActivePurchase && (
+            <div className="info-box">
+              Los productos que elijas se agregarán a tu compra de entradas en curso.
+            </div>
+          )}
           {loading && <div className="info-box">Cargando productos…</div>}
           {error && <div className="info-box info-box--error">{error}</div>}
           {!loading && !error && (
@@ -102,7 +114,12 @@ export default function CandyPage() {
         onClose={() => setAuthOpen(false)}
         onComplete={() => {
           setAuthOpen(false)
-          navigate('/candy/pago')
+          if (hasActivePurchase) {
+            markCandyVisited()
+            navigate(`/compra/${draft.movieId}/pago`)
+          } else {
+            navigate('/candy/pago')
+          }
         }}
       />
     </div>

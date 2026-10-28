@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,6 +48,15 @@ public class MembresiaController {
         return ResponseEntity.ok(SuscripcionResponse.desde(suscripcion));
     }
 
+    @GetMapping("/{membresiaId}/cotizacion")
+    public CotizacionResponse cotizar(@PathVariable int membresiaId, HttpSession sesion) {
+        Integer espectadorId = sesionService.obtenerEspectadorId(sesion);
+        if (espectadorId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Debe iniciar sesión.");
+        }
+        return CotizacionResponse.desde(membresiaService.cotizar(espectadorId, membresiaId));
+    }
+
     @DeleteMapping("/actual")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void darDeBaja(HttpSession sesion) {
@@ -72,19 +82,41 @@ public class MembresiaController {
     }
 
     public record SuscripcionResponse(int id, int membresiaId, String nombre, String descripcion,
-                                      List<String> beneficios, double precioCobrado,
-                                      String fechaInicio, String fechaFin) {
+                                      List<String> beneficios, double precioMensual, double precioCobrado,
+                                      String fechaInicio, String fechaFin, Integer membresiaProgramadaId,
+                                      String membresiaProgramadaNombre, Double precioProgramado,
+                                      String fechaCambioProgramado) {
         public static SuscripcionResponse desde(Suscripcion suscripcion) {
             Membresia membresia = suscripcion.getMembresia();
+            Membresia programada = suscripcion.getMembresiaProgramada();
             return new SuscripcionResponse(
                     suscripcion.getId(),
                     membresia.getId(),
                     membresia.getNombre(),
                     membresia.getDescripcion(),
                     membresia.listarBeneficios(),
+                    membresia.getPrecioMensual(),
                     suscripcion.getPrecioCobrado(),
                     suscripcion.getFechaInicio().toString(),
-                    suscripcion.getFechaFin().toString()
+                    suscripcion.getFechaFin().toString(),
+                    programada == null ? null : programada.getId(),
+                    programada == null ? null : programada.getNombre(),
+                    programada == null ? null : programada.getPrecioMensual(),
+                    programada == null ? null : suscripcion.getFechaFin().plusDays(1).toString()
+            );
+        }
+    }
+
+    public record CotizacionResponse(String tipo, double importeAhora, double importeRenovacion,
+                                     String fechaInicio, String fechaFin, String mensaje) {
+        public static CotizacionResponse desde(MembresiaService.Cotizacion cotizacion) {
+            return new CotizacionResponse(
+                    cotizacion.tipo().name(),
+                    cotizacion.importeAhora(),
+                    cotizacion.importeRenovacion(),
+                    cotizacion.fechaInicio().toString(),
+                    cotizacion.fechaFin().toString(),
+                    cotizacion.mensaje()
             );
         }
     }

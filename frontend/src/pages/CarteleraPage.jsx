@@ -8,6 +8,7 @@ import { formatFunction, functionHasStarted, normalizeText, todayValue } from '.
 
 import AccordionGallery from '../components/cartelera/AccordionGallery'
 import PurchaseAuthDrawer from '../components/cuenta/PurchaseAuthDrawer'
+import ConfirmDialog from '../components/common/ConfirmDialog'
 import { useAuth } from '../context/AuthContext'
 import Loader from '../components/common/Loader'
 
@@ -16,13 +17,21 @@ export default function CarteleraPage() {
 
   const { peliculas, funciones, categorias, loading, error } = useCatalog()
   const { spectator, isSpectator } = useAuth()
-  const { setDraft } = usePurchase()
+  const {
+    draft,
+    setDraft,
+    hasActivePurchase,
+    continuePath,
+    cancelActivePurchase,
+  } = usePurchase()
   const [selectedDate, setSelectedDate] = useState(todayValue())
   const [categoryId, setCategoryId] = useState('')
   const [formato, setFormato] = useState('')
   const [idioma, setIdioma] = useState('')
   const [query, setQuery] = useState('')
   const [pendingMovieId, setPendingMovieId] = useState(null)
+  const [pendingReplacement, setPendingReplacement] = useState(null)
+  const [replacingPurchase, setReplacingPurchase] = useState(false)
 
   // 1. Calculamos las películas destacadas para el carrusel
   const featuredMovies = useMemo(() => {
@@ -62,20 +71,47 @@ export default function CarteleraPage() {
       .filter((item) => item.functions.length > 0)
   }, [peliculas, funciones, selectedDate, categoryId, formato, idioma, query])
 
-  function handleSelectFunction(movie, fn) {
+  function beginPurchase(movie, fn) {
     setDraft({
+      purchaseType: 'movie',
       movieId: movie.id,
       functionId: fn.id,
       selectedSeats: [],
       consumptions: {},
       candyVisited: false,
       returnPath: null,
+      membershipId: null,
     })
     if (!isSpectator || !spectator.emailVerificado) {
       setPendingMovieId(movie.id)
       return
     }
     navigate(`/compra/${movie.id}/butacas`)
+  }
+
+  function handleSelectFunction(movie, fn) {
+    if (hasActivePurchase && draft.functionId === fn.id) {
+      navigate(continuePath)
+      return
+    }
+    if (hasActivePurchase) {
+      setPendingReplacement({ movie, fn })
+      return
+    }
+    beginPurchase(movie, fn)
+  }
+
+  async function replaceActivePurchase() {
+    if (!pendingReplacement) return
+    setReplacingPurchase(true)
+    try {
+      await cancelActivePurchase()
+      const nextPurchase = pendingReplacement
+      setPendingReplacement(null)
+      beginPurchase(nextPurchase.movie, nextPurchase.fn)
+    } finally {
+      setReplacingPurchase(false)
+    }
   }
 
   // 3. LA BARRERA DEL HÁMSTER
@@ -196,6 +232,19 @@ export default function CarteleraPage() {
           navigate(`/compra/${movieId}/butacas`)
         }}
       />
+
+      {pendingReplacement && (
+        <ConfirmDialog
+          title="Ya tenés una compra en curso"
+          message="Si elegís esta función se cancelará la compra actual y se liberarán sus butacas."
+          confirmLabel="Descartar y continuar"
+          cancelLabel="Conservar compra"
+          danger
+          loading={replacingPurchase}
+          onConfirm={replaceActivePurchase}
+          onCancel={() => setPendingReplacement(null)}
+        />
+      )}
     </div>
   )
 }

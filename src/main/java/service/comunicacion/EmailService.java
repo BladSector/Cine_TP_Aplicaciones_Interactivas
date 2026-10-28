@@ -86,7 +86,7 @@ public class EmailService {
         StringJoiner cuerpo = new StringJoiner(System.lineSeparator());
         cuerpo.add("Hola " + suscripcion.getEspectador().getNombre() + ",");
         cuerpo.add("Tu membresía " + suscripcion.getMembresia().getNombre() + " ya está activa.");
-        cuerpo.add("Precio mensual: $" + suscripcion.getPrecioCobrado());
+        cuerpo.add("Importe cobrado: $" + suscripcion.getPrecioCobrado());
         cuerpo.add("Vigente hasta el " + fecha.format(suscripcion.getFechaFin()) + ".");
         cuerpo.add("Incluye:");
         for (String beneficio : suscripcion.getMembresia().listarBeneficios()) {

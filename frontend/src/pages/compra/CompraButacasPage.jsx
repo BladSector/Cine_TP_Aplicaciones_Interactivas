@@ -8,7 +8,6 @@ import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
 import { api, errorMessage } from '../../api/client'
-import useSeatReservationHeartbeat from '../../hooks/useSeatReservationHeartbeat'
 import { formatFunction, formatLanguage, functionHasStarted, money, seatLabel, shortTime } from '../../utils/format'
 
 export default function CompraButacasPage() {
@@ -17,19 +16,15 @@ export default function CompraButacasPage() {
   const location = useLocation()
   const { isSpectator } = useAuth()
   const { peliculas, funciones, butacas, entradas, productos, reload } = useCatalog()
-  const { draft, toggleSeat, expireSeatReservation } = usePurchase()
+  const {
+    draft,
+    toggleSeat,
+    reservationError: timerError,
+    remainingSeconds,
+  } = usePurchase()
   const [reservations, setReservations] = useState([])
   const [pendingSeatIds, setPendingSeatIds] = useState([])
   const [reservationError, setReservationError] = useState('')
-  const {
-    reservationError: timerError,
-    remainingSeconds,
-    expired,
-  } = useSeatReservationHeartbeat(
-    draft.functionId,
-    draft.selectedSeats,
-    isSpectator,
-  )
 
   useEffect(() => {
     if (isSpectator) reload()
@@ -56,15 +51,6 @@ export default function CompraButacasPage() {
     const timer = window.setInterval(loadReservations, 5_000)
     return () => window.clearInterval(timer)
   }, [loadReservations])
-
-  useEffect(() => {
-    if (!expired) return
-    expireSeatReservation()
-    navigate(`/compra/${movieId}/butacas`, {
-      replace: true,
-      state: { reservationExpired: true },
-    })
-  }, [expired, expireSeatReservation, movieId, navigate])
 
   if (!isSpectator) return <Navigate to={`/compra/${movieId}/acceso`} replace />
   if (!funcion || !movie) return <Navigate to={`/pelicula/${movieId}`} replace />
@@ -145,14 +131,6 @@ export default function CompraButacasPage() {
             </div>
           )}
 
-          <SeatMap
-            seats={roomSeats}
-            selectedSeats={draft.selectedSeats}
-            isUnavailable={isUnavailable}
-            isPending={(seat) => pendingSeatIds.includes(seat.id)}
-            onToggle={handleToggleSeat}
-          />
-
           {draft.selectedSeats.length > 0 ? (
             <SeatReservationTimer remainingSeconds={remainingSeconds} />
           ) : (
@@ -160,7 +138,15 @@ export default function CompraButacasPage() {
               Al seleccionar la primera butaca, comenzará una reserva de 10 minutos.
             </p>
           )}
-          {(reservationError || timerError) && !expired && (
+
+          <SeatMap
+            seats={roomSeats}
+            selectedSeats={draft.selectedSeats}
+            isUnavailable={isUnavailable}
+            isPending={(seat) => pendingSeatIds.includes(seat.id)}
+            onToggle={handleToggleSeat}
+          />
+          {(reservationError || timerError) && (
             <div className="info-box info-box--error">{reservationError || timerError}</div>
           )}
 

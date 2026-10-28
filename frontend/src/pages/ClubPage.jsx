@@ -145,7 +145,25 @@ export default function ClubPage() {
       {suscripcion && (
         <div className="info-box">
           Tu plan <strong>{suscripcion.nombre}</strong> está activo hasta el{' '}
-          {formatDateShort(suscripcion.fechaFin)}. Elegí otro para reemplazarlo.
+          {formatDateShort(suscripcion.fechaFin)}.{' '}
+          {suscripcion.membresiaProgramadaId ? (
+            <>
+              El {formatDateShort(suscripcion.fechaCambioProgramado)} comenzará{' '}
+              <strong>{suscripcion.membresiaProgramadaNombre}</strong> por{' '}
+              <strong>${money(suscripcion.precioProgramado)}</strong>.
+            </>
+          ) : (
+            'Elegí otro para reemplazarlo.'
+          )}
+        </div>
+      )}
+      {suscripcion && !suscripcion.membresiaProgramadaId && (
+        <div className="membership-change-rule">
+          <strong>¿Querés cambiar de plan?</strong>
+          <span>
+            Durante los primeros 7 días, una mejora se cobra solo por la diferencia.
+            Después de ese plazo, o si elegís un plan menor, el cambio comienza al vencer el actual.
+          </span>
         </div>
       )}
 
@@ -159,6 +177,7 @@ export default function ClubPage() {
         {membresias.map((membresia, index) => {
           const Icon = PLAN_ICONS[index % PLAN_ICONS.length]
           const esActual = suscripcion?.membresiaId === membresia.id
+          const esProgramada = suscripcion?.membresiaProgramadaId === membresia.id
           return (
             <article
               key={membresia.id}
@@ -187,9 +206,16 @@ export default function ClubPage() {
               <button
                 type="button"
                 className={`${esActual ? 'secondary-button' : 'primary-button'} membership-card__action`}
+                disabled={esProgramada}
                 onClick={() => (esActual ? setBajaConfirm(true) : adquirir(membresia.id))}
               >
-                {esActual ? 'Dar de baja' : suscripcion ? 'Cambiar a este plan' : 'Adquirir'}
+                {esActual
+                  ? 'Dar de baja'
+                  : esProgramada
+                    ? 'Cambio programado'
+                    : suscripcion
+                      ? 'Cambiar a este plan'
+                      : 'Adquirir'}
               </button>
             </article>
           )
@@ -209,7 +235,9 @@ export default function ClubPage() {
       {bajaConfirm && (
         <ConfirmDialog
           title="Dar de baja la membresía"
-          message={`Se cancela ${suscripcion?.nombre || 'tu plan'} y dejás de tener los beneficios del club.`}
+          message={suscripcion?.membresiaProgramadaId
+            ? `Se cancela ${suscripcion.nombre}, el cambio programado a ${suscripcion.membresiaProgramadaNombre} y los beneficios del club.`
+            : `Se cancela ${suscripcion?.nombre || 'tu plan'} y dejás de tener los beneficios del club.`}
           confirmLabel="Dar de baja"
           danger
           loading={bajaLoading}

@@ -153,9 +153,13 @@ CREATE TABLE suscripcion (
     fecha_inicio DATE NOT NULL,
     fecha_fin DATE NOT NULL,
     activa BOOLEAN NOT NULL DEFAULT TRUE,
+    membresia_programada_id INT NULL,
+    metodo_pago_programado_id INT NULL,
     CONSTRAINT fk_suscripcion_espectador FOREIGN KEY (espectador_id) REFERENCES espectador(id),
     CONSTRAINT fk_suscripcion_membresia FOREIGN KEY (membresia_id) REFERENCES membresia(id),
-    CONSTRAINT fk_suscripcion_metodo_pago FOREIGN KEY (metodo_pago_id) REFERENCES metodo_pago(id)
+    CONSTRAINT fk_suscripcion_metodo_pago FOREIGN KEY (metodo_pago_id) REFERENCES metodo_pago(id),
+    CONSTRAINT fk_suscripcion_membresia_programada FOREIGN KEY (membresia_programada_id) REFERENCES membresia(id),
+    CONSTRAINT fk_suscripcion_metodo_pago_programado FOREIGN KEY (metodo_pago_programado_id) REFERENCES metodo_pago(id)
 );
 
 CREATE TABLE empleado (

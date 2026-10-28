@@ -26,6 +26,12 @@ public class Suscripcion {
     @ManyToOne(optional = false)
     @JoinColumn(name = "metodo_pago_id", nullable = false)
     private MetodoDePago metodoDePago;
+    @ManyToOne
+    @JoinColumn(name = "membresia_programada_id")
+    private Membresia membresiaProgramada;
+    @ManyToOne
+    @JoinColumn(name = "metodo_pago_programado_id")
+    private MetodoDePago metodoPagoProgramado;
     @Column(name = "precio_cobrado")
     private double precioCobrado;
     @Column(name = "fecha_inicio")
@@ -52,6 +58,15 @@ public class Suscripcion {
         this.activa = false;
     }
 
+    public void programarCambio(Membresia membresia, MetodoDePago metodoDePago) {
+        this.membresiaProgramada = membresia;
+        this.metodoPagoProgramado = metodoDePago;
+    }
+
+    public boolean tieneCambioProgramado() {
+        return membresiaProgramada != null;
+    }
+
     public int getId() {
         return id;
     }
@@ -66,6 +81,14 @@ public class Suscripcion {
 
     public MetodoDePago getMetodoDePago() {
         return metodoDePago;
+    }
+
+    public Membresia getMembresiaProgramada() {
+        return membresiaProgramada;
+    }
+
+    public MetodoDePago getMetodoPagoProgramado() {
+        return metodoPagoProgramado;
     }
 
     public double getPrecioCobrado() {

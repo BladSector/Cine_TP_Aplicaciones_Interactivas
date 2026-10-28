@@ -10,11 +10,14 @@ import jakarta.persistence.LockModeType;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
 
 public interface SuscripcionRepository extends JpaRepository<Suscripcion, Integer> {
     Optional<Suscripcion> findFirstByEspectadorIdAndActivaTrueOrderByFechaFinDesc(int espectadorId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT s FROM Suscripcion s WHERE s.espectador.id = :espectadorId AND s.activa = true")
+    @Query("SELECT s FROM Suscripcion s WHERE s.espectador.id = :espectadorId AND s.activa = true ORDER BY s.fechaFin DESC")
     List<Suscripcion> bloquearActivas(@Param("espectadorId") int espectadorId);
+
+    List<Suscripcion> findByActivaTrueAndFechaFinBeforeAndMembresiaProgramadaIsNotNull(LocalDate fecha);
 }
