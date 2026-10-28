@@ -191,6 +191,7 @@ CREATE TABLE auditoria (
     INDEX idx_auditoria_accion (accion)
 );
 
+
 CREATE TABLE aviso_sala (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     sala_id INT NOT NULL,
@@ -315,6 +316,7 @@ SET imagen_url = CASE tipo
     ELSE NULL
 END;
 
+select * from membresia
 INSERT INTO membresia (id, nombre, precio_mensual, descripcion, beneficios, destacada) VALUES
 (1, 'Luneta', 7900, 'Para sumar cine al mes sin pensarlo demasiado.', CONCAT_WS('\n',
     '2 entradas 2D por mes',
@@ -335,6 +337,52 @@ INSERT INTO membresia (id, nombre, precio_mensual, descripcion, beneficios, dest
     'Preventa de una semana y avant premiere',
     'Estacionamiento incluido'
 ), FALSE);
+
+
+update membresia 
+set nombre='Basico', precio_mensual= 15000
+where id=1;
+
+update membresia
+set nombre= 'Plus', precio_mensual=30000
+where id=2;
+
+update membresia 
+set nombre= 'Premium', precio_mensual= 60000
+where id=3;
+
+alter table membresia
+drop column destacada;
+
+update membresia
+set descripcion='Acción y pochoclos al mejor precio.'
+where id=1;
+
+update membresia
+set beneficios= CONCAT_WS('\n',
+    '2 entradas 2D por mes',
+    '10% de descuento en el Candy'
+    )
+where id= 1;
+
+update membresia
+set descripcion= 'Tu experiencia de cine, pero mejorada.', beneficios = CONCAT_WS('\n',
+    '4 entradas 2D por mes',
+    '1 combo clásico por mes',
+    '20% de descuento en el Candy',
+    'Preventa con 4 días de anticipación'
+    )
+where id=2;
+
+update membresia
+set descripcion= 'Viví el cine en primera clase.', beneficios = CONCAT_WS('\n',
+    '8 entradas de invitado por mes',
+    '2 combo clásicos por mes',
+    '30% descuento en el Candy',
+    'Preventa de una semana',
+    'Estacionamiento incluido'
+    )
+where id=3;
 
 DROP TEMPORARY TABLE IF EXISTS seed_numeros;
 DROP TEMPORARY TABLE IF EXISTS seed_filas;
