@@ -1,4 +1,4 @@
-import { ArrowUpRight, Clock3, Moon, Search, ShoppingCart, Sun, X } from 'lucide-react'
+import { ArrowUpRight, Clock3, Menu, Moon, Search, ShoppingCart, Sun, X } from 'lucide-react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import PurchaseAuthDrawer from '../cuenta/PurchaseAuthDrawer'
 import ConfirmDialog from '../common/ConfirmDialog'
@@ -52,6 +52,7 @@ export default function SiteLayout() {
 
   const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || 'light')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isNavOpen, setIsNavOpen] = useState(false)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -164,6 +165,10 @@ export default function SiteLayout() {
   }, [isSearchExpanded])
 
   useEffect(() => {
+    setIsNavOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
     const wasInPurchaseFlow = previousPathRef.current.startsWith('/compra/')
     if (!hasActivePurchase) {
       setShowCartNotice(false)
@@ -231,13 +236,27 @@ export default function SiteLayout() {
             <span className="brand__word brand__word--accent">Zone</span>
           </NavLink>
 
-          <nav className="site-nav" aria-label="Principal">
+          <button
+            type="button"
+            className="mobile-nav-toggle"
+            aria-label={isNavOpen ? 'Cerrar menú principal' : 'Abrir menú principal'}
+            aria-expanded={isNavOpen}
+            aria-controls="site-navigation"
+            onClick={() => setIsNavOpen((open) => !open)}
+          >
+            {isNavOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
+          </button>
 
-            <NavLink to="/" className= "btn-cartelera" end>Cartelera</NavLink>
-            <NavLink to="/candy">Candy</NavLink>
-            <NavLink to="/proximamente">Próximamente</NavLink>
-            <NavLink to="/experiencias">Experiencias</NavLink>
-            <NavLink to="/club">Club Film Zone</NavLink>
+          <nav
+            id="site-navigation"
+            className={`site-nav ${isNavOpen ? 'is-open' : ''}`}
+            aria-label="Principal"
+          >
+            <NavLink to="/" className="btn-cartelera" onClick={() => setIsNavOpen(false)} end>Cartelera</NavLink>
+            <NavLink to="/candy" onClick={() => setIsNavOpen(false)}>Candy</NavLink>
+            <NavLink to="/proximamente" onClick={() => setIsNavOpen(false)}>Próximamente</NavLink>
+            <NavLink to="/experiencias" onClick={() => setIsNavOpen(false)}>Experiencias</NavLink>
+            <NavLink to="/club" onClick={() => setIsNavOpen(false)}>Club Film Zone</NavLink>
           </nav>
 
           <div className={`header-utility ${isSearchExpanded ? 'is-searching' : ''}`}>

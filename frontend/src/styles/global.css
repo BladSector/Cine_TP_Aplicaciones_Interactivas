@@ -108,7 +108,7 @@ p {
 
 h1 {
   font-family: var(--font-display);
-  font-size: clamp(2.8rem, 6vw, 5rem);
+  font-size: 5rem;
   letter-spacing: 0.04em;
   line-height: 0.95;
   margin-bottom: 0.35em;
@@ -117,7 +117,7 @@ h1 {
 h2 {
   font-family: var(--font-display);
   letter-spacing: 0.04em;
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-size: 2.4rem;
   margin-bottom: 0.4em;
 }
 
@@ -937,7 +937,7 @@ h2 {
 
 .hero__brand {
   margin: 0;
-  font-size: clamp(4.5rem, 12vw, 8.5rem);
+  font-size: 8.5rem;
 }
 
 .hero__brand span {
@@ -948,7 +948,7 @@ h2 {
   max-width: 30ch;
   margin: 0.2rem 0 1rem;
   font-family: var(--font-display);
-  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-size: 3.4rem;
   letter-spacing: 0.04em;
   color: var(--accent);
 }
@@ -1346,7 +1346,7 @@ textarea {
 
 .movie-detail__summary h1 {
   margin-bottom: 0.35rem;
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-size: 2.8rem;
 }
 
 .movie-detail__description {
@@ -3172,7 +3172,7 @@ textarea {
 .ticket-receipt__highlight strong {
   color: var(--accent);
   font-family: var(--font-display);
-  font-size: clamp(2.6rem, 4vw, 3.4rem);
+  font-size: 3.4rem;
   font-weight: 400;
   letter-spacing: 0.04em;
   line-height: 0.9;
@@ -3532,6 +3532,632 @@ textarea {
 .success-panel .primary-button {
   display: inline-flex;
   align-items: center;
+}
+
+/* Responsive layout */
+.mobile-nav-toggle {
+  display: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface-translucent);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  html {
+    scroll-padding-top: 126px;
+  }
+
+  h1 {
+    font-size: 3.75rem;
+  }
+
+  h2 {
+    font-size: 2.1rem;
+  }
+
+  .site-header__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.65rem 0.8rem;
+    min-height: auto;
+    padding: 0.65rem 0;
+  }
+
+  .brand {
+    grid-column: 1;
+    grid-row: 1;
+    width: fit-content;
+  }
+
+  .mobile-nav-toggle {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .mobile-nav-toggle:hover,
+  .mobile-nav-toggle:focus-visible {
+    border-color: var(--accent);
+    outline: 0;
+    color: var(--accent);
+  }
+
+  .site-nav {
+    position: absolute;
+    top: 100%;
+    right: calc((100vw - 100%) / -2);
+    left: calc((100vw - 100%) / -2);
+    z-index: 70;
+    display: none;
+    width: auto;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.25rem;
+    padding: 0.75rem max(1rem, calc((100vw - 100%) / 2)) 1rem;
+    transform: none;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-translucent-strong);
+    box-shadow: 0 18px 34px rgba(18, 20, 26, 0.16);
+    backdrop-filter: blur(16px);
+  }
+
+  .site-nav.is-open {
+    display: flex;
+  }
+
+  .site-nav a,
+  .site-nav a.btn-cartelera {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0.7rem 0.85rem;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ink);
+    font-size: 1rem;
+  }
+
+  .site-nav a.active,
+  .site-nav a:hover,
+  .site-nav a.btn-cartelera.active,
+  .site-nav a.btn-cartelera:hover {
+    background: var(--surface-soft);
+    color: var(--accent);
+  }
+
+  .header-utility {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .header-search__results,
+  .header-cart__panel {
+    max-height: calc(100vh - 145px);
+  }
+
+  .site-main {
+    padding-top: 24px !important;
+  }
+
+  .cartelera-page {
+    margin-top: -24px;
+  }
+
+  .hero {
+    min-height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0 1rem 2rem;
+  }
+
+  .hero__content,
+  .hero__gallery {
+    width: min(100%, 680px);
+    max-width: none;
+    margin-inline: auto;
+  }
+
+  .hero__content {
+    padding: 3.25rem 0 2rem;
+  }
+
+  .hero__brand {
+    font-size: 6rem;
+  }
+
+  .hero__headline {
+    max-width: 22ch;
+    font-size: 2.8rem;
+  }
+
+  .filters,
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .movie-card {
+    grid-template-columns: 150px minmax(0, 1fr);
+  }
+
+  .movie-card__poster {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .movie-detail__layout {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+
+  .movie-detail__poster {
+    max-width: 180px;
+  }
+
+  .purchase-stepper {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.45rem;
+    scrollbar-width: thin;
+  }
+
+  .purchase-stepper__item {
+    flex: 0 0 auto;
+  }
+
+  .purchase-grid,
+  .purchase-grid--wide {
+    grid-template-columns: 1fr;
+  }
+
+  .order-summary {
+    order: 2;
+  }
+
+  .checkout-new-card {
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  }
+
+  .account-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .membership-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .legal-page__content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  html {
+    scroll-padding-top: 116px;
+  }
+
+  body {
+    overflow-x: clip;
+  }
+
+  h1 {
+    font-size: 2.75rem;
+  }
+
+  h2 {
+    font-size: 1.8rem;
+  }
+
+  .site-header__inner,
+  .site-footer__inner,
+  .catalog-panel,
+  .movie-detail,
+  .purchase-page,
+  .account-page,
+  .account-gate,
+  .placeholder-page,
+  .club-page {
+    width: min(100% - 1.25rem, 1180px);
+  }
+
+  .site-header__inner {
+    gap: 0.55rem;
+    padding: 0.55rem 0;
+  }
+
+  .brand {
+    font-size: 1.7rem;
+  }
+
+  .header-utility {
+    gap: 0.4rem;
+  }
+
+  .header-search,
+  .header-search__toggle,
+  .header-cart,
+  .header-cart__toggle,
+  .theme-toggle {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  .user-icon-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  .header-actions .secondary-button {
+    min-height: 42px;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.9rem;
+  }
+
+  .header-search__field {
+    width: min(220px, calc(100vw - 1.25rem));
+  }
+
+  @keyframes expandLeft {
+    0% {
+      width: 40px;
+      opacity: 0;
+    }
+    100% {
+      width: min(220px, calc(100vw - 1.25rem));
+      opacity: 1;
+    }
+  }
+
+  .header-search__results,
+  .header-cart__panel {
+    position: fixed;
+    top: 112px;
+    right: 0.625rem;
+    left: 0.625rem;
+    width: auto;
+    max-height: calc(100vh - 126px);
+  }
+
+  .header-search__movie {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .header-search__movie strong {
+    white-space: normal;
+  }
+
+  .dropdown-menu {
+    position: fixed;
+    top: 112px;
+    right: 0.625rem;
+    left: 0.625rem;
+    width: auto;
+  }
+
+  .site-main {
+    padding-top: 18px !important;
+    padding-bottom: 2.5rem;
+  }
+
+  .cartelera-page {
+    margin-top: -18px;
+  }
+
+  .hero {
+    margin-bottom: 1.25rem;
+    padding: 0 0.625rem 1.25rem;
+  }
+
+  .hero__content {
+    padding: 2.5rem 0 1.5rem;
+  }
+
+  .hero__kicker {
+    letter-spacing: 0.18em;
+  }
+
+  .hero__brand {
+    font-size: 4.4rem;
+  }
+
+  .hero__headline {
+    font-size: 2.2rem;
+  }
+
+  .hero__support {
+    font-size: 1rem;
+  }
+
+  .hero__empty-gallery {
+    min-height: 300px;
+  }
+
+  .date-strip__list {
+    margin-inline: -0.625rem;
+    padding-inline: 0.625rem;
+    scroll-snap-type: x proximity;
+  }
+
+  .date-chip {
+    scroll-snap-align: start;
+  }
+
+  .filters,
+  .form-grid,
+  .form-grid--two,
+  .checkout-customer,
+  .payment-card-grid,
+  .checkout-new-card,
+  .membership-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-heading,
+  .section-heading,
+  .account-header,
+  .wallet-heading,
+  .profile-security {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .catalog-heading .count-pill {
+    align-self: flex-start;
+  }
+
+  .movie-card {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 0.8rem;
+    padding: 0.7rem;
+  }
+
+  .movie-card__body h3 {
+    font-size: 1.08rem;
+  }
+
+  .movie-card__desc {
+    -webkit-line-clamp: 2;
+  }
+
+  .movie-card__sessions,
+  .function-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .movie-card__footer,
+  .movie-detail__cta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .movie-card__footer .primary-button,
+  .movie-detail__cta .primary-button {
+    width: 100%;
+  }
+
+  .movie-detail__layout {
+    grid-template-columns: 94px minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+
+  .movie-detail__poster {
+    max-width: 94px;
+  }
+
+  .movie-detail__summary h1 {
+    font-size: 2rem;
+  }
+
+  .movie-detail__description {
+    grid-column: 1 / -1;
+  }
+
+  .movie-detail__booking {
+    grid-column: 1 / -1;
+  }
+
+  .purchase-stepper {
+    margin-right: -0.625rem;
+    margin-left: -0.625rem;
+    padding-inline: 0.625rem;
+  }
+
+  .purchase-stepper__item {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.82rem;
+  }
+
+  .purchase-panel,
+  .order-summary,
+  .account-section,
+  .success-panel {
+    padding: 1rem;
+    border-radius: 10px;
+  }
+
+  .order-summary__movie {
+    grid-template-columns: 74px minmax(0, 1fr);
+  }
+
+  .order-summary__row,
+  .order-summary__total,
+  .ticket-detail__items p {
+    align-items: flex-start;
+  }
+
+  .seat-map {
+    margin-right: -1rem;
+    margin-left: -1rem;
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .seat-button {
+    width: 2.65rem;
+    height: 3rem;
+  }
+
+  .seat-gap {
+    width: 2.2rem;
+    height: 3rem;
+  }
+
+  .seat-legend {
+    justify-content: flex-start;
+    gap: 0.65rem 1rem;
+  }
+
+  .checkout-card-options,
+  .saved-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-card,
+  .payment-card--preview,
+  .checkout-card-options .payment-card {
+    width: min(100%, 270px);
+    max-width: 270px;
+  }
+
+  .expiry-picker__popover {
+    position: fixed;
+    top: 50%;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    transform: translateY(-50%);
+  }
+
+  .consumption-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .consumption-card h3,
+  .consumption-card__description {
+    min-height: 0;
+  }
+
+  .ticket-detail__movie {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .ticket-receipt__highlight strong {
+    font-size: 2.5rem;
+  }
+
+  .ticket-qr {
+    max-width: 150px;
+    justify-self: start;
+  }
+
+  .modal-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .modal-panel,
+  .modal-panel--compact {
+    width: 100%;
+    max-height: min(88vh, 760px);
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-actions,
+  .auth-drawer__header,
+  .auth-drawer__body {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+
+  .auth-drawer {
+    width: 100%;
+    border-left: 0;
+  }
+
+  .reservation-expired-toast,
+  .cart-resume-toast {
+    right: 0.625rem;
+    bottom: 0.625rem;
+    width: calc(100vw - 1.25rem);
+  }
+
+  .site-footer {
+    padding: 2.25rem 0 1.5rem;
+  }
+
+  .site-footer__links-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .about-hero {
+    min-height: 460px;
+  }
+
+  .about-hero__content {
+    padding: 2rem 1rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .header-search__field {
+    position: fixed;
+    top: 108px;
+    right: 0.625rem;
+    left: 0.625rem;
+    width: auto;
+    transform: none;
+  }
+
+  .header-search__results {
+    top: 160px;
+    max-height: calc(100vh - 172px);
+  }
+
+  .movie-card {
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+
+  .function-option {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .function-option__price {
+    grid-column: 2;
+    grid-row: 3;
+    justify-self: start;
+  }
 }
 
 
