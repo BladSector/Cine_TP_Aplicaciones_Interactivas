@@ -58,6 +58,7 @@ public class MetodoDePagoController {
         }
         String titular = obtenerTitular(request);
         MetodoDePago metodo = metodoDePagoService.guardar(
+                espectadorId,
                 request.numero(),
                 request.fechaVencimiento(),
                 titular,

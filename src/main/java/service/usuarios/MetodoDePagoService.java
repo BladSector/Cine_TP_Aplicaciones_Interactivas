@@ -29,8 +29,9 @@ public class MetodoDePagoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe un metodo de pago con ese id."));
     }
 
-    public MetodoDePago guardar(String numero, YearMonth fechaVencimiento, String nombre, String apellido, String cvv) {
+    public MetodoDePago guardar(int espectadorId, String numero, YearMonth fechaVencimiento, String nombre, String apellido, String cvv) {
         validarDatos(numero, fechaVencimiento, nombre, cvv);
+        validarNoDuplicado(espectadorId, numero, 0);
         return metodoDePagoRepository.save(new MetodoDePago(numero, fechaVencimiento, nombre.trim(), normalizar(apellido), cvv));
     }
 
@@ -39,6 +40,9 @@ public class MetodoDePagoService {
         MetodoDePago metodoDePago = buscarPorId(id);
         if (!metodoDePago.isActiva()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede modificar un metodo de pago inactivo.");
+        }
+        if (metodoDePago.getEspectador() != null) {
+            validarNoDuplicado(metodoDePago.getEspectador().getId(), numero, id);
         }
         metodoDePago.actualizarDatos(numero, fechaVencimiento, nombre.trim(), normalizar(apellido), cvv);
         return metodoDePagoRepository.save(metodoDePago);
@@ -86,6 +90,14 @@ public class MetodoDePagoService {
         }
         if (cvv == null || !cvv.matches("\\d{3}")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El CVV debe tener exactamente 3 digitos.");
+        }
+    }
+
+    private void validarNoDuplicado(int espectadorId, String numero, int idExcluido) {
+        boolean existe = metodoDePagoRepository.findByEspectadorIdAndNumero(espectadorId, numero).stream()
+                .anyMatch(metodo -> metodo.isActiva() && metodo.getId() != idExcluido);
+        if (existe) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Esa tarjeta ya esta registrada como metodo de pago.");
         }
     }
 
