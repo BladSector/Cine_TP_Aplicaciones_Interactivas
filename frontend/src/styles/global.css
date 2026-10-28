@@ -1620,6 +1620,20 @@ textarea {
   margin-top: 0.85rem;
 }
 
+.order-summary__empty-candy {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+}
+
+.order-summary__empty-candy p {
+  margin: 0;
+}
+
+.checkout-save-card {
+  margin-top: 0.9rem;
+}
+
 .seat-chip {
   min-width: 2rem;
   min-height: 2rem;

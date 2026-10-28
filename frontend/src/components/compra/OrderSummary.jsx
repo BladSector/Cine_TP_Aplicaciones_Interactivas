@@ -145,11 +145,18 @@ export default function OrderSummary({
 
       <div className="order-summary__block">
         {selectedProducts.length === 0 ? (
-          <p className="muted">
-            {candyOnly
-              ? 'Todavía no seleccionaste productos.'
-              : 'Candy bar no añadido. Puedes añadir productos o ir directamente al pago.'}
-          </p>
+          <div className="order-summary__empty-candy">
+            <p className="muted">
+              {candyOnly
+                ? 'Todavía no seleccionaste productos.'
+                : 'No agregaste productos del candy bar.'}
+            </p>
+            {editCandyTo && (
+              <Link to={editCandyTo} className="text-button">
+                Volver al candy bar
+              </Link>
+            )}
+          </div>
         ) : (
           <>
             <div className="order-summary__row">

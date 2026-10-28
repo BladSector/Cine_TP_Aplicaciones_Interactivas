@@ -52,6 +52,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
   const [accepted, setAccepted] = useState(false)
   const [methodMode, setMethodMode] = useState('saved')
   const [selectedMethodId, setSelectedMethodId] = useState('')
+  const [saveNewCard, setSaveNewCard] = useState(false)
   const [card, setCard] = useState({
     numero: '',
     fechaVencimiento: '',
@@ -202,7 +203,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
       if (!metodo || paymentIsExpired(metodo.fechaVencimiento)) {
         throw new Error('El método de pago seleccionado no es válido o está vencido.')
       }
-      return Number(selectedMethodId)
+      return { id: Number(selectedMethodId), isNew: false }
     }
 
     if (!card.numero || !card.fechaVencimiento || !card.nombreTitular || !card.cvv) {
@@ -218,8 +219,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
       nombreTitular: card.nombreTitular,
       cvv: card.cvv,
     })
-    await refreshSpectator(spectator.id)
-    return created.id
+    return { id: created.id, isNew: true }
   }
 
   async function handlePay(event) {
@@ -239,8 +239,14 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
 
     setLoading(true)
     setError('')
+    let temporaryPaymentMethodId = null
     try {
-      const metodoDePagoId = await ensurePaymentMethod()
+      const paymentMethod = await ensurePaymentMethod()
+      const metodoDePagoId = paymentMethod.id
+      const guardarMetodoPago = !paymentMethod.isNew || membershipOnly || saveNewCard
+      if (paymentMethod.isNew && !guardarMetodoPago) {
+        temporaryPaymentMethodId = metodoDePagoId
+      }
       const items = Object.entries(draft.consumptions)
         .map(([productoId, cantidad]) => ({
           productoId: Number(productoId),
@@ -258,6 +264,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
           ? await api.comprarCandy({
               espectadorId: spectator.id,
               metodoDePagoId,
+              guardarMetodoPago,
               items,
             })
           : await api.comprar({
@@ -265,6 +272,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
               metodoDePagoId,
               funcionId: funcion.id,
               butacasIds: draft.selectedSeats.map((seat) => seat.id),
+              guardarMetodoPago,
               items,
             })
 
@@ -278,6 +286,14 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
       await reload()
       await refreshSpectator(spectator.id)
     } catch (err) {
+      if (temporaryPaymentMethodId) {
+        try {
+          await api.eliminarMetodoPago(temporaryPaymentMethodId)
+          await refreshSpectator(spectator.id)
+        } catch {
+          // La compra conserva su error original aunque falle la limpieza de la tarjeta temporal.
+        }
+      }
       setError(errorMessage(err))
     } finally {
       setLoading(false)
@@ -359,12 +375,14 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
 
   return (
     <div className="purchase-page">
-      <Link
-        to={membershipOnly ? '/club' : candyOnly ? '/candy' : `/compra/${movieId}/candy`}
-        className="back-link"
-      >
-        {membershipOnly ? 'Volver al club' : candyOnly ? 'Volver al Candy' : 'Volver al candy bar'}
-      </Link>
+      {sinFuncion && (
+        <Link
+          to={membershipOnly ? '/club' : '/candy'}
+          className="back-link"
+        >
+          {membershipOnly ? 'Volver al club' : 'Volver al Candy'}
+        </Link>
+      )}
       {!sinFuncion && <PurchaseStepper current="pago" />}
 
       <div className="purchase-grid purchase-grid--wide">
@@ -568,6 +586,16 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
                     />
                   </label>
                 </div>
+                {!membershipOnly && (
+                  <label className="checkbox-row checkout-save-card">
+                    <input
+                      type="checkbox"
+                      checked={saveNewCard}
+                      onChange={(event) => setSaveNewCard(event.target.checked)}
+                    />
+                    <span>Guardar esta tarjeta para futuras compras.</span>
+                  </label>
+                )}
               </div>
             )}
 

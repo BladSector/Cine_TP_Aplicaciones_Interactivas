@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
 import SeatMap from '../../components/compra/SeatMap'
@@ -109,9 +109,6 @@ export default function CompraButacasPage() {
 
   return (
     <div className="purchase-page">
-      <Link to={`/pelicula/${movieId}`} className="back-link">
-        Cambiar función
-      </Link>
       <PurchaseStepper current="butacas" />
 
       <div className="purchase-grid purchase-grid--wide">

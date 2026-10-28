@@ -72,7 +72,8 @@ public class CompraService {
     // La compra es atómica: si falla una entrada o un consumo, no queda un ticket incompleto.
     @Transactional
     public Ticket comprar(int espectadorId, int metodoDePagoId, int funcionId,
-                          List<Integer> butacasIds, List<ItemCompra> items) {
+                          List<Integer> butacasIds, List<ItemCompra> items,
+                          boolean guardarMetodoPago) {
         validarButacasSolicitadas(butacasIds);
 
         Espectador espectador = buscarEspectadorVerificado(espectadorId);
@@ -109,13 +110,15 @@ public class CompraService {
         reservaButacaService.liberarTrasCompra(funcion, espectador, butacas);
 
         Ticket ticketGuardado = ticketRepository.save(ticket);
+        desactivarMetodoTemporal(metodoDePago, guardarMetodoPago);
         // El correo se procesa después del commit para no informar una compra que luego se revierta.
         eventPublisher.publishEvent(new TicketCompradoEvent(ticketGuardado.getId()));
         return ticketGuardado;
     }
 
     @Transactional
-    public Ticket comprarConsumibles(int espectadorId, int metodoDePagoId, List<ItemCompra> items) {
+    public Ticket comprarConsumibles(int espectadorId, int metodoDePagoId, List<ItemCompra> items,
+                                     boolean guardarMetodoPago) {
         validarItemsSolicitados(items);
 
         Espectador espectador = buscarEspectadorVerificado(espectadorId);
@@ -127,8 +130,15 @@ public class CompraService {
         }
 
         Ticket ticketGuardado = ticketRepository.save(ticket);
+        desactivarMetodoTemporal(metodoDePago, guardarMetodoPago);
         eventPublisher.publishEvent(new TicketCompradoEvent(ticketGuardado.getId()));
         return ticketGuardado;
+    }
+
+    private void desactivarMetodoTemporal(MetodoDePago metodoDePago, boolean guardarMetodoPago) {
+        if (!guardarMetodoPago) {
+            metodoDePagoService.eliminar(metodoDePago.getId());
+        }
     }
 
     private void agregarItem(Ticket ticket, ItemCompra itemCompra) {

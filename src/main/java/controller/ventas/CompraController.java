@@ -40,7 +40,8 @@ public class CompraController {
                 request.metodoDePagoId(),
                 request.funcionId(),
                 request.butacasIds(),
-                request.items()
+                request.items(),
+                request.debeGuardarMetodoDePago()
         );
         return crearResponse(ticket);
     }
@@ -53,7 +54,8 @@ public class CompraController {
         Ticket ticket = compraService.comprarConsumibles(
                 request.espectadorId(),
                 request.metodoDePagoId(),
-                request.items()
+                request.items(),
+                request.debeGuardarMetodoDePago()
         );
         return crearResponse(ticket);
     }
@@ -83,11 +85,19 @@ public class CompraController {
     }
 
     public record CompraRequest(int espectadorId, int metodoDePagoId, int funcionId,
-                                List<Integer> butacasIds, List<CompraService.ItemCompra> items) {
+                                List<Integer> butacasIds, List<CompraService.ItemCompra> items,
+                                Boolean guardarMetodoPago) {
+        public boolean debeGuardarMetodoDePago() {
+            return guardarMetodoPago == null || guardarMetodoPago;
+        }
     }
 
     public record CompraCandyRequest(int espectadorId, int metodoDePagoId,
-                                     List<CompraService.ItemCompra> items) {
+                                     List<CompraService.ItemCompra> items,
+                                     Boolean guardarMetodoPago) {
+        public boolean debeGuardarMetodoDePago() {
+            return guardarMetodoPago == null || guardarMetodoPago;
+        }
     }
 
     public record CompraMembresiaRequest(int espectadorId, int metodoDePagoId, int membresiaId) {

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import CandyCatalog from '../../components/compra/CandyCatalog'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
@@ -42,9 +42,6 @@ export default function CompraCandyPage() {
 
   return (
     <div className="purchase-page">
-      <Link to={`/compra/${movieId}/butacas`} className="back-link">
-        Volver a las butacas
-      </Link>
       <PurchaseStepper current="candy" />
 
       <div className="purchase-grid purchase-grid--wide">
