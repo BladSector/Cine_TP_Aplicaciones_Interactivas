@@ -38,6 +38,7 @@ export default function SiteLayout() {
   const {
     draft,
     hasActivePurchase,
+    hasCandyCart,
     cartItemCount,
     continuePath,
     cancelActivePurchase,
@@ -108,7 +109,8 @@ export default function SiteLayout() {
     0,
   )
   const isPurchaseFlow = location.pathname.startsWith('/compra/')
-  const showCart = hasActivePurchase && !isPurchaseFlow
+  const hasCart = hasActivePurchase || hasCandyCart
+  const showCart = hasCart && !isPurchaseFlow && location.pathname !== '/candy/pago'
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -353,26 +355,28 @@ export default function SiteLayout() {
               <button
                 type="button"
                 className={`header-cart__toggle ${isCartOpen ? 'is-active' : ''}`}
-                aria-label={hasActivePurchase ? `Compra en curso, ${cartItemCount} productos` : 'Carrito vacío'}
-                title={hasActivePurchase ? 'Continuar compra' : 'No hay una compra en curso'}
-                disabled={!hasActivePurchase}
-                onClick={() => hasActivePurchase && setIsCartOpen((open) => !open)}
+                aria-label={hasCart ? `Compra en curso, ${cartItemCount} productos` : 'Carrito vacío'}
+                title={hasCart ? 'Continuar compra' : 'No hay una compra en curso'}
+                disabled={!hasCart}
+                onClick={() => hasCart && setIsCartOpen((open) => !open)}
               >
                 <ShoppingCart size={20} aria-hidden="true" />
-                {hasActivePurchase && <span className="header-cart__badge">{cartItemCount}</span>}
+                {hasCart && <span className="header-cart__badge">{cartItemCount}</span>}
               </button>
 
-              {isCartOpen && hasActivePurchase && (
+              {isCartOpen && hasCart && (
                 <div className="header-cart__panel">
                   <div className="header-cart__heading">
                     <div>
                       <span>Compra en curso</span>
-                      <strong>{activeMovie?.titulo || 'Tu película'}</strong>
+                      <strong>{hasActivePurchase ? activeMovie?.titulo || 'Tu película' : 'Candy'}</strong>
                     </div>
-                    <span className={`header-cart__timer ${remainingSeconds !== null && remainingSeconds <= 120 ? 'is-warning' : ''}`}>
-                      <Clock3 size={16} aria-hidden="true" />
-                      {timerLabel(remainingSeconds)}
-                    </span>
+                    {hasActivePurchase && (
+                      <span className={`header-cart__timer ${remainingSeconds !== null && remainingSeconds <= 120 ? 'is-warning' : ''}`}>
+                        <Clock3 size={16} aria-hidden="true" />
+                        {timerLabel(remainingSeconds)}
+                      </span>
+                    )}
                   </div>
 
                   {activeFunction && (
@@ -386,10 +390,12 @@ export default function SiteLayout() {
                     </div>
                   )}
 
-                  <div className="header-cart__line">
-                    <span>{draft.selectedSeats.length} entrada{draft.selectedSeats.length === 1 ? '' : 's'}</span>
-                    <strong>${money(cartTicketsTotal)}</strong>
-                  </div>
+                  {hasActivePurchase && (
+                    <div className="header-cart__line">
+                      <span>{draft.selectedSeats.length} entrada{draft.selectedSeats.length === 1 ? '' : 's'}</span>
+                      <strong>${money(cartTicketsTotal)}</strong>
+                    </div>
+                  )}
 
                   {activeConsumptions.map(({ product, quantity }) => (
                     <div key={product.id} className="header-cart__line">

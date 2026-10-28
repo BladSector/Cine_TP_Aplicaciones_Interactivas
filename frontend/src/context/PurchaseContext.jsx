@@ -160,11 +160,15 @@ export function PurchaseProvider({ children }) {
   const cartItemCount = draft.selectedSeats.length
     + Object.values(draft.consumptions).reduce((sum, quantity) => sum + Number(quantity), 0)
 
+  const hasCandyCart = draft.purchaseType === 'candy' && Object.keys(draft.consumptions).length > 0
+
   const continuePath = hasActivePurchase
     ? draft.candyVisited
       ? `/compra/${draft.movieId}/pago`
       : `/compra/${draft.movieId}/candy`
-    : null
+    : hasCandyCart
+      ? '/candy/pago'
+      : null
 
   const value = useMemo(
     () => ({
@@ -181,6 +185,7 @@ export function PurchaseProvider({ children }) {
       expireSeatReservation,
       cancelActivePurchase,
       hasActivePurchase,
+      hasCandyCart,
       cartItemCount,
       continuePath,
       reservationError,
@@ -203,6 +208,7 @@ export function PurchaseProvider({ children }) {
       expireSeatReservation,
       cancelActivePurchase,
       hasActivePurchase,
+      hasCandyCart,
       cartItemCount,
       continuePath,
       reservationError,
