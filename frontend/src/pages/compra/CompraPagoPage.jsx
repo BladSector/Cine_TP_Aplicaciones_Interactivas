@@ -3,6 +3,7 @@ import { Check, CreditCard } from 'lucide-react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
+import CompraExitosaPage from './CompraExitosaPage'
 import ExpiryMonthPicker from '../../components/compra/ExpiryMonthPicker'
 import SeatReservationTimer from '../../components/compra/SeatReservationTimer'
 import TicketDetails from '../../components/tickets/TicketDetails'
@@ -303,69 +304,65 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
   if (suscripcion) {
     const tieneCambioProgramado = Boolean(suscripcion.membresiaProgramadaId)
     return (
-      <div className="purchase-page">
-        <section className="success-panel">
-          <p className="eyebrow">
-            {tieneCambioProgramado ? 'Cambio programado' : 'Membresía confirmada'}
+      <CompraExitosaPage>
+        <p className="eyebrow">
+          {tieneCambioProgramado ? 'Cambio programado' : 'Membresía confirmada'}
+        </p>
+        <h1>
+          {tieneCambioProgramado ? 'Tu próximo plan está confirmado' : 'Ya sos parte del Club Film Zone'}
+        </h1>
+        {tieneCambioProgramado ? (
+          <p>
+            <strong>{suscripcion.nombre}</strong> continúa activo hasta el{' '}
+            {formatDateShort(suscripcion.fechaFin)}. El{' '}
+            {formatDateShort(suscripcion.fechaCambioProgramado)} comenzará{' '}
+            <strong>{suscripcion.membresiaProgramadaNombre}</strong> y se cobrarán{' '}
+            <strong>${money(suscripcion.precioProgramado)}</strong>.
           </p>
-          <h1>
-            {tieneCambioProgramado ? 'Tu próximo plan está confirmado' : 'Ya sos parte del Club Film Zone'}
-          </h1>
-          {tieneCambioProgramado ? (
-            <p>
-              <strong>{suscripcion.nombre}</strong> continúa activo hasta el{' '}
-              {formatDateShort(suscripcion.fechaFin)}. El{' '}
-              {formatDateShort(suscripcion.fechaCambioProgramado)} comenzará{' '}
-              <strong>{suscripcion.membresiaProgramadaNombre}</strong> y se cobrarán{' '}
-              <strong>${money(suscripcion.precioProgramado)}</strong>.
-            </p>
-          ) : (
-            <p>
-              Enviamos la confirmación a <strong>{spectator.email}</strong>.{' '}
-              Tu plan <strong>{suscripcion.nombre}</strong> está activo hasta el{' '}
-              {formatDateShort(suscripcion.fechaFin)}.
-            </p>
-          )}
-          <ul className="membership-success__benefits">
-            {(tieneCambioProgramado ? membresia?.beneficios || [] : suscripcion.beneficios).map((beneficio) => (
-              <li key={beneficio}>
-                <Check size={16} aria-hidden="true" />
-                <span>{beneficio}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="muted">
-            {tieneCambioProgramado
-              ? 'Hoy no se realizó ningún cobro.'
-              : esMejoraPorDiferencia
-                ? `Pagaste $${money(suscripcion.precioCobrado)} correspondientes a la diferencia entre planes.`
-                : esMejoraPrecioCompleto
-                  ? `Pagaste $${money(suscripcion.precioCobrado)} por el nuevo mes de membresía.`
+        ) : (
+          <p>
+            Enviamos la confirmación a <strong>{spectator.email}</strong>.{' '}
+            Tu plan <strong>{suscripcion.nombre}</strong> está activo hasta el{' '}
+            {formatDateShort(suscripcion.fechaFin)}.
+          </p>
+        )}
+        <ul className="membership-success__benefits">
+          {(tieneCambioProgramado ? membresia?.beneficios || [] : suscripcion.beneficios).map((beneficio) => (
+            <li key={beneficio}>
+              <Check size={16} aria-hidden="true" />
+              <span>{beneficio}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="muted">
+          {tieneCambioProgramado
+            ? 'Hoy no se realizó ningún cobro.'
+            : esMejoraPorDiferencia
+              ? `Pagaste $${money(suscripcion.precioCobrado)} correspondientes a la diferencia entre planes.`
+              : esMejoraPrecioCompleto
+                ? `Pagaste $${money(suscripcion.precioCobrado)} por el nuevo mes de membresía.`
                 : `Pagaste $${money(suscripcion.precioCobrado)} por este mes.`}
-          </p>
-          <Link to="/club" className="primary-button">
-            Volver al club
-          </Link>
-        </section>
-      </div>
+        </p>
+        <Link to="/club" className="primary-button">
+          Volver al club
+        </Link>
+      </CompraExitosaPage>
     )
   }
 
   if (ticket) {
     return (
-      <div className="purchase-page">
-        <section className="success-panel">
-          <p className="eyebrow">Compra confirmada</p>
-          <h1>{candyOnly ? '¡Tu pedido está listo!' : '¡Listo para la gran pantalla!'}</h1>
-          <p>
-            Enviamos el comprobante a <strong>{spectator.email}</strong>.{' '}
-            {candyOnly
-              ? 'Presentá el QR en el Candy para retirar tus productos.'
-              : 'También podés verlo en Mi cuenta.'}
-          </p>
-          <TicketDetails ticket={ticket} movie={movie} />
-        </section>
-      </div>
+      <CompraExitosaPage>
+        <p className="eyebrow">Compra confirmada</p>
+        <h1>{candyOnly ? '¡Tu pedido está listo!' : '¡Listo para la gran pantalla!'}</h1>
+        <p>
+          Enviamos el comprobante a <strong>{spectator.email}</strong>.{' '}
+          {candyOnly
+            ? 'Presentá el QR en el Candy para retirar tus productos.'
+            : 'Tus entradas ya están listas. También podés verlas en Mi cuenta.'}
+        </p>
+        <TicketDetails ticket={ticket} movie={movie} />
+      </CompraExitosaPage>
     )
   }
 

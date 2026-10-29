@@ -1516,8 +1516,7 @@ textarea {
 
 .purchase-panel,
 .order-summary,
-.account-section,
-.success-panel {
+.account-section {
   padding: 1.5rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -2555,11 +2554,6 @@ textarea {
   margin: 0.2rem 0 0;
 }
 
-.success-panel {
-  max-width: 720px;
-  margin: 2rem auto;
-}
-
 @media (max-width: 900px) {
   .site-header__inner {
     flex-direction: column;
@@ -3529,11 +3523,6 @@ textarea {
   letter-spacing: 0;
 }
 
-.success-panel .primary-button {
-  display: inline-flex;
-  align-items: center;
-}
-
 /* Responsive layout */
 .mobile-nav-toggle {
   display: none;
@@ -3985,8 +3974,7 @@ textarea {
 
   .purchase-panel,
   .order-summary,
-  .account-section,
-  .success-panel {
+  .account-section {
     padding: 1rem;
     border-radius: 10px;
   }
