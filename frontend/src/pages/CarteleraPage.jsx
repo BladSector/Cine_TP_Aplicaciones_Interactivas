@@ -4,7 +4,7 @@ import DateStrip from '../components/cartelera/DateStrip'
 import MovieCard from '../components/cartelera/MovieCard'
 import { useCatalog } from '../context/CatalogContext'
 import { usePurchase } from '../context/PurchaseContext'
-import { formatFunction, functionHasStarted, normalizeText, todayValue } from '../utils/format'
+import { formatFunction, functionHasStarted, todayValue } from '../utils/format'
 
 import AccordionGallery from '../components/cartelera/AccordionGallery'
 import PurchaseAuthDrawer from '../components/cuenta/PurchaseAuthDrawer'
@@ -28,7 +28,6 @@ export default function CarteleraPage() {
   const [categoryId, setCategoryId] = useState('')
   const [formato, setFormato] = useState('')
   const [idioma, setIdioma] = useState('')
-  const [query, setQuery] = useState('')
   const [pendingMovieId, setPendingMovieId] = useState(null)
   const [pendingReplacement, setPendingReplacement] = useState(null)
   const [replacingPurchase, setReplacingPurchase] = useState(false)
@@ -63,13 +62,12 @@ export default function CarteleraPage() {
           if (categoryId && String(movie.categoriaId) !== categoryId) return false
           if (formato && fn.formato !== formato) return false
           if (idioma && fn.idioma !== idioma) return false
-          if (query && !normalizeText(movie.titulo).includes(normalizeText(query))) return false
           return true
         })
         return { movie, functions: movieFunctions }
       })
       .filter((item) => item.functions.length > 0)
-  }, [peliculas, funciones, selectedDate, categoryId, formato, idioma, query])
+  }, [peliculas, funciones, selectedDate, categoryId, formato, idioma])
 
   function beginPurchase(movie, fn) {
     setDraft((prev) => ({
@@ -155,15 +153,6 @@ export default function CarteleraPage() {
         <DateStrip selectedDate={selectedDate} onChange={setSelectedDate} />
 
         <div className="filters">
-          <label>
-            Buscar
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Nombre de película"
-            />
-          </label>
           <label>
             Género
             <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>

@@ -374,7 +374,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
   }
 
   return (
-    <div className="purchase-page">
+    <div className="purchase-page purchase-page--checkout">
       {sinFuncion && (
         <Link
           to={membershipOnly ? '/club' : '/candy'}

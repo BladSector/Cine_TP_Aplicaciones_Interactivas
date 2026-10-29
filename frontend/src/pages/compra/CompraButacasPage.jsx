@@ -4,6 +4,7 @@ import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
 import SeatMap from '../../components/compra/SeatMap'
 import SeatReservationTimer from '../../components/compra/SeatReservationTimer'
+import MobileCheckoutBar from '../../components/compra/MobileCheckoutBar'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
@@ -112,7 +113,7 @@ export default function CompraButacasPage() {
   }, 0)
 
   return (
-    <div className="purchase-page">
+    <div className="purchase-page purchase-page--seats">
       <PurchaseStepper current="butacas" />
 
       <div className="purchase-grid purchase-grid--wide">
@@ -184,6 +185,25 @@ export default function CompraButacasPage() {
           }
         />
       </div>
+
+      <MobileCheckoutBar
+        label={`${draft.selectedSeats.length} butaca${draft.selectedSeats.length === 1 ? '' : 's'}`}
+        total={totalTickets + totalCandy}
+        disabled={draft.selectedSeats.length === 0}
+        onContinue={() => navigate(`/compra/${movieId}/candy`)}
+        details={(
+          <OrderSummary
+            movie={movie}
+            funcion={funcion}
+            seats={draft.selectedSeats}
+            products={productos}
+            consumptions={draft.consumptions}
+            totalTickets={totalTickets}
+            totalCandy={totalCandy}
+            total={totalTickets + totalCandy}
+          />
+        )}
+      />
     </div>
   )
 }

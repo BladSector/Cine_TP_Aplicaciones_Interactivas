@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import CandyCatalog from '../../components/compra/CandyCatalog'
+import MobileCheckoutBar from '../../components/compra/MobileCheckoutBar'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
 import SeatReservationTimer from '../../components/compra/SeatReservationTimer'
@@ -39,9 +40,17 @@ export default function CompraCandyPage() {
     const product = productos.find((item) => item.id === Number(id))
     return sum + (product ? product.precio * qty : 0)
   }, 0)
+  const selectedItems = Object.values(draft.consumptions).reduce(
+    (total, quantity) => total + Number(quantity),
+    0,
+  )
+
+  function continueToPayment() {
+    navigate(`/compra/${movieId}/pago`)
+  }
 
   return (
-    <div className="purchase-page">
+    <div className="purchase-page purchase-page--candy">
       <PurchaseStepper current="candy" />
 
       <div className="purchase-grid purchase-grid--wide">
@@ -77,7 +86,7 @@ export default function CompraCandyPage() {
               <button
                 type="button"
                 className="primary-button"
-                onClick={() => navigate(`/compra/${movieId}/pago`)}
+                onClick={continueToPayment}
               >
                 Continuar al pago
               </button>
@@ -85,6 +94,26 @@ export default function CompraCandyPage() {
           }
         />
       </div>
+
+      <MobileCheckoutBar
+        label={`${draft.selectedSeats.length} entrada${draft.selectedSeats.length === 1 ? '' : 's'}${selectedItems > 0 ? ` · ${selectedItems} producto${selectedItems === 1 ? '' : 's'}` : ''}`}
+        total={totalTickets + totalCandy}
+        onContinue={continueToPayment}
+        details={(
+          <OrderSummary
+            movie={movie}
+            funcion={funcion}
+            seats={draft.selectedSeats}
+            products={productos}
+            consumptions={draft.consumptions}
+            onClearCandy={clearConsumptions}
+            editSeatsTo={`/compra/${movieId}/butacas`}
+            totalTickets={totalTickets}
+            totalCandy={totalCandy}
+            total={totalTickets + totalCandy}
+          />
+        )}
+      />
     </div>
   )
 }

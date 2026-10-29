@@ -13,7 +13,6 @@ export default function MisEntradasList() {
     <section id="entradas" className="account-section">
       <div className="section-heading">
         <div><p className="eyebrow">Historial</p><h2>Mis tickets</h2></div>
-        <span className="count-pill">{myTickets.length}</span>
       </div>
       {myTickets.length === 0 ? (
         <div className="info-box">Todavía no tenés compras. Elegí una función en cartelera.</div>

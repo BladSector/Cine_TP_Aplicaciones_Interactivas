@@ -327,23 +327,32 @@ export default function SiteLayout() {
                       aria-label={`Ver funciones de ${result.movie.titulo}`}
                       onClick={() => openMovieResult(result)}
                     >
-                      <span className="header-search__movie">
-                        <strong>{result.movie.titulo}</strong>
-                        <small>{result.movie.categoriaNombre}</small>
-                      </span>
-                      <span className="header-search__functions">
-                        {result.upcomingFunctions.length > 0 ? (
-                          result.upcomingFunctions.map((fn) => (
-                            <span key={fn.id}>
-                              {functionDateLabel(fn.fecha)} · {shortTime(fn.horario)} ·{' '}
-                              {formatFunction(fn.formato)} · {formatLanguage(fn.idioma)}
-                            </span>
-                          ))
+                      <span className="header-search__poster" aria-hidden="true">
+                        {result.movie.portadaUrl ? (
+                          <img src={result.movie.portadaUrl} alt="" />
                         ) : (
-                          <span>Sin funciones próximas</span>
+                          <span>{result.movie.titulo.slice(0, 1)}</span>
                         )}
                       </span>
-                      <span className="header-search__action">Ver todas las funciones</span>
+                      <span className="header-search__result-body">
+                        <span className="header-search__movie">
+                          <strong>{result.movie.titulo}</strong>
+                          <small>{result.movie.categoriaNombre}</small>
+                        </span>
+                        <span className="header-search__functions">
+                          {result.upcomingFunctions.length > 0 ? (
+                            result.upcomingFunctions.map((fn) => (
+                              <span key={fn.id}>
+                                {functionDateLabel(fn.fecha)} · {shortTime(fn.horario)} ·{' '}
+                                {formatFunction(fn.formato)} · {formatLanguage(fn.idioma)}
+                              </span>
+                            ))
+                          ) : (
+                            <span>Sin funciones próximas</span>
+                          )}
+                        </span>
+                        <span className="header-search__action">Ver todas las funciones</span>
+                      </span>
                     </button>
                   ))
                 )}
