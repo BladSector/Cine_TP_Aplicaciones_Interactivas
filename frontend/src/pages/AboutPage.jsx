@@ -1,8 +1,31 @@
-import { UserRound } from 'lucide-react'
 import { useCatalog } from '../context/CatalogContext'
 
-// Agregar objetos con nombre, legajo, rol y foto cuando el equipo defina sus datos.
-const TEAM_MEMBERS = []
+const TEAM_MEMBERS = [
+  {
+    nombre: 'Santiago López',
+    legajo: '1207966',
+    rol: 'Desarrollo Backend y API REST',
+    iniciales: 'SL',
+  },
+  {
+    nombre: 'Antonella Rayen López Brugorello',
+    legajo: '1167557',
+    rol: 'Desarrollo Frontend y diseño UX/UI',
+    iniciales: 'AL',
+  },
+  {
+    nombre: 'Martín Enrique Salas',
+    legajo: '1209668',
+    rol: 'Base de datos y pruebas del sistema',
+    iniciales: 'MS',
+  },
+  {
+    nombre: 'Lucas Iacobellis',
+    legajo: '1217175',
+    rol: 'Interfaz de escritorio Swing e integración',
+    iniciales: 'LI',
+  },
+]
 
 export default function AboutPage() {
   const { peliculas } = useCatalog()
@@ -62,28 +85,20 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {TEAM_MEMBERS.length === 0 ? (
-          <div className="about-team__empty">
-            <UserRound size={34} aria-hidden="true" />
-            <div>
-              <strong>Información del equipo pendiente</strong>
-              <p>Las fotos, nombres, legajos y roles se incorporarán próximamente.</p>
-            </div>
-          </div>
-        ) : (
-          <div className="about-team__grid">
-            {TEAM_MEMBERS.map((member) => (
-              <article key={member.legajo} className="team-member">
-                <img src={member.foto} alt={`Foto de ${member.nombre}`} />
-                <div>
-                  <h3>{member.nombre}</h3>
-                  <p>{member.rol}</p>
-                  <span>Legajo {member.legajo}</span>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+        <div className="about-team__grid">
+          {TEAM_MEMBERS.map((member) => (
+            <article key={member.legajo} className="team-member">
+              <div className="team-member__photo" aria-hidden="true">
+                <span>{member.iniciales}</span>
+              </div>
+              <div className="team-member__details">
+                <h3>{member.nombre}</h3>
+                <p>{member.rol}</p>
+                <span>Legajo {member.legajo}</span>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
     </article>
   )

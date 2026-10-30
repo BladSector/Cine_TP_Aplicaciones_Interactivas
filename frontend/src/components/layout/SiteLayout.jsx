@@ -1,21 +1,20 @@
-import { ArrowUpRight, Clock3, Menu, Moon, Search, ShoppingCart, Sun, X } from 'lucide-react'
+import { Clock3, Menu, Moon, ShoppingCart, Sun, X } from 'lucide-react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import PurchaseAuthDrawer from '../cuenta/PurchaseAuthDrawer'
 import ConfirmDialog from '../common/ConfirmDialog'
+import Loader from '../common/Loader'
 import { api } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
 import {
-  formatFunction,
-  formatLanguage,
-  functionHasStarted,
-  normalizeText,
   money,
   seatLabel,
   shortTime,
 } from '../../utils/format'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import HeaderMovieSearch from './HeaderMovieSearch'
+import SiteFooter from './SiteFooter'
 
 function functionDateLabel(value) {
   if (!value) return ''
@@ -33,7 +32,7 @@ function timerLabel(seconds) {
 }
 
 export default function SiteLayout() {
-  const { spectator, isSpectator, logout } = useAuth()
+  const { spectator, isSpectator, logout, loading: authLoading } = useAuth()
   const { peliculas, funciones, productos, loading } = useCatalog()
   const {
     draft,
@@ -55,9 +54,6 @@ export default function SiteLayout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isNavOpen, setIsNavOpen] = useState(false)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [showCartNotice, setShowCartNotice] = useState(false)
@@ -65,33 +61,8 @@ export default function SiteLayout() {
   const [isCancellingPurchase, setIsCancellingPurchase] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const menuRef = useRef(null)
-  const searchRef = useRef(null)
   const cartRef = useRef(null)
   const previousPathRef = useRef(location.pathname)
-  const searchInputRef = useRef(null)
-
-  const searchResults = useMemo(() => {
-    const query = normalizeText(searchQuery)
-    if (!query) return []
-
-    return peliculas
-      .filter((movie) => normalizeText(movie.titulo).includes(query))
-      .map((movie) => ({
-        movie,
-        upcomingFunctions: funciones
-          .filter((fn) => fn.peliculaId === movie.id && !functionHasStarted(fn))
-          .sort((a, b) =>
-            `${a.fecha}T${a.horario}`.localeCompare(`${b.fecha}T${b.horario}`),
-          )
-          .slice(0, 3),
-      }))
-      .sort((a, b) => {
-        const availabilityDifference = Number(b.upcomingFunctions.length > 0)
-          - Number(a.upcomingFunctions.length > 0)
-        return availabilityDifference || a.movie.titulo.localeCompare(b.movie.titulo, 'es')
-      })
-      .slice(0, 6)
-  }, [peliculas, funciones, searchQuery])
 
   const activeMovie = peliculas.find((movie) => movie.id === draft.movieId)
   const activeFunction = funciones.find((funcion) => funcion.id === draft.functionId)
@@ -148,10 +119,6 @@ export default function SiteLayout() {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false)
       }
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setIsSearchOpen(false)
-        setIsSearchExpanded(false)
-      }
       if (cartRef.current && !cartRef.current.contains(event.target)) {
         setIsCartOpen(false)
       }
@@ -159,12 +126,6 @@ export default function SiteLayout() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
-
-  useEffect(() => {
-    if (isSearchExpanded) {
-      searchInputRef.current?.focus()
-    }
-  }, [isSearchExpanded])
 
   useEffect(() => {
     setIsNavOpen(false)
@@ -220,14 +181,7 @@ export default function SiteLayout() {
     navigate(continuePath)
   }
 
-  function openMovieResult(result) {
-    setSearchQuery('')
-    setIsSearchOpen(false)
-    setIsSearchExpanded(false)
-    navigate(`/pelicula/${result.movie.id}`, {
-      state: { selectedDate: result.upcomingFunctions[0]?.fecha },
-    })
-  }
+  if (authLoading) return <Loader />
 
   return (
     <div className="site">
@@ -261,104 +215,8 @@ export default function SiteLayout() {
             <NavLink to="/club" onClick={() => setIsNavOpen(false)}>Club Film Zone</NavLink>
           </nav>
 
-          <div className={`header-utility ${isSearchExpanded ? 'is-searching' : ''}`}>
-            <div className="header-search" ref={searchRef}>
-            {!isSearchExpanded ? (
-              <button
-                type="button"
-                className="header-search__toggle"
-                aria-label="Abrir buscador de películas"
-                title="Buscar películas"
-                onClick={() => setIsSearchExpanded(true)}
-              >
-                <Search size={20} aria-hidden="true" />
-              </button>
-            ) : (
-              <div className="header-search__field">
-                <Search className="header-search__icon" size={18} aria-hidden="true" />
-                <input
-                  ref={searchInputRef}
-                  type="search"
-                  value={searchQuery}
-                  placeholder="Buscar películas"
-                  aria-label="Buscar películas y funciones"
-                  aria-expanded={isSearchOpen && Boolean(searchQuery.trim())}
-                  aria-controls="movie-search-results"
-                  onFocus={() => setIsSearchOpen(Boolean(searchQuery.trim()))}
-                  onChange={(event) => {
-                    setSearchQuery(event.target.value)
-                    setIsSearchOpen(Boolean(event.target.value.trim()))
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape') {
-                      setIsSearchOpen(false)
-                      setIsSearchExpanded(false)
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  className="header-search__clear"
-                  aria-label="Cerrar buscador"
-                  title="Cerrar buscador"
-                  onClick={() => {
-                    setSearchQuery('')
-                    setIsSearchOpen(false)
-                    setIsSearchExpanded(false)
-                  }}
-                >
-                  <X size={16} aria-hidden="true" />
-                </button>
-              </div>
-            )}
-
-            {isSearchOpen && searchQuery.trim() && (
-              <div id="movie-search-results" className="header-search__results">
-                {loading ? (
-                  <p className="header-search__message">Buscando películas…</p>
-                ) : searchResults.length === 0 ? (
-                  <p className="header-search__message">No encontramos películas con ese nombre.</p>
-                ) : (
-                  searchResults.map((result) => (
-                    <button
-                      key={result.movie.id}
-                      type="button"
-                      className="header-search__result"
-                      aria-label={`Ver funciones de ${result.movie.titulo}`}
-                      onClick={() => openMovieResult(result)}
-                    >
-                      <span className="header-search__poster" aria-hidden="true">
-                        {result.movie.portadaUrl ? (
-                          <img src={result.movie.portadaUrl} alt="" />
-                        ) : (
-                          <span>{result.movie.titulo.slice(0, 1)}</span>
-                        )}
-                      </span>
-                      <span className="header-search__result-body">
-                        <span className="header-search__movie">
-                          <strong>{result.movie.titulo}</strong>
-                          <small>{result.movie.categoriaNombre}</small>
-                        </span>
-                        <span className="header-search__functions">
-                          {result.upcomingFunctions.length > 0 ? (
-                            result.upcomingFunctions.map((fn) => (
-                              <span key={fn.id}>
-                                {functionDateLabel(fn.fecha)} · {shortTime(fn.horario)} ·{' '}
-                                {formatFunction(fn.formato)} · {formatLanguage(fn.idioma)}
-                              </span>
-                            ))
-                          ) : (
-                            <span>Sin funciones próximas</span>
-                          )}
-                        </span>
-                        <span className="header-search__action">Ver todas las funciones</span>
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-            </div>
+          <div className="header-utility">
+            <HeaderMovieSearch movies={peliculas} functions={funciones} loading={loading} />
 
             {showCart && <div className="header-cart" ref={cartRef}>
               <button
@@ -563,31 +421,7 @@ export default function SiteLayout() {
         </div>
       )}
 
-      <footer className="site-footer">
-        <div className="site-footer__inner">
-          <div className="brand brand--footer">
-            <span className="brand__word">Film</span>
-            <span className="brand__word brand__word--accent">Zone</span>
-          </div>
-          <p className="site-footer__tagline">La vida se ve mejor en pantalla grande.</p>
-          <div className="site-footer__links">
-            <div className="site-footer__links-row">
-              <span>Nuestros cines</span>
-              <span>Preguntas frecuentes</span>
-              <span>Contacto</span>
-              <NavLink to="/privacidad">Política de privacidad</NavLink>
-              <NavLink to="/normas">Normas del cine</NavLink>
-            </div>
-            <NavLink to="/nosotros" className="site-footer__about-link">
-              Sobre nosotros
-              <ArrowUpRight size={16} aria-hidden="true" />
-            </NavLink>
-          </div>
-          <p className="site-footer__copy">
-            © {new Date().getFullYear()} Film Zone. Todos los derechos reservados.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
 
       <PurchaseAuthDrawer
         open={isAuthOpen}

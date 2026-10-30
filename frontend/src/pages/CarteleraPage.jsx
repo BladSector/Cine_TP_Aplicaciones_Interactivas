@@ -190,6 +190,10 @@ export default function CarteleraPage() {
           <span className="count-pill">{moviesWithSessions.length} películas</span>
         </div>
 
+        <p className="catalog-note">
+          Seleccioná un horario para elegir tus butacas. El precio varía según la función y el formato.
+        </p>
+
         {error && <div className="info-box info-box--error">{error}</div>}
         {!error && moviesWithSessions.length === 0 && (
           <div className="info-box">No hay funciones para los filtros seleccionados.</div>
@@ -205,10 +209,6 @@ export default function CarteleraPage() {
             />
           ))}
         </div>
-
-        <p className="catalog-note">
-          Seleccioná un horario para elegir tus butacas. El precio varía según la función y el formato.
-        </p>
       </section>
 
       <PurchaseAuthDrawer

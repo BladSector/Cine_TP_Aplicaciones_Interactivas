@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import ConfirmDialog from '../common/ConfirmDialog'
 import {
   formatDateShort,
   formatFunction,
@@ -25,6 +27,8 @@ export default function OrderSummary({
   membership = null,
   membershipQuote = null,
 }) {
+  const [showClearCandyConfirm, setShowClearCandyConfirm] = useState(false)
+
   if (membership) {
     return (
       <aside className="order-summary">
@@ -135,8 +139,8 @@ export default function OrderSummary({
               </span>
             ))}
             {editSeatsTo && (
-              <Link to={editSeatsTo} className="text-button">
-                Editar
+              <Link to={editSeatsTo} className="order-summary__action-button">
+                Editar butacas
               </Link>
             )}
           </div>
@@ -152,7 +156,7 @@ export default function OrderSummary({
                 : 'No agregaste productos del kiosco.'}
             </p>
             {editCandyTo && (
-              <Link to={editCandyTo} className="text-button">
+              <Link to={editCandyTo} className="order-summary__action-button">
                 Volver al kiosco
               </Link>
             )}
@@ -173,12 +177,16 @@ export default function OrderSummary({
             {(editCandyTo || onClearCandy) && (
               <div className="order-summary__candy-actions">
                 {editCandyTo && (
-                  <Link to={editCandyTo} className="text-button">
+                  <Link to={editCandyTo} className="order-summary__action-button">
                     Editar kiosco
                   </Link>
                 )}
                 {onClearCandy && (
-                  <button type="button" className="text-button" onClick={onClearCandy}>
+                  <button
+                    type="button"
+                    className="order-summary__action-button order-summary__action-button--danger"
+                    onClick={() => setShowClearCandyConfirm(true)}
+                  >
                     Quitar productos
                   </button>
                 )}
@@ -195,6 +203,21 @@ export default function OrderSummary({
       <p className="muted tiny">IVA incluido · Sin cargos adicionales</p>
 
       {footer}
+
+      {showClearCandyConfirm && (
+        <ConfirmDialog
+          title="Quitar productos"
+          message="¿Querés quitar todos los productos seleccionados del kiosco?"
+          confirmLabel="Quitar productos"
+          cancelLabel="Conservar productos"
+          danger
+          onConfirm={() => {
+            onClearCandy()
+            setShowClearCandyConfirm(false)
+          }}
+          onCancel={() => setShowClearCandyConfirm(false)}
+        />
+      )}
     </aside>
   )
 }

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Check, CreditCard } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
-import ExpiryMonthPicker from '../../components/compra/ExpiryMonthPicker'
+import PaymentMethodSelector from '../../components/compra/PaymentMethodSelector'
 import SeatReservationTimer from '../../components/compra/SeatReservationTimer'
 import TicketDetails from '../../components/tickets/TicketDetails'
 import Loader from '../../components/common/Loader'
@@ -11,26 +11,7 @@ import { api, errorMessage } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
-import { formatDateShort, functionHasStarted, money, nextMonthValue, paymentIsExpired } from '../../utils/format'
-
-function formatCardNumber(value) {
-  return value
-    .replace(/\D/g, '')
-    .slice(0, 16)
-    .replace(/(.{4})/g, '$1 ')
-    .trim()
-}
-
-function formatExpiry(value) {
-  if (!value || !value.includes('-')) return 'MM/AA'
-  const [year, month] = value.split('-')
-  return `${month}/${year.slice(-2)}`
-}
-
-function cardPreviewNumber(value) {
-  if (!value) return '•••• •••• •••• ••••'
-  return formatCardNumber(value).padEnd(19, '•')
-}
+import { formatDateShort, functionHasStarted, money, paymentIsExpired } from '../../utils/format'
 
 export default function CompraPagoPage({ candyOnly = false, membershipOnly = false }) {
   const { movieId } = useParams()
@@ -378,7 +359,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
       {sinFuncion && (
         <Link
           to={membershipOnly ? '/club' : '/candy'}
-          className="back-link"
+          className="order-summary__action-button checkout-back-button"
         >
           {membershipOnly ? 'Volver al club' : 'Volver al kiosco'}
         </Link>
@@ -462,142 +443,18 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
             </div>
 
             <h2>{esCambioProgramado ? 'Método de pago para la renovación' : 'Método de pago'}</h2>
-            {metodos.length > 0 && (
-              <div className="auth-tabs">
-                <button
-                  type="button"
-                  className={methodMode === 'saved' ? 'is-active' : ''}
-                  onClick={() => setMethodMode('saved')}
-                >
-                  Tarjeta guardada
-                </button>
-                <button
-                  type="button"
-                  className={methodMode === 'new' ? 'is-active' : ''}
-                  onClick={() => setMethodMode('new')}
-                >
-                  Nueva tarjeta
-                </button>
-              </div>
-            )}
-
-            {methodMode === 'saved' && metodos.length > 0 ? (
-              <div className="checkout-card-options" role="radiogroup" aria-label="Tarjetas guardadas">
-                {metodos.map((metodo) => {
-                  const expired = paymentIsExpired(metodo.fechaVencimiento)
-                  const selected = selectedMethodId === String(metodo.id)
-                  return (
-                    <label key={metodo.id} className="payment-card-option">
-                      <input
-                        type="radio"
-                        name="metodoDePago"
-                        value={metodo.id}
-                        checked={selected}
-                        disabled={expired}
-                        onChange={(event) => setSelectedMethodId(event.target.value)}
-                      />
-                      <div className={`payment-card${expired ? ' is-expired' : ''}`}>
-                        <div className="payment-card__top">
-                          <span className="payment-card__chip" aria-hidden="true" />
-                          <CreditCard size={22} aria-hidden="true" />
-                        </div>
-                        <div className="payment-card__number">•••• •••• •••• {metodo.ultimosNumeros}</div>
-                        <div className="payment-card__details">
-                          <div>
-                            <span>Titular</span>
-                            <strong>{metodo.titular || `${metodo.nombre} ${metodo.apellido || ''}`}</strong>
-                          </div>
-                          <div>
-                            <span>Vence</span>
-                            <strong>{formatExpiry(metodo.fechaVencimiento)}</strong>
-                          </div>
-                        </div>
-                        {expired && <span className="payment-card__status">Vencida</span>}
-                        {selected && !expired && (
-                          <span className="payment-card__selected">
-                            <Check size={14} aria-hidden="true" />
-                            Seleccionada
-                          </span>
-                        )}
-                      </div>
-                    </label>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="checkout-new-card">
-                <div className="payment-card payment-card--preview" aria-label="Vista previa de la tarjeta">
-                  <div className="payment-card__top">
-                    <span className="payment-card__chip" aria-hidden="true" />
-                    <CreditCard size={22} aria-hidden="true" />
-                  </div>
-                  <div className="payment-card__number">{cardPreviewNumber(card.numero)}</div>
-                  <div className="payment-card__details">
-                    <div>
-                      <span>Titular</span>
-                      <strong>{card.nombreTitular || 'NOMBRE Y APELLIDO'}</strong>
-                    </div>
-                    <div>
-                      <span>Vence</span>
-                      <strong>{formatExpiry(card.fechaVencimiento)}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-grid payment-card-grid">
-                  <label className="full">
-                    Titular de la tarjeta
-                    <input
-                      value={card.nombreTitular}
-                      onChange={(e) => setCard((prev) => ({ ...prev, nombreTitular: e.target.value }))}
-                      required={methodMode === 'new' || metodos.length === 0}
-                    />
-                  </label>
-                  <label className="full">
-                    Número de tarjeta
-                    <input
-                      value={card.numero}
-                      onChange={(e) => setCard((prev) => ({ ...prev, numero: formatCardNumber(e.target.value) }))}
-                      placeholder="0000 0000 0000 0000"
-                      inputMode="numeric"
-                      maxLength="19"
-                      required={methodMode === 'new' || metodos.length === 0}
-                    />
-                  </label>
-                  <label>
-                    Vencimiento (mes y año)
-                    <ExpiryMonthPicker
-                      min={nextMonthValue()}
-                      value={card.fechaVencimiento}
-                      onChange={(fechaVencimiento) =>
-                        setCard((prev) => ({ ...prev, fechaVencimiento }))
-                      }
-                    />
-                  </label>
-                  <label className="payment-card-grid__cvv">
-                    CVV
-                    <input
-                      type="password"
-                      value={card.cvv}
-                      onChange={(e) => setCard((prev) => ({ ...prev, cvv: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
-                      inputMode="numeric"
-                      maxLength="4"
-                      required={methodMode === 'new' || metodos.length === 0}
-                    />
-                  </label>
-                </div>
-                {!membershipOnly && (
-                  <label className="checkbox-row checkout-save-card">
-                    <input
-                      type="checkbox"
-                      checked={saveNewCard}
-                      onChange={(event) => setSaveNewCard(event.target.checked)}
-                    />
-                    <span>Guardar esta tarjeta para futuras compras.</span>
-                  </label>
-                )}
-              </div>
-            )}
+            <PaymentMethodSelector
+              methods={metodos}
+              mode={methodMode}
+              onModeChange={setMethodMode}
+              selectedMethodId={selectedMethodId}
+              onSelectedMethodChange={setSelectedMethodId}
+              card={card}
+              onCardChange={setCard}
+              saveCard={saveNewCard}
+              onSaveCardChange={setSaveNewCard}
+              forceSave={membershipOnly}
+            />
 
             <label className="checkbox-row">
               <input

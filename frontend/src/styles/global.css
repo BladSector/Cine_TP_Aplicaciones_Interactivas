@@ -1,3 +1,4 @@
+/* 1. Tema, variables y estilos base */
 :root {
   color-scheme: light;
   --bg: #f3efe6;
@@ -57,12 +58,7 @@
 }
 
 html {
-  /* Le avisa al navegador cuánto mide tu header para que frene antes */
   scroll-padding-top: 120px;
-
-
-  /* De paso, hace que el movimiento hacia abajo sea un deslizamiento suave y no un salto brusco */
-  scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
 }
 html,
@@ -144,6 +140,7 @@ h2 {
   flex-direction: column;
 }
 
+/* 2. Estructura general, encabezado y navegación */
 .site-header {
   position: sticky;
   top: 0;
@@ -285,6 +282,13 @@ h2 {
   background: var(--surface-translucent);
   color: var(--ink);
   cursor: pointer;
+  transition: opacity 120ms ease, visibility 120ms ease;
+}
+
+.header-search.is-searching .header-search__toggle {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .header-search__toggle:hover,
@@ -301,9 +305,44 @@ h2 {
   right: 0;
   z-index: 3;
   width: 240px;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
   transform: translateY(-50%);
   transform-origin: right center;
+}
+
+.header-search.is-searching .header-search__field {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
   animation: expandLeft 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.header-search-portal {
+  position: fixed;
+  top: var(--search-field-top, 17px);
+  right: var(--search-field-right, 1rem);
+  z-index: 100;
+  width: 250px;
+}
+
+.header-search-portal .header-search__field {
+  position: relative;
+  top: auto;
+  right: auto;
+  width: 100%;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  animation: expandLeft 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.header-search-portal .header-search__results {
+  position: absolute;
+  top: calc(100% + 0.65rem);
+  right: 0;
 }
 
 .header-search__field input {
@@ -891,13 +930,29 @@ h2 {
   background: var(--surface);
 }
 
-.team-member img {
+.team-member img,
+.team-member__photo {
   width: 100%;
   aspect-ratio: 4 / 3;
+}
+
+.team-member img {
   object-fit: cover;
 }
 
-.team-member > div {
+.team-member__photo {
+  display: grid;
+  place-items: center;
+  color: var(--surface);
+  background: var(--text);
+}
+
+.team-member__photo span {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 7vw, 5.5rem);
+}
+
+.team-member__details {
   padding: 1rem;
 }
 
@@ -960,6 +1015,7 @@ h2 {
   }
 }
 
+/* 3. Cartelera, portada y tarjetas de películas */
 .hero {
   position: relative;
   overflow: hidden;
@@ -1123,7 +1179,7 @@ textarea {
   justify-content: space-between;
   align-items: end;
   gap: 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.45rem;
 }
 
 .count-pill,
@@ -1142,6 +1198,7 @@ textarea {
 .movie-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 1.5rem;
 }
 
@@ -1259,8 +1316,12 @@ textarea {
 }
 
 .movie-card__schedule {
-  margin-top: 0.15rem;
-  border-top: 1px solid var(--line);
+  display: none;
+  margin-top: 0;
+}
+
+.movie-card__schedule.is-expanded {
+  display: block;
 }
 
 .movie-card__schedule-label {
@@ -1271,7 +1332,32 @@ textarea {
 }
 
 .movie-card__schedule-toggle {
-  display: none;
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+  padding: 0.45rem 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.movie-card__schedule-toggle svg {
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.movie-card__schedule-toggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
 }
 
 .movie-card__sessions {
@@ -1378,7 +1464,7 @@ textarea {
 }
 
 .catalog-note {
-  margin-bottom: 0;
+  margin: 0 0 1.25rem;
   font-size: 0.82rem;
 }
 
@@ -1462,6 +1548,7 @@ textarea {
   transform: translateX(-2px);
 }
 
+/* 4. Detalle de película y flujo de compra */
 .movie-detail__layout,
 .purchase-grid {
   display: grid;
@@ -1767,6 +1854,48 @@ textarea {
   flex-wrap: wrap;
   gap: 0.75rem 1.25rem;
   margin-top: 0.85rem;
+}
+
+.order-summary__action-button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 750;
+  line-height: 1;
+  text-decoration: none;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.order-summary__action-button:hover,
+.order-summary__action-button:focus-visible {
+  border-color: var(--bg-deep);
+  background: var(--bg-deep);
+  color: #fff;
+}
+
+.order-summary__action-button--danger {
+  border-color: var(--accent);
+  color: var(--accent-dark);
+}
+
+.order-summary__action-button--danger:hover,
+.order-summary__action-button--danger:focus-visible {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.checkout-back-button {
+  margin: 1.5rem 0 1rem;
 }
 
 .order-summary__empty-candy {
@@ -2448,6 +2577,7 @@ textarea {
 
 .page-loading,
 .placeholder-page,
+/* 5. Cuenta, perfil y métodos de pago */
 .account-gate {
   padding: 4rem 0;
 }
@@ -3398,6 +3528,12 @@ textarea {
   font-size: 0.72rem;
 }
 
+.ticket-qr__manual-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .ticket-detail__entries,
 .ticket-detail__items {
   display: grid;
@@ -4025,6 +4161,13 @@ textarea {
     animation: none;
   }
 
+  .header-search-portal {
+    top: 58px;
+    right: 0.625rem;
+    left: 0.625rem;
+    width: auto;
+  }
+
   @keyframes expandLeft {
     0% {
       width: 40px;
@@ -4096,7 +4239,7 @@ textarea {
   }
 
   .catalog-note {
-    margin-top: 0.7rem;
+    margin: 0.35rem 0 0.9rem;
     font-size: 0.78rem;
     line-height: 1.35;
   }

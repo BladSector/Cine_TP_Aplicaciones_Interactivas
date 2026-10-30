@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function Modal({ title, children, onClose, actions, compact = false }) {
   useEffect(() => {
@@ -9,7 +10,7 @@ export default function Modal({ title, children, onClose, actions, compact = fal
     return () => document.removeEventListener('keydown', handleKey)
   }, [onClose])
 
-  return (
+  return createPortal(
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <section
         className={`modal-panel${compact ? ' modal-panel--compact' : ''}`}
@@ -27,6 +28,7 @@ export default function Modal({ title, children, onClose, actions, compact = fal
         <div className="modal-body">{children}</div>
         {actions && <footer className="modal-actions">{actions}</footer>}
       </section>
-    </div>
+    </div>,
+    document.body,
   )
 }

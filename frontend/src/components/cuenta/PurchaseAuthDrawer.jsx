@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Mail } from 'lucide-react'
 import { api, errorMessage } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
@@ -26,12 +26,12 @@ export default function PurchaseAuthDrawer({
 }) {
   const {
     spectator,
-    isSpectator,
     loginSpectator,
     registerSpectator,
     verifySpectatorEmail,
     authError,
     setAuthError,
+    loading: authLoading,
   } = useAuth()
   const [mode, setMode] = useState('login')
   const [form, setForm] = useState(EMPTY_FORM)
@@ -41,6 +41,8 @@ export default function PurchaseAuthDrawer({
   const [recoveryMail, setRecoveryMail] = useState(null)
   const [recoveryForm, setRecoveryForm] = useState(EMPTY_RECOVERY_FORM)
   const [recoveryError, setRecoveryError] = useState('')
+  const verifiedCompletionRef = useRef(false)
+  const requiresEmailVerification = Boolean(spectator && !spectator.emailVerificado)
 
   useEffect(() => {
     if (!open) return undefined
@@ -58,6 +60,17 @@ export default function PurchaseAuthDrawer({
       document.removeEventListener('keydown', handleKey)
     }
   }, [open, onClose])
+
+  useEffect(() => {
+    if (!open) {
+      verifiedCompletionRef.current = false
+      return
+    }
+    if (authLoading || !spectator?.emailVerificado || verifiedCompletionRef.current) return
+
+    verifiedCompletionRef.current = true
+    onComplete()
+  }, [open, authLoading, spectator?.emailVerificado, onComplete])
 
   if (!open) return null
 
@@ -138,7 +151,10 @@ export default function PurchaseAuthDrawer({
     try {
       if (mode === 'login') {
         const logged = await loginSpectator(form.email, form.contrasenia)
-        if (logged.emailVerificado) onComplete()
+        if (logged.emailVerificado) {
+          verifiedCompletionRef.current = true
+          onComplete()
+        }
       } else {
         if (form.contrasenia !== form.contraseniaConfirmacion) {
           throw new Error('Las contraseñas no coinciden.')
@@ -157,6 +173,7 @@ export default function PurchaseAuthDrawer({
     setAuthError('')
     try {
       await verifySpectatorEmail()
+      verifiedCompletionRef.current = true
       onComplete()
     } catch {
       // El contexto muestra el mensaje devuelto por el backend.
@@ -178,7 +195,7 @@ export default function PurchaseAuthDrawer({
           <div>
             <p className="eyebrow">{purchase ? 'Continuar compra' : 'Mi cuenta'}</p>
             <h2>
-              {isSpectator
+              {requiresEmailVerification
                 ? 'Verificá tu correo'
                 : recoveryStep
                   ? 'Restablecé tu contraseña'
@@ -191,7 +208,7 @@ export default function PurchaseAuthDrawer({
         </header>
 
         <div className="auth-drawer__body">
-          {isSpectator ? (
+          {requiresEmailVerification ? (
             <div className="stack-form">
               <p>Confirmá tu correo para habilitar la compra.</p>
               <div className="simulated-mail">

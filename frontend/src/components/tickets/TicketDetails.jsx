@@ -148,6 +148,8 @@ export default function TicketDetails({ ticket, movie, allowCancellation = false
         </div>
         <div className="ticket-qr" aria-label="Código QR del ticket">
           <QRCodeSVG value={ticket.codigoQR} size={136} level="M" includeMargin />
+          <span className="ticket-qr__manual-label">Código para ingreso manual</span>
+          <code>{ticket.codigoQR}</code>
         </div>
       </div>
 
