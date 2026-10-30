@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ArrowLeft } from 'lucide-react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import DateStrip from '../components/cartelera/DateStrip'
 import ConfirmDialog from '../components/common/ConfirmDialog'
@@ -104,8 +105,8 @@ export default function PeliculaPage() {
 
   return (
     <div className="movie-detail">
-      <Link to="/" className="back-link">
-        Volver a cartelera
+      <Link to="/" className="back-link" aria-label="Volver a cartelera" title="Volver a cartelera">
+        <ArrowLeft size={24} aria-hidden="true" />
       </Link>
 
       {location.state?.expiredFunction && (

@@ -1182,6 +1182,47 @@ textarea {
   background: #1a1d26;
 }
 
+.movie-card__poster {
+  cursor: pointer;
+}
+
+.movie-card__poster::after {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  content: 'Ver película';
+  background: rgba(18, 20, 26, 0.58);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.movie-card__poster img {
+  transition: transform 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .movie-card__poster:hover img {
+    transform: scale(1.025);
+  }
+
+  .movie-card__poster:hover::after {
+    opacity: 1;
+  }
+}
+
+.movie-card__poster:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.movie-card__poster:focus-visible::after {
+  opacity: 1;
+}
+
 .movie-card__placeholder {
   width: 100%;
   height: 100%;
@@ -1220,6 +1261,13 @@ textarea {
 .movie-card__schedule {
   margin-top: 0.15rem;
   border-top: 1px solid var(--line);
+}
+
+.movie-card__schedule-label {
+  margin: 0.65rem 0 0.15rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .movie-card__schedule-toggle {
@@ -1398,10 +1446,20 @@ textarea {
 }
 
 .back-link {
-  display: inline-block;
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
   margin: 1.5rem 0 1rem;
-  font-weight: 700;
   color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.back-link:hover,
+.back-link:focus-visible {
+  color: var(--ink);
+  outline: 0;
+  transform: translateX(-2px);
 }
 
 .movie-detail__layout,

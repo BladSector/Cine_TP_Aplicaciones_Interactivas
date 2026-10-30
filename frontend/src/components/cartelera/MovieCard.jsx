@@ -37,7 +37,11 @@ export default function MovieCard({ movie, functions, onSelectFunction }) {
 
   return (
     <article className="movie-card">
-      <div className="movie-card__poster">
+      <Link
+        to={`/pelicula/${movie.id}`}
+        className="movie-card__poster"
+        aria-label={`Ver ${movie.titulo}`}
+      >
         {movie.portadaUrl ? (
           <img src={movie.portadaUrl} alt={`Portada de ${movie.titulo}`} />
         ) : (
@@ -45,7 +49,7 @@ export default function MovieCard({ movie, functions, onSelectFunction }) {
             <span>{movie.titulo}</span>
           </div>
         )}
-      </div>
+      </Link>
 
       <div className="movie-card__body">
         <div className="movie-card__meta">
@@ -71,6 +75,7 @@ export default function MovieCard({ movie, functions, onSelectFunction }) {
           id={`movie-schedule-${movie.id}`}
           className={`movie-card__schedule${scheduleOpen ? ' is-expanded' : ''}`}
         >
+        <p className="movie-card__schedule-label">Horarios:</p>
         {groupedSessions.map(([key, list]) => {
           const [formato, idioma] = key.split('|')
           return (
@@ -100,9 +105,6 @@ export default function MovieCard({ movie, functions, onSelectFunction }) {
         </div>
 
         <div className="movie-card__footer">
-          <Link to={`/pelicula/${movie.id}`} className="text-button">
-            Ver película
-          </Link>
           <span className="movie-card__price">Desde ${money(minPrice)}</span>
         </div>
       </div>
