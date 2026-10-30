@@ -255,7 +255,7 @@ export default function SiteLayout() {
             aria-label="Principal"
           >
             <NavLink to="/" className="btn-cartelera" onClick={() => setIsNavOpen(false)} end>Cartelera</NavLink>
-            <NavLink to="/candy" onClick={() => setIsNavOpen(false)}>Candy</NavLink>
+            <NavLink to="/candy" onClick={() => setIsNavOpen(false)}>Kiosco</NavLink>
             <NavLink to="/proximamente" onClick={() => setIsNavOpen(false)}>Próximamente</NavLink>
             <NavLink to="/experiencias" onClick={() => setIsNavOpen(false)}>Experiencias</NavLink>
             <NavLink to="/club" onClick={() => setIsNavOpen(false)}>Club Film Zone</NavLink>
@@ -378,7 +378,7 @@ export default function SiteLayout() {
                   <div className="header-cart__heading">
                     <div>
                       <span>Compra en curso</span>
-                      <strong>{hasActivePurchase ? activeMovie?.titulo || 'Tu película' : 'Candy'}</strong>
+                      <strong>{hasActivePurchase ? activeMovie?.titulo || 'Tu película' : 'Kiosco'}</strong>
                     </div>
                     {hasActivePurchase && (
                       <span className={`header-cart__timer ${remainingSeconds !== null && remainingSeconds <= 120 ? 'is-warning' : ''}`}>

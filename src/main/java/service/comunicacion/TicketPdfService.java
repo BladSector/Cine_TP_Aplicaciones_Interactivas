@@ -30,6 +30,7 @@ import java.util.Locale;
 public class TicketPdfService {
     private static final float MARGEN = 48;
     private static final float INTERLINEADO = 18;
+    private static final float TAMANO_QR_PDF = 165;
 
     public byte[] generar(Ticket ticket, double total) {
         try (PDDocument documento = new PDDocument();
@@ -54,7 +55,9 @@ public class TicketPdfService {
 
                 byte[] qr = generarQr(ticket.getCodigoQR());
                 PDImageXObject imagenQr = PDImageXObject.createFromByteArray(documento, qr, "ticket-qr");
-                contenido.drawImage(imagenQr, 410, pagina.getMediaBox().getHeight() - 175, 120, 120);
+                float qrX = pagina.getMediaBox().getWidth() - MARGEN - TAMANO_QR_PDF;
+                float qrY = pagina.getMediaBox().getHeight() - MARGEN - TAMANO_QR_PDF - 8;
+                contenido.drawImage(imagenQr, qrX, qrY, TAMANO_QR_PDF, TAMANO_QR_PDF);
 
                 y -= 34;
                 if (!ticket.getEntradas().isEmpty()) {
@@ -107,7 +110,7 @@ public class TicketPdfService {
     }
 
     private byte[] generarQr(String codigo) throws WriterException, IOException {
-        BitMatrix matriz = new QRCodeWriter().encode(codigo, BarcodeFormat.QR_CODE, 280, 280);
+        BitMatrix matriz = new QRCodeWriter().encode(codigo, BarcodeFormat.QR_CODE, 420, 420);
         BufferedImage imagen = new BufferedImage(matriz.getWidth(), matriz.getHeight(), BufferedImage.TYPE_INT_RGB);
         for (int x = 0; x < matriz.getWidth(); x++) {
             for (int y = 0; y < matriz.getHeight(); y++) {

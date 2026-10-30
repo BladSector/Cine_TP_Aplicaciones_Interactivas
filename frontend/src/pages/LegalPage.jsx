@@ -21,7 +21,7 @@ const CONTENT = {
       ['Butacas', 'Respetá la ubicación asignada. Las butacas señaladas como fuera de servicio no pueden utilizarse.'],
       ['Convivencia', 'Mantené el teléfono en silencio, evitá conversaciones durante la película y seguí las indicaciones del personal.'],
       ['Consumos', 'Los productos comprados pueden retirarse presentando el mismo QR. La entrega queda registrada en el ticket.'],
-      ['Cancelaciones y reembolsos', 'Las entradas pueden cancelarse desde Mis tickets hasta 2 horas antes de la función. Las compras de Candy pueden cancelarse mientras no hayan sido entregadas. No se admiten cancelaciones de entradas validadas ni de consumos entregados.'],
+      ['Cancelaciones y reembolsos', 'Las entradas pueden cancelarse desde Mis tickets hasta 2 horas antes de la función. Las compras del kiosco pueden cancelarse mientras no hayan sido entregadas. No se admiten cancelaciones de entradas validadas ni de consumos entregados.'],
     ],
   },
 }

@@ -59,7 +59,7 @@ export default function CandyPage() {
   return (
     <div className="purchase-page candy-page">
       <header className="candy-page__heading">
-        <p className="eyebrow">Candy Film Zone</p>
+        <p className="eyebrow">Kiosco Film Zone</p>
         <h1>Tu película favorita también se disfruta en casa</h1>
         <p>Elegí tus productos, pagá en línea y presentá el QR para retirarlos en el cine.</p>
       </header>
@@ -129,7 +129,7 @@ export default function CandyPage() {
 
       <PurchaseAuthDrawer
         open={authOpen}
-        purchaseDescription="Necesitás una cuenta para comprar productos del Candy."
+        purchaseDescription="Necesitás una cuenta para comprar productos del kiosco."
         onClose={() => setAuthOpen(false)}
         onComplete={() => {
           setAuthOpen(false)

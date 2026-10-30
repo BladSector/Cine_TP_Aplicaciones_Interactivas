@@ -121,7 +121,7 @@ export default function TicketDetails({ ticket, movie, allowCancellation = false
   const funciones = groupEntradas(entradas)
   const titulo = movie?.titulo
     || entradas[0]?.pelicula
-    || (consumos.length > 0 ? 'Compra de Candy' : 'Compra de cine')
+    || (consumos.length > 0 ? 'Compra del Kiosco' : 'Compra de cine')
   const tienePelicula = funciones.length > 0
   const compraSoloCandy = !tienePelicula && consumos.length > 0
   const limite = cancellationDeadline(ticket.limiteCancelacion)
@@ -184,7 +184,7 @@ export default function TicketDetails({ ticket, movie, allowCancellation = false
       ))}
 
       <section className="ticket-receipt__section">
-        <h4>Candy bar</h4>
+        <h4>Kiosco</h4>
         {consumos.length > 0 ? (
           <div className="ticket-detail__items">
             {consumos.map((item) => (
@@ -195,7 +195,7 @@ export default function TicketDetails({ ticket, movie, allowCancellation = false
             ))}
           </div>
         ) : (
-          <p className="muted ticket-receipt__empty">No se agregaron consumos del candy bar.</p>
+          <p className="muted ticket-receipt__empty">No se agregaron productos del kiosco.</p>
         )}
       </section>
 
@@ -223,7 +223,7 @@ export default function TicketDetails({ ticket, movie, allowCancellation = false
         </button>
         {allowCancellation && ticket.cancelacionPermitida && (
           <button type="button" className="danger-button" onClick={() => setShowCancelConfirm(true)}>
-            {compraSoloCandy ? 'Cancelar compra de Candy' : 'Cancelar compra'}
+            {compraSoloCandy ? 'Cancelar compra del Kiosco' : 'Cancelar compra'}
           </button>
         )}
       </div>

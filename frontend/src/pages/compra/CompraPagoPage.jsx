@@ -360,7 +360,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
           <p>
             Enviamos el comprobante a <strong>{spectator.email}</strong>.{' '}
             {candyOnly
-              ? 'Presentá el QR en el Candy para retirar tus productos.'
+              ? 'Presentá el QR en el kiosco para retirar tus productos.'
               : 'También podés verlo en Mi cuenta.'}
           </p>
           <TicketDetails ticket={ticket} movie={movie} />
@@ -380,7 +380,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
           to={membershipOnly ? '/club' : '/candy'}
           className="back-link"
         >
-          {membershipOnly ? 'Volver al club' : 'Volver al Candy'}
+          {membershipOnly ? 'Volver al club' : 'Volver al kiosco'}
         </Link>
       )}
       {!sinFuncion && <PurchaseStepper current="pago" />}

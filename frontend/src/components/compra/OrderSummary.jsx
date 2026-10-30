@@ -94,7 +94,7 @@ export default function OrderSummary({
         )}
         <div>
           <p className="eyebrow">{candyOnly ? 'Tu pedido' : 'Tu noche de cine'}</p>
-          <h2>{candyOnly ? 'Candy bar' : movie?.titulo}</h2>
+          <h2>{candyOnly ? 'Kiosco' : movie?.titulo}</h2>
           {!candyOnly && (
             <p className="muted">
               {movie?.duracion} min
@@ -149,18 +149,18 @@ export default function OrderSummary({
             <p className="muted">
               {candyOnly
                 ? 'Todavía no seleccionaste productos.'
-                : 'No agregaste productos del candy bar.'}
+                : 'No agregaste productos del kiosco.'}
             </p>
             {editCandyTo && (
               <Link to={editCandyTo} className="text-button">
-                Volver al candy bar
+                Volver al kiosco
               </Link>
             )}
           </div>
         ) : (
           <>
             <div className="order-summary__row">
-              <span>{candyOnly ? 'Productos seleccionados' : 'Candy bar · opcional'}</span>
+              <span>{candyOnly ? 'Productos seleccionados' : 'Kiosco · opcional'}</span>
               <strong>${money(totalCandy)}</strong>
             </div>
             <ul className="order-summary__candy">
@@ -174,12 +174,12 @@ export default function OrderSummary({
               <div className="order-summary__candy-actions">
                 {editCandyTo && (
                   <Link to={editCandyTo} className="text-button">
-                    Editar candy bar
+                    Editar kiosco
                   </Link>
                 )}
                 {onClearCandy && (
                   <button type="button" className="text-button" onClick={onClearCandy}>
-                    Quitar candy bar
+                    Quitar productos
                   </button>
                 )}
               </div>

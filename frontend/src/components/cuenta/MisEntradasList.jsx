@@ -34,7 +34,7 @@ export default function MisEntradasList() {
                 <div>
                   <p className="eyebrow">Ticket #{ticket.id}</p>
                   <h3 className={candyOnly ? 'ticket-list-item__title--candy' : undefined}>
-                    {candyOnly ? 'Compra de Candy' : first?.pelicula || 'Compra'}
+                    {candyOnly ? 'Compra del Kiosco' : first?.pelicula || 'Compra'}
                   </h3>
                   {candyOnly ? (
                     <>
