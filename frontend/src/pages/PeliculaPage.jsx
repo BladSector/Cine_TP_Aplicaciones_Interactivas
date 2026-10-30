@@ -165,7 +165,7 @@ export default function PeliculaPage() {
             {selected && (
               <div className="movie-detail__cta">
                 <button type="button" className="primary-button" onClick={continueToSeats}>
-                  Continuar con butacas
+                  Elegir asientos
                 </button>
               </div>
             )}

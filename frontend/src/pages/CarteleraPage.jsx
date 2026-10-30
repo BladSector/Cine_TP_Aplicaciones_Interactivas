@@ -207,8 +207,7 @@ export default function CarteleraPage() {
         </div>
 
         <p className="catalog-note">
-          Selecciona un horario para elegir tus butacas. Los precios pueden variar según la función y
-          el formato.
+          Seleccioná un horario para elegir tus butacas. El precio varía según la función y el formato.
         </p>
       </section>
 
