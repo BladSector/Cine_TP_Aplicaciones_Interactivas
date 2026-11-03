@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import CompraExitosaPage from '../../pages/compra/CompraExitosaPage'
 import TicketDetails from '../tickets/TicketDetails'
 import { formatDateShort, money } from '../../utils/format'
 
@@ -20,8 +21,7 @@ export default function PurchaseSuccess({
       : subscription.beneficios
 
     return (
-      <div className="purchase-page">
-        <section className="success-panel">
+      <CompraExitosaPage>
           <p className="eyebrow">
             {hasScheduledChange ? 'Cambio programado' : 'Membresía confirmada'}
           </p>
@@ -69,26 +69,23 @@ export default function PurchaseSuccess({
           <Link to="/club" className="primary-button">
             Volver al club
           </Link>
-        </section>
-      </div>
+      </CompraExitosaPage>
     )
   }
 
   if (!ticket) return null
 
   return (
-    <div className="purchase-page">
-      <section className="success-panel">
+    <CompraExitosaPage>
         <p className="eyebrow">Compra confirmada</p>
         <h1>{candyOnly ? '¡Tu pedido está listo!' : '¡Listo para la gran pantalla!'}</h1>
         <p>
           Enviamos el comprobante a <strong>{spectator.email}</strong>.{' '}
           {candyOnly
             ? 'Presentá el QR en el candy para retirar tus productos.'
-            : 'También podés verlo en Mi cuenta.'}
+            : 'Tus entradas ya están listas. También podés verlas en Mi cuenta.'}
         </p>
         <TicketDetails ticket={ticket} movie={movie} />
-      </section>
-    </div>
+    </CompraExitosaPage>
   )
 }

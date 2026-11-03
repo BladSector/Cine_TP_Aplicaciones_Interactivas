@@ -1,0 +1,36 @@
+.compra-exitosa-page {
+  position: relative;
+}
+
+/* react-confetti fija el canvas con estilos en línea (position: absolute).
+   Lo llevamos a la ventana para que los pochoclos cubran la pantalla
+   sin bloquear los clics del comprobante. */
+.compra-exitosa-page__confetti {
+  position: fixed !important;
+  z-index: 30 !important;
+  pointer-events: none !important;
+}
+
+.mensaje-exito {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-translucent-strong);
+  box-shadow: var(--shadow);
+}
+
+.mensaje-exito .primary-button {
+  display: inline-flex;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .mensaje-exito {
+    padding: 1rem;
+    border-radius: 10px;
+  }
+}
