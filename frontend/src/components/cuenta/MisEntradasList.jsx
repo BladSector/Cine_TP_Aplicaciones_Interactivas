@@ -21,25 +21,25 @@ export default function MisEntradasList() {
           {myTickets.map((ticket) => {
             const first = ticket.entradas?.[0]
             const items = ticket.itemsConsumo || []
-            const candyOnly = !first && items.length > 0
-            const candyQuantity = items.reduce(
+            const compraSoloCandy = !first && items.length > 0
+            const cantidadProductosCandy = items.reduce(
               (total, item) => total + Number(item.cantidad || 0),
               0,
             )
-            const candySummary = items
+            const resumenCandy = items
               .map((item) => `${item.cantidad} × ${item.producto}`)
               .join(' · ')
             return (
               <button key={ticket.id} type="button" className="ticket-list-item" onClick={() => setSelected(ticket)}>
                 <div>
                   <p className="eyebrow">Ticket #{ticket.id}</p>
-                  <h3 className={candyOnly ? 'ticket-list-item__title--candy' : undefined}>
-                    {candyOnly ? 'Compra del Kiosco' : first?.pelicula || 'Compra'}
+                  <h3 className={compraSoloCandy ? 'ticket-list-item__title--candy' : undefined}>
+                    {compraSoloCandy ? 'Compra del Candy' : first?.pelicula || 'Compra'}
                   </h3>
-                  {candyOnly ? (
+                  {compraSoloCandy ? (
                     <>
-                      <p>{candyQuantity} consumible{candyQuantity !== 1 ? 's' : ''}</p>
-                      <p>{candySummary}</p>
+                      <p>{cantidadProductosCandy} consumible{cantidadProductosCandy !== 1 ? 's' : ''}</p>
+                      <p>{resumenCandy}</p>
                     </>
                   ) : (
                     <>

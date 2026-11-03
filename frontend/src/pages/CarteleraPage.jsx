@@ -75,8 +75,8 @@ export default function CarteleraPage() {
       movieId: movie.id,
       functionId: fn.id,
       selectedSeats: [],
-      consumptions: prev.consumptions,
-      candyVisited: false,
+      consumos: prev.consumos,
+      candyVisitado: false,
       returnPath: null,
       membershipId: null,
     }))

@@ -5,42 +5,43 @@ import MobileCheckoutBar from '../../components/compra/MobileCheckoutBar'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
 import SeatReservationTimer from '../../components/compra/SeatReservationTimer'
+import Loader from '../../components/common/Loader'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
-import { money } from '../../utils/format'
 
 export default function CompraCandyPage() {
   const { movieId } = useParams()
   const navigate = useNavigate()
   const { isSpectator } = useAuth()
-  const { peliculas, funciones, productos } = useCatalog()
+  const { peliculas, funciones, productos, loading: catalogLoading } = useCatalog()
   const {
     draft,
-    setConsumption,
-    clearConsumptions,
-    markCandyVisited,
+    actualizarConsumo,
+    limpiarConsumos,
+    marcarCandyVisitado,
     reservationError,
     remainingSeconds,
   } = usePurchase()
 
   useEffect(() => {
-    markCandyVisited()
-  }, [markCandyVisited])
+    marcarCandyVisitado()
+  }, [marcarCandyVisitado])
 
   const movie = peliculas.find((item) => item.id === Number(movieId))
   const funcion = funciones.find((item) => item.id === draft.functionId)
   if (!isSpectator) return <Navigate to={`/compra/${movieId}/acceso`} replace />
+  if (catalogLoading && (!funcion || !movie)) return <Loader />
   if (!funcion || !movie || draft.selectedSeats.length === 0) {
     return <Navigate to={`/compra/${movieId}/butacas`} replace />
   }
 
   const totalTickets = draft.selectedSeats.length * funcion.precioEntrada
-  const totalCandy = Object.entries(draft.consumptions).reduce((sum, [id, qty]) => {
+  const totalCandy = Object.entries(draft.consumos).reduce((sum, [id, quantity]) => {
     const product = productos.find((item) => item.id === Number(id))
-    return sum + (product ? product.precio * qty : 0)
+    return sum + (product ? product.precio * quantity : 0)
   }, 0)
-  const selectedItems = Object.values(draft.consumptions).reduce(
+  const selectedItems = Object.values(draft.consumos).reduce(
     (total, quantity) => total + Number(quantity),
     0,
   )
@@ -57,7 +58,7 @@ export default function CompraCandyPage() {
         <section className="purchase-panel">
           <p className="eyebrow">Un extra para tu película · opcional</p>
           <h1>El cine sabe mejor así</h1>
-          <p>Añade tus favoritos o continúa al pago solo con tus entradas. Tú eliges.</p>
+          <p>Agregá tus favoritos o continuá al pago solo con tus entradas.</p>
           <SeatReservationTimer remainingSeconds={remainingSeconds} />
           {reservationError && (
             <div className="info-box info-box--error">{reservationError}</div>
@@ -65,8 +66,8 @@ export default function CompraCandyPage() {
 
           <CandyCatalog
             products={productos}
-            consumptions={draft.consumptions}
-            onChange={setConsumption}
+            consumos={draft.consumos}
+            onChange={actualizarConsumo}
           />
         </section>
 
@@ -75,23 +76,19 @@ export default function CompraCandyPage() {
           funcion={funcion}
           seats={draft.selectedSeats}
           products={productos}
-          consumptions={draft.consumptions}
-          onClearCandy={clearConsumptions}
+          consumos={draft.consumos}
+          onLimpiarCandy={limpiarConsumos}
           editSeatsTo={`/compra/${movieId}/butacas`}
           totalTickets={totalTickets}
           totalCandy={totalCandy}
           total={totalTickets + totalCandy}
-          footer={
+          footer={(
             <div className="summary-actions">
-              <button
-                type="button"
-                className="primary-button"
-                onClick={continueToPayment}
-              >
+              <button type="button" className="primary-button" onClick={continueToPayment}>
                 Continuar al pago
               </button>
             </div>
-          }
+          )}
         />
       </div>
 
@@ -105,8 +102,8 @@ export default function CompraCandyPage() {
             funcion={funcion}
             seats={draft.selectedSeats}
             products={productos}
-            consumptions={draft.consumptions}
-            onClearCandy={clearConsumptions}
+            consumos={draft.consumos}
+            onLimpiarCandy={limpiarConsumos}
             editSeatsTo={`/compra/${movieId}/butacas`}
             totalTickets={totalTickets}
             totalCandy={totalCandy}

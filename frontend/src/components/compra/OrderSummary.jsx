@@ -15,10 +15,10 @@ export default function OrderSummary({
   funcion,
   seats,
   products,
-  consumptions,
-  onClearCandy,
+  consumos,
+  onLimpiarCandy,
   editSeatsTo,
-  editCandyTo,
+  editarCandyEn,
   totalTickets,
   totalCandy,
   total,
@@ -75,7 +75,7 @@ export default function OrderSummary({
     )
   }
 
-  const selectedProducts = Object.entries(consumptions || {})
+  const selectedProducts = Object.entries(consumos || {})
     .map(([id, qty]) => {
       const product = products.find((item) => item.id === Number(id))
       return product ? { ...product, qty } : null
@@ -98,7 +98,7 @@ export default function OrderSummary({
         )}
         <div>
           <p className="eyebrow">{candyOnly ? 'Tu pedido' : 'Tu noche de cine'}</p>
-          <h2>{candyOnly ? 'Kiosco' : movie?.titulo}</h2>
+          <h2>{candyOnly ? 'Candy' : movie?.titulo}</h2>
           {!candyOnly && (
             <p className="muted">
               {movie?.duracion} min
@@ -153,18 +153,18 @@ export default function OrderSummary({
             <p className="muted">
               {candyOnly
                 ? 'Todavía no seleccionaste productos.'
-                : 'No agregaste productos del kiosco.'}
+                : 'No agregaste productos del candy.'}
             </p>
-            {editCandyTo && (
-              <Link to={editCandyTo} className="order-summary__action-button">
-                Volver al kiosco
+            {editarCandyEn && (
+              <Link to={editarCandyEn} className="order-summary__action-button">
+                Volver al candy
               </Link>
             )}
           </div>
         ) : (
           <>
             <div className="order-summary__row">
-              <span>{candyOnly ? 'Productos seleccionados' : 'Kiosco · opcional'}</span>
+              <span>{candyOnly ? 'Productos seleccionados' : 'Candy · opcional'}</span>
               <strong>${money(totalCandy)}</strong>
             </div>
             <ul className="order-summary__candy">
@@ -174,14 +174,14 @@ export default function OrderSummary({
                 </li>
               ))}
             </ul>
-            {(editCandyTo || onClearCandy) && (
+            {(editarCandyEn || onLimpiarCandy) && (
               <div className="order-summary__candy-actions">
-                {editCandyTo && (
-                  <Link to={editCandyTo} className="order-summary__action-button">
-                    Editar kiosco
+                {editarCandyEn && (
+                  <Link to={editarCandyEn} className="order-summary__action-button">
+                    Editar candy
                   </Link>
                 )}
-                {onClearCandy && (
+                {onLimpiarCandy && (
                   <button
                     type="button"
                     className="order-summary__action-button order-summary__action-button--danger"
@@ -207,12 +207,12 @@ export default function OrderSummary({
       {showClearCandyConfirm && (
         <ConfirmDialog
           title="Quitar productos"
-          message="¿Querés quitar todos los productos seleccionados del kiosco?"
+          message="¿Querés quitar todos los productos seleccionados del candy?"
           confirmLabel="Quitar productos"
           cancelLabel="Conservar productos"
           danger
           onConfirm={() => {
-            onClearCandy()
+            onLimpiarCandy()
             setShowClearCandyConfirm(false)
           }}
           onCancel={() => setShowClearCandyConfirm(false)}

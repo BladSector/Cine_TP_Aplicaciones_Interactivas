@@ -1,0 +1,54 @@
+/* 1. Tema, variables y estilos base */
+:root {
+  color-scheme: light;
+  --bg: #f3efe6;
+  --bg-deep: #12141a;
+  --surface: #fffdf8;
+  --surface-soft: #ebe4d6;
+  --surface-raised: #fff;
+  --surface-translucent: rgba(255, 255, 255, 0.76);
+  --surface-translucent-strong: rgba(255, 253, 248, 0.92);
+  --control-muted-bg: rgba(22, 24, 31, 0.05);
+  --header-bg: rgba(243, 239, 230, 0.88);
+  --body-background:
+    radial-gradient(circle at top left, rgba(214, 69, 43, 0.12), transparent 30%),
+    radial-gradient(circle at top right, rgba(201, 162, 39, 0.16), transparent 28%),
+    linear-gradient(180deg, #f7f2e8 0%, var(--bg) 40%, #ebe6da 100%);
+  --ink: #16181f;
+  --muted: #5c6170;
+  --line: #d5cbb8;
+  --accent: #d6452b;
+  --accent-dark: #b33620;
+  --gold: #c9a227;
+  --focus: #2a5db0;
+  --danger: #b42318;
+  --ok: #1f7a4d;
+  --shadow: 0 24px 60px rgba(18, 20, 26, 0.14);
+  --radius: 18px;
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'Outfit', sans-serif;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #101116;
+  --bg-deep: #08090d;
+  --surface: #191b22;
+  --surface-soft: #252832;
+  --surface-raised: #20232b;
+  --surface-translucent: rgba(32, 35, 43, 0.82);
+  --surface-translucent-strong: rgba(25, 27, 34, 0.94);
+  --control-muted-bg: rgba(255, 255, 255, 0.07);
+  --header-bg: rgba(16, 17, 22, 0.9);
+  --body-background: linear-gradient(180deg, #101116 0%, #15171d 48%, #0d0f13 100%);
+  --ink: #f4efe4;
+  --muted: #aeb4c2;
+  --line: #3a3e49;
+  --accent: #e75a3e;
+  --accent-dark: #ff765c;
+  --gold: #d9b83f;
+  --focus: #82adf5;
+  --danger: #ff7468;
+  --ok: #58c88e;
+  --shadow: 0 24px 60px rgba(0, 0, 0, 0.34);
+}

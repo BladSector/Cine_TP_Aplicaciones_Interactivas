@@ -5,6 +5,7 @@ import PurchaseStepper from '../../components/compra/PurchaseStepper'
 import SeatMap from '../../components/compra/SeatMap'
 import SeatReservationTimer from '../../components/compra/SeatReservationTimer'
 import MobileCheckoutBar from '../../components/compra/MobileCheckoutBar'
+import Loader from '../../components/common/Loader'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import { usePurchase } from '../../context/PurchaseContext'
@@ -16,7 +17,7 @@ export default function CompraButacasPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { isSpectator } = useAuth()
-  const { peliculas, funciones, butacas, entradas, productos, reload } = useCatalog()
+  const { peliculas, funciones, butacas, entradas, productos, reload, loading: catalogLoading } = useCatalog()
   const {
     draft,
     toggleSeat,
@@ -54,6 +55,7 @@ export default function CompraButacasPage() {
   }, [loadReservations])
 
   if (!isSpectator) return <Navigate to={`/compra/${movieId}/acceso`} replace />
+  if (catalogLoading && (!funcion || !movie)) return <Loader />
   if (!funcion || !movie) return <Navigate to={`/pelicula/${movieId}`} replace />
   if (functionHasStarted(funcion)) {
     return <Navigate to={`/pelicula/${movieId}`} replace state={{ expiredFunction: true }} />
@@ -107,9 +109,9 @@ export default function CompraButacasPage() {
   }
 
   const totalTickets = draft.selectedSeats.length * funcion.precioEntrada
-  const totalCandy = Object.entries(draft.consumptions).reduce((sum, [id, qty]) => {
+  const totalCandy = Object.entries(draft.consumos).reduce((sum, [id, quantity]) => {
     const product = productos.find((item) => item.id === Number(id))
-    return sum + (product ? product.precio * qty : 0)
+    return sum + (product ? product.precio * quantity : 0)
   }, 0)
 
   return (
@@ -167,7 +169,7 @@ export default function CompraButacasPage() {
           funcion={funcion}
           seats={draft.selectedSeats}
           products={productos}
-          consumptions={draft.consumptions}
+          consumos={draft.consumos}
           totalTickets={totalTickets}
           totalCandy={totalCandy}
           total={totalTickets + totalCandy}
@@ -197,7 +199,7 @@ export default function CompraButacasPage() {
             funcion={funcion}
             seats={draft.selectedSeats}
             products={productos}
-            consumptions={draft.consumptions}
+            consumos={draft.consumos}
             totalTickets={totalTickets}
             totalCandy={totalCandy}
             total={totalTickets + totalCandy}

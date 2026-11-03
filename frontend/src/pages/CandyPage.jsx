@@ -14,26 +14,26 @@ export default function CandyPage() {
   const { productos, loading, error } = useCatalog()
   const {
     draft,
-    startCandyOnly,
+    iniciarCompraCandy,
     hasActivePurchase,
-    setConsumption,
-    clearConsumptions,
-    markCandyVisited,
+    actualizarConsumo,
+    limpiarConsumos,
+    marcarCandyVisitado,
   } = usePurchase()
   const [authOpen, setAuthOpen] = useState(false)
   const [selectionError, setSelectionError] = useState('')
 
   useEffect(() => {
     if (draft.purchaseType !== 'candy' && !hasActivePurchase) {
-      startCandyOnly()
+      iniciarCompraCandy()
     }
-  }, [draft.purchaseType, hasActivePurchase, startCandyOnly])
+  }, [draft.purchaseType, hasActivePurchase, iniciarCompraCandy])
 
-  const selectedItems = Object.values(draft.consumptions).reduce(
+  const selectedItems = Object.values(draft.consumos).reduce(
     (total, quantity) => total + Number(quantity),
     0,
   )
-  const total = Object.entries(draft.consumptions).reduce((sum, [id, quantity]) => {
+  const total = Object.entries(draft.consumos).reduce((sum, [id, quantity]) => {
     const product = productos.find((item) => item.id === Number(id))
     return sum + (product ? product.precio * quantity : 0)
   }, 0)
@@ -49,7 +49,7 @@ export default function CandyPage() {
       return
     }
     if (hasActivePurchase) {
-      markCandyVisited()
+      marcarCandyVisitado()
       navigate(`/compra/${draft.movieId}/pago`)
     } else {
       navigate('/candy/pago')
@@ -59,7 +59,7 @@ export default function CandyPage() {
   return (
     <div className="purchase-page candy-page">
       <header className="candy-page__heading">
-        <p className="eyebrow">Kiosco Film Zone</p>
+        <p className="eyebrow">candy Film Zone</p>
         <h1>Tu película favorita también se disfruta en casa</h1>
         <p>Elegí tus productos, pagá en línea y presentá el QR para retirarlos en el cine.</p>
       </header>
@@ -76,10 +76,10 @@ export default function CandyPage() {
           {!loading && !error && (
             <CandyCatalog
               products={productos}
-              consumptions={draft.consumptions}
+              consumos={draft.consumos}
               onChange={(productId, quantity) => {
                 setSelectionError('')
-                setConsumption(productId, quantity)
+                actualizarConsumo(productId, quantity)
               }}
             />
           )}
@@ -89,12 +89,12 @@ export default function CandyPage() {
         <OrderSummary
           candyOnly
           products={productos}
-          consumptions={draft.consumptions}
-          onClearCandy={clearConsumptions}
+          consumos={draft.consumos}
+          onLimpiarcandy={limpiarConsumos}
           totalTickets={0}
-          totalCandy={total}
+          totalcandy={total}
           total={total}
-          footer={
+          footer={(
             <div className="summary-actions">
               <button
                 type="button"
@@ -105,7 +105,7 @@ export default function CandyPage() {
                 Continuar al pago
               </button>
             </div>
-          }
+          )}
         />
       </div>
 
@@ -118,10 +118,10 @@ export default function CandyPage() {
           <OrderSummary
             candyOnly
             products={productos}
-            consumptions={draft.consumptions}
-            onClearCandy={clearConsumptions}
+            consumos={draft.consumos}
+            onLimpiarcandy={limpiarConsumos}
             totalTickets={0}
-            totalCandy={total}
+            totalcandy={total}
             total={total}
           />
         )}
@@ -129,12 +129,12 @@ export default function CandyPage() {
 
       <PurchaseAuthDrawer
         open={authOpen}
-        purchaseDescription="Necesitás una cuenta para comprar productos del kiosco."
+        purchaseDescription="Necesitás una cuenta para comprar productos del candy."
         onClose={() => setAuthOpen(false)}
         onComplete={() => {
           setAuthOpen(false)
           if (hasActivePurchase) {
-            markCandyVisited()
+            marcarCandyVisitado()
             navigate(`/compra/${draft.movieId}/pago`)
           } else {
             navigate('/candy/pago')

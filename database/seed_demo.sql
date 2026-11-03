@@ -318,7 +318,7 @@ SET imagen_url = CASE tipo
     ELSE NULL
 END;
 
-select * from membresia
+select * from membresia;
 INSERT INTO membresia (id, nombre, precio_mensual, descripcion, beneficios, destacada) VALUES
 (1, 'Luneta', 7900, 'Para sumar cine al mes sin pensarlo demasiado.', CONCAT_WS('\n',
     '2 entradas 2D por mes',
@@ -352,9 +352,6 @@ where id=2;
 update membresia 
 set nombre= 'Premium', precio_mensual= 60000
 where id=3;
-
-alter table membresia
-drop column destacada;
 
 update membresia
 set descripcion='Acción y pochoclos al mejor precio.'

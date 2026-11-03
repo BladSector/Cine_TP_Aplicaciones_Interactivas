@@ -1,6 +1,7 @@
 package desktop.inicio;
 
 import desktop.comun.ApiClient;
+import desktop.comun.api.SesionApi;
 import desktop.comun.PrincipalFrame;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -19,11 +20,11 @@ import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 public class LoginFrame extends JFrame {
     private final ApiClient apiClient;
+    private final SesionApi sesionApi;
     private final JTextField usuario = new JTextField(18);
     private final JPasswordField contrasenia = new JPasswordField(18);
     private final JButton ingresar = new JButton("Ingresar");
@@ -32,6 +33,7 @@ public class LoginFrame extends JFrame {
     public LoginFrame(ApiClient apiClient) {
         super("Cine API - Personal");
         this.apiClient = apiClient;
+        this.sesionApi = new SesionApi(apiClient);
         construirVista();
     }
 
@@ -103,8 +105,7 @@ public class LoginFrame extends JFrame {
         new SwingWorker<JsonNode, Void>() {
             @Override
             protected JsonNode doInBackground() throws Exception {
-                apiClient.post("/sesion/personal", Map.of("usuario", nombreUsuario, "contrasenia", clave));
-                return apiClient.get("/sesion/personal");
+                return sesionApi.iniciarSesion(nombreUsuario, clave);
             }
 
             @Override

@@ -53,7 +53,7 @@ export default function AboutPage() {
           <h2>El cine, organizado alrededor de cada función</h2>
         </div>
         <p>
-          Film Zone integra la venta de entradas, la selección de butacas, el kiosco y la
+          Film Zone integra la venta de entradas, la selección de butacas, el candy y la
           validación mediante QR en una misma plataforma. El sistema conecta la experiencia
           del espectador con la operación diaria del cine.
         </p>

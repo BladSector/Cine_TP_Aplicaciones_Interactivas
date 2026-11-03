@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import SiteLayout from '../components/layout/SiteLayout'
 import AboutPage from '../pages/AboutPage'
 import CandyPage from '../pages/CandyPage'
@@ -12,6 +12,11 @@ import CompraAccesoPage from '../pages/compra/CompraAccesoPage'
 import CompraButacasPage from '../pages/compra/CompraButacasPage'
 import CompraCandyPage from '../pages/compra/CompraCandyPage'
 import CompraPagoPage from '../pages/compra/CompraPagoPage'
+
+function LegacyCandyRedirect() {
+  const { movieId } = useParams()
+  return <Navigate to={`/compra/${movieId}/candy`} replace />
+}
 
 export default function AppRoutes() {
   return (
@@ -31,6 +36,10 @@ export default function AppRoutes() {
         <Route path="privacidad" element={<LegalPage type="privacidad" />} />
         <Route path="normas" element={<LegalPage type="normas" />} />
         <Route path="nosotros" element={<AboutPage />} />
+        {/* Compatibilidad con enlaces guardados antes del cambio de nombre. */}
+        <Route path="kiosco" element={<Navigate to="/candy" replace />} />
+        <Route path="kiosco/pago" element={<Navigate to="/candy/pago" replace />} />
+        <Route path="compra/:movieId/kiosco" element={<LegacyCandyRedirect />} />
         <Route
           path="proximamente"
           element={

@@ -1,67 +1,65 @@
 package desktop.duenio;
 
-import desktop.comun.ApiClient;
-import modelo.entidades.Butaca;
-import modelo.entidades.Categoria;
-import modelo.entidades.Empleado;
-import modelo.entidades.Pelicula;
-import modelo.entidades.Sala;
-
-import com.fasterxml.jackson.databind.JsonNode;
+import java.awt.BorderLayout;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFileChooser;
-import javax.swing.ImageIcon;
 import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
-import javax.swing.RowFilter;
-import javax.swing.RowSorter;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SortOrder;
 import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableColumn;
-import javax.swing.table.TableRowSorter;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Image;
-import java.awt.Insets;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.text.Normalizer;
-import java.time.LocalDate;
-import java.util.Base64;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import desktop.comun.ApiClient;
+import desktop.comun.api.CarteleraApi;
+import desktop.comun.api.PersonalApi;
+import desktop.comun.api.ProductosApi;
+import desktop.comun.api.SalasApi;
+import desktop.comun.componentes.VisorDetalle;
+import desktop.comun.dialogos.EstadoSalaDialog;
+import desktop.duenio.dialogos.CategoriaDialog;
+import desktop.duenio.dialogos.FuncionDialog;
+import desktop.duenio.dialogos.Opcion;
+import desktop.duenio.dialogos.PeliculaDialog;
+import desktop.duenio.dialogos.ProductoDialog;
+import desktop.duenio.dialogos.SalaDialog;
+import desktop.duenio.paneles.CategoriasPanel;
+import desktop.duenio.paneles.FuncionesAdminPanel;
+import desktop.duenio.paneles.PeliculasPanel;
+import desktop.duenio.paneles.ProductosPanel;
+import desktop.duenio.paneles.SalasAdminPanel;
+
+import static desktop.comun.util.ConfiguradorTablas.limpiar;
+import static desktop.comun.util.ConfiguradorTablas.modelo;
+import static desktop.comun.util.ConfiguradorTablas.tablaAdministracion;
+import static desktop.comun.util.DetalleHtml.campoHtml;
+import static desktop.comun.util.DetalleHtml.inicioHtml;
+import static desktop.comun.util.DetalleHtml.itemHtml;
+import static desktop.comun.util.DetalleHtml.mensajeHtml;
+import static desktop.comun.util.DetalleHtml.mensajeSecundarioHtml;
+import static desktop.comun.util.DetalleHtml.seccionHtml;
+import static desktop.comun.util.DetalleHtml.tituloHtml;
+import static desktop.comun.util.FormatoSwing.nombreEstadoSala;
+import static desktop.comun.util.FormatoSwing.nombreFormato;
+import static desktop.comun.util.FormatoSwing.nombreIdioma;
 
 public class AdministracionPanel extends JPanel {
-    private final ApiClient apiClient;
+    private final CarteleraApi carteleraApi;
+    private final SalasApi salasApi;
+    private final PersonalApi personalApi;
+    private final ProductosApi productosApi;
+    private boolean activo = true;
     private final JLabel estado = new JLabel("Cargando administración...");
 
     private final DefaultTableModel categoriasModel = modelo("ID", "Nombre");
@@ -74,11 +72,11 @@ public class AdministracionPanel extends JPanel {
             "ID", "Nombre", "Precio", "Tipo", "Tamaño", "Descripción", "Imagen"
     );
 
-    private final JTable categoriasTabla = tabla(categoriasModel);
-    private final JTable peliculasTabla = tabla(peliculasModel);
-    private final JTable salasTabla = tabla(salasModel);
-    private final JTable funcionesTabla = tabla(funcionesModel);
-    private final JTable productosTabla = tabla(productosModel);
+    private final JTable categoriasTabla = tablaAdministracion(categoriasModel);
+    private final JTable peliculasTabla = tablaAdministracion(peliculasModel);
+    private final JTable salasTabla = tablaAdministracion(salasModel);
+    private final JTable funcionesTabla = tablaAdministracion(funcionesModel);
+    private final JTable productosTabla = tablaAdministracion(productosModel);
 
     private List<Opcion> categorias = new ArrayList<>();
     private List<Opcion> peliculas = new ArrayList<>();
@@ -89,22 +87,30 @@ public class AdministracionPanel extends JPanel {
     };
 
     public AdministracionPanel(ApiClient apiClient) {
-        super(new BorderLayout());
-        this.apiClient = apiClient;
+        this(apiClient, null, null);
         construirVista();
         cargarTodo();
     }
 
     public AdministracionPanel(ApiClient apiClient, JTabbedPane pestanias, Consumer<String> estadoExterno) {
         super(new BorderLayout());
-        this.apiClient = apiClient;
+        this.carteleraApi = new CarteleraApi(apiClient);
+        this.salasApi = new SalasApi(apiClient);
+        this.personalApi = new PersonalApi(apiClient);
+        this.productosApi = new ProductosApi(apiClient);
         this.estadoExterno = estadoExterno == null ? mensaje -> {
         } : estadoExterno;
-        agregarPestanias(pestanias);
+        if (pestanias != null) {
+            agregarPestanias(pestanias);
+        }
     }
 
     public void recargar() {
         cargarTodo();
+    }
+
+    public void detener() {
+        activo = false;
     }
 
     private void construirVista() {
@@ -126,106 +132,59 @@ public class AdministracionPanel extends JPanel {
 
     private JPanel panelCategorias() {
         Runnable editar = () -> formularioCategoria(true);
-        Runnable eliminar = () -> eliminarSeleccionado(categoriasTabla, "/categorias/", "la categoría");
-        return panelCrud("Categorías", categoriasTabla, editar, eliminar,
-                boton("Nueva", event -> formularioCategoria(false)),
-                boton("Recargar", event -> cargarTodo()));
+        Runnable eliminar = () -> eliminarSeleccionado(categoriasTabla, carteleraApi::eliminarCategoria, "la categoría");
+        return new CategoriasPanel(
+                categoriasTabla,
+                () -> formularioCategoria(false),
+                this::cargarTodo,
+                () -> mostrarDetalleConAcciones("Categorías", categoriasTabla, editar, eliminar)
+        );
     }
 
     private JPanel panelPeliculas() {
         Runnable editar = () -> formularioPelicula(true);
-        Runnable eliminar = () -> eliminarSeleccionado(peliculasTabla, "/peliculas/", "la película");
-        return panelCrud("Películas", peliculasTabla, editar, eliminar,
-                boton("Nueva", event -> formularioPelicula(false)),
-                boton("Recargar", event -> cargarTodo()));
+        Runnable eliminar = () -> eliminarSeleccionado(peliculasTabla, carteleraApi::eliminarPelicula, "la película");
+        return new PeliculasPanel(
+                peliculasTabla,
+                () -> formularioPelicula(false),
+                this::cargarTodo,
+                () -> mostrarDetalleConAcciones("Películas", peliculasTabla, editar, eliminar)
+        );
     }
 
     private JPanel panelSalas() {
         Runnable editar = () -> formularioMatrizSala();
-        Runnable eliminar = () -> eliminarSeleccionado(salasTabla, "/salas/", "la sala");
-        return panelCrud("Salas", salasTabla, editar, eliminar,
-                boton("Nueva sala", event -> formularioSalaNueva()),
-                boton("Recargar", event -> cargarTodo()));
+        Runnable eliminar = () -> eliminarSeleccionado(salasTabla, salasApi::eliminarSala, "la sala");
+        return new SalasAdminPanel(
+                salasTabla,
+                this::formularioSalaNueva,
+                this::cargarTodo,
+                () -> mostrarDetalleConAcciones("Salas", salasTabla, editar, eliminar)
+        );
     }
 
     private JPanel panelFunciones() {
         Runnable editar = () -> formularioFuncion(true);
-        Runnable eliminar = () -> eliminarSeleccionado(funcionesTabla, "/funciones/", "la función");
-        return panelCrud("Funciones", funcionesTabla, editar, eliminar,
-                boton("Nueva función", event -> formularioFuncion(false)),
-                boton("Recargar", event -> cargarTodo()));
+        Runnable eliminar = () -> eliminarSeleccionado(funcionesTabla, carteleraApi::eliminarFuncion, "la función");
+        return new FuncionesAdminPanel(
+                funcionesTabla,
+                () -> formularioFuncion(false),
+                this::cargarTodo,
+                () -> mostrarDetalleConAcciones("Funciones", funcionesTabla, editar, eliminar)
+        );
     }
 
     private JPanel panelProductos() {
         Runnable editar = () -> formularioProducto(true);
-        Runnable eliminar = () -> eliminarSeleccionado(productosTabla, "/productos-confiteria/", "el producto");
-        return panelCrud("Productos de confitería", productosTabla, editar, eliminar,
-                boton("Nuevo", event -> formularioProducto(false)),
-                boton("Recargar", event -> cargarTodo()));
-    }
-
-    private JPanel panelCrud(String titulo, JTable tabla, Runnable editar, Runnable eliminar, JButton... botones) {
-        JPanel panel = new JPanel(new BorderLayout(8, 8));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        JPanel cabecera = new JPanel(new BorderLayout(12, 0));
-        JLabel etiqueta = new JLabel(titulo);
-        etiqueta.setFont(etiqueta.getFont().deriveFont(Font.BOLD, 15f));
-        JTextField filtro = new JTextField(24);
-        filtro.putClientProperty("JTextField.placeholderText", "Buscar...");
-        JPanel buscador = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        buscador.add(new JLabel("Buscar:"));
-        buscador.add(filtro);
-        cabecera.add(etiqueta, BorderLayout.WEST);
-        cabecera.add(buscador, BorderLayout.EAST);
-        conectarFiltro(tabla, filtro);
-
-        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        for (JButton boton : botones) {
-            acciones.add(boton);
-        }
-        tabla.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent event) {
-                if (event.getClickCount() == 2 && event.getButton() == java.awt.event.MouseEvent.BUTTON1) {
-                    int fila = tabla.rowAtPoint(event.getPoint());
-                    if (fila >= 0) {
-                        tabla.setRowSelectionInterval(fila, fila);
-                        mostrarDetalleConAcciones(titulo, tabla, editar, eliminar);
-                    }
-                }
-            }
-        });
-
-        JPanel encabezado = new JPanel(new BorderLayout(0, 4));
-        encabezado.add(cabecera, BorderLayout.NORTH);
-        encabezado.add(etiquetaAyuda(
-                "Seleccioná una fila para operar. Hacé doble clic para ver la información y las acciones disponibles."),
-                BorderLayout.SOUTH);
-
-        JPanel tablaPanel = new JPanel(new BorderLayout(0, 8));
-        tablaPanel.add(encabezado, BorderLayout.NORTH);
-        tablaPanel.add(new JScrollPane(tabla), BorderLayout.CENTER);
-
-        panel.add(tablaPanel, BorderLayout.CENTER);
-        panel.add(acciones, BorderLayout.SOUTH);
-        return panel;
-    }
-
-    private static JLabel etiquetaAyuda(String texto) {
-        JLabel ayuda = new JLabel(texto);
-        ayuda.setForeground(new Color(92, 98, 108));
-        ayuda.setFont(ayuda.getFont().deriveFont(Font.ITALIC, 12f));
-        ayuda.setBorder(BorderFactory.createEmptyBorder(10, 8, 4, 8));
-        return ayuda;
-    }
-
-    private JEditorPane crearAreaDetalle() {
-        JEditorPane area = new JEditorPane("text/html", mensajeHtml("Seleccioná una fila para ver su información."));
-        area.setEditable(false);
-        area.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
-        area.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
-        return area;
+        Runnable eliminar = () -> eliminarSeleccionado(productosTabla, productosApi::eliminarProducto, "el producto");
+        return new ProductosPanel(
+                productosTabla,
+                () -> formularioProducto(false),
+                this::cargarTodo,
+                () -> mostrarDetalleConAcciones(
+                        "Productos de confitería", productosTabla, editar, eliminar
+                )
+        );
     }
 
     private String descripcionSeleccion(JTable tabla) {
@@ -343,7 +302,7 @@ public class AdministracionPanel extends JPanel {
     }
 
     private void mostrarDetalleConAcciones(String titulo, JTable tabla, Runnable editar, Runnable eliminar) {
-        JEditorPane detalle = crearAreaDetalle();
+        JEditorPane detalle = new VisorDetalle("Seleccioná una fila para ver su información.");
         detalle.setText(descripcionSeleccion(tabla));
         detalle.setCaretPosition(0);
         JScrollPane scroll = new JScrollPane(detalle);
@@ -372,63 +331,23 @@ public class AdministracionPanel extends JPanel {
         }
     }
 
-    private static String inicioHtml() {
-        return "<html><body style='font-family:sans-serif;font-size:10px;margin:8px'>";
-    }
-
-    private static String mensajeHtml(String mensaje) {
-        return inicioHtml() + escaparHtml(mensaje) + "</body></html>";
-    }
-
-    private static String campoHtml(String etiqueta, Object valor) {
-        String contenido = escaparHtml(valor == null || valor.toString().isBlank() ? "-" : valor)
-                .replace("\n", "<br>");
-        return "<table width='100%' cellpadding='4' cellspacing='0'>"
-                + "<tr><td width='38%'><b>" + escaparHtml(etiqueta) + ":</b></td>"
-                + "<td>" + contenido + "</td></tr></table>";
-    }
-
-    private static String tituloHtml(String titulo) {
-        return "<div align='center'><h2>" + escaparHtml(titulo) + "</h2></div><hr>";
-    }
-
-    private static String seccionHtml(String titulo) {
-        return "<br><br><h3>" + escaparHtml(titulo) + "</h3><hr><br>";
-    }
-
-    private static String itemHtml(String titulo) {
-        return "<p><b>" + escaparHtml(titulo) + "</b></p>";
-    }
-
-    private static String mensajeSecundarioHtml(String mensaje) {
-        return "<p><i>" + escaparHtml(mensaje) + "</i></p>";
-    }
-
-    private static String escaparHtml(Object valor) {
-        return String.valueOf(valor)
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-    }
-
     private void formularioCategoria(boolean edicion) {
         int fila = edicion ? filaSeleccionada(categoriasTabla) : -1;
         if (edicion && fila < 0) {
             return;
         }
-        JTextField nombre = new JTextField(edicion ? valor(categoriasModel, fila, 1) : "", 24);
-        if (!confirmarFormulario("Categoría", formulario(new String[]{"Nombre"}, nombre))) {
-            return;
-        }
-        Map<String, Object> cuerpo = Map.of("nombre", nombre.getText().trim());
-        if (edicion) {
-            int id = id(categoriasModel, fila);
-            ejecutar("Actualizando categoría...", () -> apiClient.put("/categorias/" + id, cuerpo), respuesta -> cargarTodo());
-        } else {
-            ejecutar("Creando categoría...", () -> apiClient.post("/categorias", cuerpo), respuesta -> cargarTodo());
-        }
+        String nombreActual = edicion ? valor(categoriasModel, fila, 1) : "";
+        int categoriaId = edicion ? id(categoriasModel, fila) : 0;
+        CategoriaDialog.mostrar(this, nombreActual).ifPresent(datos -> {
+            Map<String, Object> cuerpo = Map.of("nombre", datos.nombre());
+            if (edicion) {
+                ejecutar("Actualizando categoría...",
+                        () -> carteleraApi.actualizarCategoria(categoriaId, cuerpo), respuesta -> cargarTodo());
+            } else {
+                ejecutar("Creando categoría...",
+                        () -> carteleraApi.crearCategoria(cuerpo), respuesta -> cargarTodo());
+            }
+        });
     }
 
     private void formularioPelicula(boolean edicion) {
@@ -441,143 +360,38 @@ public class AdministracionPanel extends JPanel {
             return;
         }
 
-        JTextField titulo = new JTextField(edicion ? valor(peliculasModel, fila, 1) : "", 24);
-        JSpinner duracion = new JSpinner(new SpinnerNumberModel(
-                edicion ? numero(peliculasModel, fila, 2) : 100, 1, 600, 1));
-        JTextArea descripcion = new JTextArea(edicion ? valor(peliculasModel, fila, 4) : "", 3, 24);
-        descripcion.setLineWrap(true);
-        descripcion.setWrapStyleWord(true);
-        JScrollPane scrollDescripcion = new JScrollPane(descripcion);
-        scrollDescripcion.setPreferredSize(new Dimension(320, 95));
         int peliculaId = edicion ? id(peliculasModel, fila) : 0;
-        String[] portada = {edicion ? portadasPeliculas.getOrDefault(peliculaId, "") : ""};
-        JLabel vistaPrevia = new JLabel("Sin imagen", JLabel.CENTER);
-        vistaPrevia.setPreferredSize(new Dimension(90, 120));
-        vistaPrevia.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-        actualizarVistaPrevia(vistaPrevia, portada[0]);
-        JButton elegirImagen = new JButton("Elegir imagen...");
-        elegirImagen.addActionListener(event -> seleccionarImagenLocal(portada, vistaPrevia));
-        JPanel controlImagen = new JPanel(new BorderLayout(6, 6));
-        controlImagen.add(vistaPrevia, BorderLayout.CENTER);
-        controlImagen.add(elegirImagen, BorderLayout.SOUTH);
-        JComboBox<Opcion> categoria = new JComboBox<>(categorias.toArray(Opcion[]::new));
-        if (edicion) {
-            seleccionarPorNombre(categoria, valor(peliculasModel, fila, 3));
-        }
+        PeliculaDialog.Datos inicial = edicion
+                ? new PeliculaDialog.Datos(
+                valor(peliculasModel, fila, 1),
+                numero(peliculasModel, fila, 2),
+                valor(peliculasModel, fila, 4),
+                portadasPeliculas.getOrDefault(peliculaId, ""),
+                0,
+                valor(peliculasModel, fila, 3))
+                : null;
 
-        JPanel panel = formulario(
-                new String[]{"Título", "Duración (min)", "Categoría", "Descripción", "Imagen de portada"},
-                titulo, duracion, categoria, scrollDescripcion, controlImagen
-        );
-        if (!confirmarFormulario("Película", panel)) {
-            return;
-        }
-
-        Opcion categoriaElegida = (Opcion) categoria.getSelectedItem();
-        Map<String, Object> cuerpo = Map.of(
-                "titulo", titulo.getText().trim(),
-                "duracion", duracion.getValue(),
-                "descripcion", descripcion.getText().trim(),
-                "portadaUrl", portada[0],
-                "categoriaId", categoriaElegida.id()
-        );
-        guardarOActualizar(edicion, peliculasModel, fila, "/peliculas", cuerpo, "película");
-    }
-
-    private void seleccionarImagenLocal(String[] portada, JLabel vistaPrevia) {
-        JFileChooser selector = new JFileChooser();
-        selector.setDialogTitle("Elegir imagen");
-        selector.setFileFilter(new FileNameExtensionFilter(
-                "Imágenes JPG, PNG o WEBP", "jpg", "jpeg", "png", "webp"));
-
-        if (selector.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
-            return;
-        }
-
-        File archivo = selector.getSelectedFile();
-        try {
-            byte[] contenido = Files.readAllBytes(archivo.toPath());
-            if (contenido.length > 5 * 1024 * 1024) {
-                aviso("La imagen no puede superar los 5 MB.");
-                return;
-            }
-
-            String mime = Files.probeContentType(archivo.toPath());
-            if (mime == null || !mime.startsWith("image/")) {
-                mime = mimePorExtension(archivo.getName());
-            }
-            if (mime == null) {
-                aviso("El archivo elegido no es una imagen JPG, PNG o WEBP.");
-                return;
-            }
-
-            portada[0] = "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(contenido);
-            actualizarVistaPrevia(vistaPrevia, portada[0]);
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo leer la imagen: " + e.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private String mimePorExtension(String nombre) {
-        String minuscula = nombre.toLowerCase();
-        if (minuscula.endsWith(".jpg") || minuscula.endsWith(".jpeg")) {
-            return "image/jpeg";
-        }
-        if (minuscula.endsWith(".png")) {
-            return "image/png";
-        }
-        if (minuscula.endsWith(".webp")) {
-            return "image/webp";
-        }
-        return null;
-    }
-
-    private void actualizarVistaPrevia(JLabel vistaPrevia, String portada) {
-        vistaPrevia.setIcon(null);
-        if (portada == null || portada.isBlank()) {
-            vistaPrevia.setText("Sin imagen");
-            return;
-        }
-        if (!portada.startsWith("data:image/") || !portada.contains(",")) {
-            vistaPrevia.setText("Imagen actual");
-            return;
-        }
-
-        try {
-            String base64 = portada.substring(portada.indexOf(',') + 1);
-            ImageIcon original = new ImageIcon(Base64.getDecoder().decode(base64));
-            if (original.getIconWidth() <= 0 || original.getIconHeight() <= 0) {
-                throw new IllegalArgumentException("Imagen inválida");
-            }
-
-            int anchoMaximo = Math.max(1, vistaPrevia.getPreferredSize().width - 8);
-            int altoMaximo = Math.max(1, vistaPrevia.getPreferredSize().height - 8);
-            double escala = Math.min(
-                    (double) anchoMaximo / original.getIconWidth(),
-                    (double) altoMaximo / original.getIconHeight());
-            int ancho = Math.max(1, (int) (original.getIconWidth() * escala));
-            int alto = Math.max(1, (int) (original.getIconHeight() * escala));
-            Image imagen = original.getImage().getScaledInstance(ancho, alto, Image.SCALE_SMOOTH);
-            vistaPrevia.setText("");
-            vistaPrevia.setIcon(new ImageIcon(imagen));
-        } catch (IllegalArgumentException e) {
-            vistaPrevia.setText("Imagen inválida");
-        }
+        PeliculaDialog.mostrar(this, inicial, categorias).ifPresent(datos -> {
+            Map<String, Object> cuerpo = Map.of(
+                    "titulo", datos.titulo(),
+                    "duracion", datos.duracion(),
+                    "descripcion", datos.descripcion(),
+                    "portadaUrl", datos.portadaUrl(),
+                    "categoriaId", datos.categoriaId());
+            guardarOActualizar(edicion, "película", () -> edicion
+                    ? carteleraApi.actualizarPelicula(peliculaId, cuerpo)
+                    : carteleraApi.crearPelicula(cuerpo));
+        });
     }
 
     private void formularioSalaNueva() {
-        EditorDistribucionSala editor = EditorDistribucionSala.nuevo();
-        if (!confirmarEditorSala("Nueva sala", editor)) {
-            return;
-        }
-        Map<String, Object> cuerpo = Map.of(
-                "nombre", editor.getNombre(),
-                "butacas", editor.getUbicaciones()
-        );
-        ejecutar("Creando sala y butacas...",
-                () -> apiClient.post("/salas/con-matriz", cuerpo), respuesta -> cargarTodo());
+        SalaDialog.mostrarNueva(this).ifPresent(datos -> {
+            Map<String, Object> cuerpo = Map.of(
+                    "nombre", datos.nombre(),
+                    "butacas", datos.butacas());
+            ejecutar("Creando sala y butacas...",
+                    () -> salasApi.crearSala(cuerpo), respuesta -> cargarTodo());
+        });
     }
 
     private void formularioMatrizSala() {
@@ -587,7 +401,7 @@ public class AdministracionPanel extends JPanel {
         }
         int salaId = id(salasModel, filaSala);
         String nombreSala = valor(salasModel, filaSala, 1);
-        ejecutar("Cargando distribución...", () -> apiClient.get("/butacas"),
+        ejecutar("Cargando distribución...", salasApi::listarButacas,
                 respuesta -> editarDistribucionSala(salaId, nombreSala, respuesta));
     }
 
@@ -598,36 +412,14 @@ public class AdministracionPanel extends JPanel {
                 butacasSala.add(butaca);
             }
         });
-        EditorDistribucionSala editor = EditorDistribucionSala.desde(nombreSala, butacasSala);
-        if (!confirmarEditorSala("Editar " + nombreSala, editor)) {
-            return;
-        }
-        Map<String, Object> cuerpo = Map.of(
-                "nombre", editor.getNombre(),
-                "butacas", editor.getUbicaciones()
-        );
-        ejecutar("Actualizando distribución...",
-                () -> apiClient.put("/salas/" + salaId + "/distribucion", cuerpo), respuestaApi -> cargarTodo());
-    }
-
-    private boolean confirmarEditorSala(String titulo, EditorDistribucionSala editor) {
-        JScrollPane scroll = new JScrollPane(editor);
-        scroll.setPreferredSize(new Dimension(860, 560));
-        int opcion = JOptionPane.showConfirmDialog(
-                this, scroll, titulo, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
-        );
-        if (opcion != JOptionPane.OK_OPTION) {
-            return false;
-        }
-        if (editor.getNombre().isBlank()) {
-            aviso("El nombre de la Sala es obligatorio.");
-            return false;
-        }
-        if (editor.getUbicaciones().isEmpty()) {
-            aviso("La Sala debe tener al menos una Butaca.");
-            return false;
-        }
-        return true;
+        SalaDialog.mostrarEdicion(this, nombreSala, butacasSala).ifPresent(datos -> {
+            Map<String, Object> cuerpo = Map.of(
+                    "nombre", datos.nombre(),
+                    "butacas", datos.butacas());
+            ejecutar("Actualizando distribución...",
+                    () -> salasApi.actualizarDistribucion(salaId, cuerpo),
+                    respuestaApi -> cargarTodo());
+        });
     }
 
     private void formularioEstadoSala() {
@@ -635,60 +427,32 @@ public class AdministracionPanel extends JPanel {
         if (fila < 0) {
             return;
         }
+        int salaId = id(salasModel, fila);
+        String estadoActual = valor(salasModel, fila, 3);
         ejecutar(
                 "Cargando empleados...",
-                () -> apiClient.get("/empleados/activos"),
-                empleadosActivos -> mostrarFormularioEstadoSala(fila, empleadosActivos)
+                personalApi::listarEmpleadosActivos,
+                empleadosActivos -> mostrarFormularioEstadoSala(salaId, estadoActual, empleadosActivos)
         );
     }
 
-    private void mostrarFormularioEstadoSala(int fila, JsonNode empleadosActivos) {
-        JComboBox<String> estadoSala = new JComboBox<>(new String[]{
-                "Disponible", "Limpieza", "Cerrada", "Problema particular"
+    private void mostrarFormularioEstadoSala(int salaId, String estadoActual, JsonNode empleadosActivos) {
+        EstadoSalaDialog.mostrar(this, estadoActual, empleadosActivos).ifPresent(datos -> {
+            Map<String, Object> cuerpo = new HashMap<>();
+            cuerpo.put("estado", datos.estado());
+            cuerpo.put("descripcion", datos.descripcion());
+            if (datos.destinatarioEmpleadoId() != null) {
+                cuerpo.put("destinatarioEmpleadoId", datos.destinatarioEmpleadoId());
+            }
+
+            ejecutar("Actualizando estado de la sala...",
+                    () -> salasApi.cambiarEstado(salaId, cuerpo), respuesta -> cargarTodo());
         });
-        estadoSala.setSelectedItem(valor(salasModel, fila, 3));
-
-        JTextArea descripcion = new JTextArea(4, 24);
-        descripcion.setLineWrap(true);
-        descripcion.setWrapStyleWord(true);
-
-        JComboBox<Opcion> destinatario = new JComboBox<>();
-        destinatario.addItem(new Opcion(0, "Todos los empleados"));
-        empleadosActivos.forEach(empleado -> destinatario.addItem(new Opcion(
-                empleado.path("id").asInt(),
-                empleado.path("nombre").asText() + " (" + empleado.path("usuario").asText() + ")"
-        )));
-
-        JPanel panel = formulario(
-                new String[]{"Estado", "Descripción", "Avisar a"},
-                estadoSala, new JScrollPane(descripcion), destinatario
-        );
-        if (!confirmarFormulario("Nuevo estado de la sala", panel)) {
-            return;
-        }
-        String estado = codigoEstadoSala(String.valueOf(estadoSala.getSelectedItem()));
-        String detalle = descripcion.getText().trim();
-        if ("PROBLEMA_PARTICULAR".equals(estado) && detalle.isBlank()) {
-            aviso("Describí el problema particular de la Sala.");
-            return;
-        }
-
-        Opcion destino = (Opcion) destinatario.getSelectedItem();
-        Map<String, Object> cuerpo = new HashMap<>();
-        cuerpo.put("estado", estado);
-        cuerpo.put("descripcion", detalle);
-        if (destino != null && destino.id() != 0) {
-            cuerpo.put("destinatarioEmpleadoId", destino.id());
-        }
-
-        int salaId = id(salasModel, fila);
-        ejecutar("Actualizando estado de la sala...",
-                () -> apiClient.put("/salas/" + salaId + "/estado", cuerpo), respuesta -> cargarTodo());
     }
 
     private void formularioFuncion(boolean edicion) {
         if (!edicion) {
-            mostrarFormularioFuncion(false, -1);
+            mostrarFormularioFuncion(null, null);
             return;
         }
 
@@ -697,9 +461,18 @@ public class AdministracionPanel extends JPanel {
             return;
         }
         int funcionId = id(funcionesModel, fila);
+        // La tabla puede recargarse mientras se consultan las entradas o se completa el diálogo.
+        FuncionDialog.Datos inicial = new FuncionDialog.Datos(
+                valor(funcionesModel, fila, 1),
+                valor(funcionesModel, fila, 2),
+                numero(funcionesModel, fila, 3),
+                numero(funcionesModel, fila, 5),
+                valor(funcionesModel, fila, 7),
+                valor(funcionesModel, fila, 8),
+                decimal(funcionesModel, fila, 9));
         ejecutar(
                 "Comprobando entradas vendidas...",
-                () -> apiClient.get("/funciones/" + funcionId + "/entradas-activas"),
+                () -> carteleraApi.consultarEntradasActivas(funcionId),
                 respuesta -> {
                     long cantidadEntradas = respuesta.path("cantidadEntradas").asLong();
                     if (cantidadEntradas > 0) {
@@ -716,65 +489,31 @@ public class AdministracionPanel extends JPanel {
                             return;
                         }
                     }
-                    mostrarFormularioFuncion(true, fila);
+                    mostrarFormularioFuncion(funcionId, inicial);
                 }
         );
     }
 
-    private void mostrarFormularioFuncion(boolean edicion, int fila) {
+    private void mostrarFormularioFuncion(Integer funcionId, FuncionDialog.Datos inicial) {
         if (peliculas.isEmpty() || salas.isEmpty()) {
             aviso("Primero deben existir Películas y Salas.");
             return;
         }
 
-        JTextField fecha = new JTextField(edicion ? valor(funcionesModel, fila, 1) : LocalDate.now().toString());
-        JTextField horario = new JTextField(edicion ? valor(funcionesModel, fila, 2) : "20:30");
-        JTextField buscarPelicula = new JTextField();
-        JTextField buscarSala = new JTextField();
-        buscarPelicula.putClientProperty("JTextField.placeholderText", "Buscar por título...");
-        buscarSala.putClientProperty("JTextField.placeholderText", "Buscar por nombre...");
-        JComboBox<Opcion> pelicula = new JComboBox<>(peliculas.toArray(Opcion[]::new));
-        JComboBox<Opcion> sala = new JComboBox<>(salas.toArray(Opcion[]::new));
-        JComboBox<String> formato = new JComboBox<>(new String[]{"2D", "3D"});
-        JComboBox<String> idioma = new JComboBox<>(new String[]{"ESPAÑOL", "SUBTITULADA"});
-        JSpinner precio = new JSpinner(new SpinnerNumberModel(
-                edicion ? decimal(funcionesModel, fila, 9) : 8000.0, 0.01, 10000000.0, 100.0));
-
-        if (edicion) {
-            seleccionarPorId(pelicula, numero(funcionesModel, fila, 3));
-            seleccionarPorId(sala, numero(funcionesModel, fila, 5));
-            formato.setSelectedItem(nombreFormato(valor(funcionesModel, fila, 7)));
-            idioma.setSelectedItem(nombreIdioma(valor(funcionesModel, fila, 8)));
-        }
-        conectarBusquedaOpciones(buscarPelicula, pelicula, peliculas);
-        conectarBusquedaOpciones(buscarSala, sala, salas);
-
-        JPanel panel = formulario(
-                new String[]{"Fecha (AAAA-MM-DD)", "Horario (HH:mm)", "Buscar película", "Película",
-                        "Buscar sala", "Sala", "Formato", "Idioma", "Precio"},
-                fecha, horario, buscarPelicula, pelicula, buscarSala, sala, formato, idioma, precio
-        );
-        if (!confirmarFormulario("Función", panel)) {
-            return;
-        }
-
-        Opcion peliculaElegida = (Opcion) pelicula.getSelectedItem();
-        Opcion salaElegida = (Opcion) sala.getSelectedItem();
-        if (peliculaElegida == null || salaElegida == null) {
-            aviso("Seleccioná una Película y una Sala de las opciones encontradas.");
-            return;
-        }
-
-        Map<String, Object> cuerpo = Map.of(
-                "fecha", fecha.getText().trim(),
-                "horario", horario.getText().trim(),
-                "peliculaId", peliculaElegida.id(),
-                "salaId", salaElegida.id(),
-                "formato", codigoFormato(String.valueOf(formato.getSelectedItem())),
-                "idioma", codigoIdioma(String.valueOf(idioma.getSelectedItem())),
-                "precioEntrada", precio.getValue()
-        );
-        guardarOActualizar(edicion, funcionesModel, fila, "/funciones", cuerpo, "función");
+        FuncionDialog.mostrar(this, inicial, peliculas, salas).ifPresent(datos -> {
+            boolean edicion = funcionId != null;
+            Map<String, Object> cuerpo = Map.of(
+                    "fecha", datos.fecha(),
+                    "horario", datos.horario(),
+                    "peliculaId", datos.peliculaId(),
+                    "salaId", datos.salaId(),
+                    "formato", datos.formato(),
+                    "idioma", datos.idioma(),
+                    "precioEntrada", datos.precioEntrada());
+            guardarOActualizar(edicion, "función", () -> edicion
+                    ? carteleraApi.actualizarFuncion(funcionId, cuerpo)
+                    : carteleraApi.crearFuncion(cuerpo));
+        });
     }
 
     private void formularioProducto(boolean edicion) {
@@ -782,58 +521,37 @@ public class AdministracionPanel extends JPanel {
         if (edicion && fila < 0) {
             return;
         }
-        JTextField nombre = new JTextField(edicion ? valor(productosModel, fila, 1) : "");
-        JTextArea descripcion = new JTextArea(edicion ? valor(productosModel, fila, 5) : "", 3, 22);
-        descripcion.setLineWrap(true);
-        descripcion.setWrapStyleWord(true);
-        JScrollPane descripcionScroll = new JScrollPane(descripcion);
-        descripcionScroll.setPreferredSize(new Dimension(320, 72));
-        JSpinner precio = new JSpinner(new SpinnerNumberModel(
-                edicion ? decimal(productosModel, fila, 2) : 1000.0, 0.01, 10000000.0, 100.0));
-        JComboBox<String> tipo = new JComboBox<>(new String[]{"POCHOCLOS", "BEBIDA", "DULCE", "COMBO"});
-        JComboBox<String> tamano = new JComboBox<>(new String[]{"CHICO", "MEDIANO", "GRANDE", "UNICO"});
-        if (edicion) {
-            tipo.setSelectedItem(valor(productosModel, fila, 3));
-            tamano.setSelectedItem(valor(productosModel, fila, 4));
-        }
         int productoId = edicion ? id(productosModel, fila) : 0;
-        String[] imagen = {edicion ? imagenesProductos.getOrDefault(productoId, "") : ""};
-        JLabel vistaPrevia = new JLabel("Sin imagen", JLabel.CENTER);
-        vistaPrevia.setPreferredSize(new Dimension(140, 105));
-        vistaPrevia.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-        actualizarVistaPrevia(vistaPrevia, imagen[0]);
-        JButton elegirImagen = new JButton("Elegir imagen...");
-        elegirImagen.addActionListener(event -> seleccionarImagenLocal(imagen, vistaPrevia));
-        JPanel controlImagen = new JPanel(new BorderLayout(6, 6));
-        controlImagen.add(vistaPrevia, BorderLayout.CENTER);
-        controlImagen.add(elegirImagen, BorderLayout.SOUTH);
-        if (!confirmarFormulario("Producto de confitería", formulario(
-                new String[]{"Nombre", "Descripción", "Precio", "Tipo", "Tamaño", "Imagen"},
-                nombre, descripcionScroll, precio, tipo, tamano, controlImagen))) {
-            return;
-        }
-        Map<String, Object> cuerpo = Map.of(
-                "nombre", nombre.getText().trim(),
-                "descripcion", descripcion.getText().trim(),
-                "precio", precio.getValue(),
-                "tipo", tipo.getSelectedItem(),
-                "tamano", tamano.getSelectedItem(),
-                "imagenUrl", imagen[0]
-        );
-        guardarOActualizar(edicion, productosModel, fila, "/productos-confiteria", cuerpo, "producto");
+        ProductoDialog.Datos inicial = edicion
+                ? new ProductoDialog.Datos(
+                valor(productosModel, fila, 1),
+                valor(productosModel, fila, 5),
+                decimal(productosModel, fila, 2),
+                valor(productosModel, fila, 3),
+                valor(productosModel, fila, 4),
+                imagenesProductos.getOrDefault(productoId, ""))
+                : null;
+
+        ProductoDialog.mostrar(this, inicial).ifPresent(datos -> {
+            Map<String, Object> cuerpo = Map.of(
+                    "nombre", datos.nombre(),
+                    "descripcion", datos.descripcion(),
+                    "precio", datos.precio(),
+                    "tipo", datos.tipo(),
+                    "tamano", datos.tamano(),
+                    "imagenUrl", datos.imagenUrl());
+            guardarOActualizar(edicion, "producto", () -> edicion
+                    ? productosApi.actualizarProducto(productoId, cuerpo)
+                    : productosApi.crearProducto(cuerpo));
+        });
     }
 
-    private void guardarOActualizar(boolean edicion, DefaultTableModel model, int fila,
-                                    String ruta, Map<String, Object> cuerpo, String entidad) {
-        if (edicion) {
-            int id = id(model, fila);
-            ejecutar("Actualizando " + entidad + "...", () -> apiClient.put(ruta + "/" + id, cuerpo), respuesta -> cargarTodo());
-        } else {
-            ejecutar("Creando " + entidad + "...", () -> apiClient.post(ruta, cuerpo), respuesta -> cargarTodo());
-        }
+    private void guardarOActualizar(boolean edicion, String entidad, Operacion<JsonNode> operacion) {
+        String mensaje = (edicion ? "Actualizando " : "Creando ") + entidad + "...";
+        ejecutar(mensaje, operacion, respuesta -> cargarTodo());
     }
 
-    private void eliminarSeleccionado(JTable tabla, String ruta, String entidad) {
+    private void eliminarSeleccionado(JTable tabla, Eliminacion eliminar, String entidad) {
         int fila = filaSeleccionada(tabla);
         if (fila < 0) {
             return;
@@ -846,18 +564,18 @@ public class AdministracionPanel extends JPanel {
             return;
         }
         ejecutar("Eliminando...", () -> {
-            apiClient.delete(ruta + id);
+            eliminar.ejecutar(id);
             return null;
         }, ignorado -> cargarTodo());
     }
 
     private void cargarTodo() {
         ejecutar("Cargando datos administrativos...", () -> new DatosAdministracion(
-                apiClient.get("/categorias"),
-                apiClient.get("/peliculas"),
-                apiClient.get("/salas"),
-                apiClient.get("/funciones"),
-                apiClient.get("/productos-confiteria")
+                carteleraApi.listarCategorias(),
+                carteleraApi.listarPeliculas(),
+                salasApi.listarSalas(),
+                carteleraApi.listarFunciones(),
+                productosApi.listarProductos()
         ), this::aplicarDatos);
     }
 
@@ -922,38 +640,6 @@ public class AdministracionPanel extends JPanel {
         });
     }
 
-    private JPanel formulario(String[] etiquetas, java.awt.Component... componentes) {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
-        for (int i = 0; i < etiquetas.length; i++) {
-            if (componentes[i] instanceof JTextField campo && campo.getColumns() == 0) {
-                campo.setColumns(22);
-            }
-
-            GridBagConstraints etiqueta = new GridBagConstraints();
-            etiqueta.gridx = 0;
-            etiqueta.gridy = i;
-            etiqueta.anchor = GridBagConstraints.LINE_END;
-            etiqueta.insets = new Insets(4, 4, 4, 8);
-            panel.add(new JLabel(etiquetas[i]), etiqueta);
-
-            GridBagConstraints control = new GridBagConstraints();
-            control.gridx = 1;
-            control.gridy = i;
-            control.weightx = 1;
-            control.fill = GridBagConstraints.HORIZONTAL;
-            control.anchor = GridBagConstraints.LINE_START;
-            control.insets = new Insets(4, 0, 4, 4);
-            panel.add(componentes[i], control);
-        }
-        return panel;
-    }
-
-    private boolean confirmarFormulario(String titulo, JPanel panel) {
-        return JOptionPane.showConfirmDialog(this, panel, titulo,
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION;
-    }
-
     private int filaSeleccionada(JTable tabla) {
         int filaVista = tabla.getSelectedRow();
         if (filaVista < 0) {
@@ -968,6 +654,9 @@ public class AdministracionPanel extends JPanel {
     }
 
     private <T> void ejecutar(String mensaje, Operacion<T> operacion, Consumer<T> alCompletar) {
+        if (!activo) {
+            return;
+        }
         actualizarEstado(mensaje);
         new SwingWorker<T, Void>() {
             @Override
@@ -977,6 +666,9 @@ public class AdministracionPanel extends JPanel {
 
             @Override
             protected void done() {
+                if (!activo) {
+                    return;
+                }
                 try {
                     alCompletar.accept(get());
                     actualizarEstado("Operación completada");
@@ -997,210 +689,6 @@ public class AdministracionPanel extends JPanel {
         estadoExterno.accept(mensaje);
     }
 
-    private JButton boton(String texto, java.awt.event.ActionListener accion) {
-        JButton boton = new JButton(texto);
-        boton.addActionListener(accion);
-        return boton;
-    }
-
-    private static JTable tabla(DefaultTableModel model) {
-        JTable tabla = new JTable(model);
-        tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        tabla.setAutoCreateRowSorter(true);
-        tabla.setRowHeight(24);
-        tabla.getTableHeader().setReorderingAllowed(false);
-        ordenarColumnas(tabla);
-        configurarAnchos(tabla);
-        return tabla;
-    }
-
-    private static void conectarFiltro(JTable tabla, JTextField campo) {
-        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>((DefaultTableModel) tabla.getModel());
-        tabla.setRowSorter(sorter);
-        configurarOrdenInicial(sorter, (DefaultTableModel) tabla.getModel());
-        campo.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            private void actualizar() {
-                String busqueda = normalizarBusqueda(campo.getText());
-                sorter.setRowFilter(busqueda.isEmpty() ? null : new RowFilter<DefaultTableModel, Integer>() {
-                    @Override
-                    public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
-                        for (int columna = 0; columna < entry.getValueCount(); columna++) {
-                            if (normalizarBusqueda(String.valueOf(entry.getValue(columna))).contains(busqueda)) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    }
-                });
-            }
-
-            @Override
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                actualizar();
-            }
-
-            @Override
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                actualizar();
-            }
-
-            @Override
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                actualizar();
-            }
-        });
-    }
-
-    private static void ordenarColumnas(JTable tabla) {
-        DefaultTableModel model = (DefaultTableModel) tabla.getModel();
-        if (model.findColumn("Película ID") >= 0) {
-            moverColumnas(tabla, "ID", "Fecha", "Horario", "Película", "Sala", "Formato", "Idioma",
-                    "Precio", "Película ID", "Sala ID");
-        } else if (model.findColumn("Título") >= 0) {
-            moverColumnas(tabla, "ID", "Título", "Categoría", "Duración", "Descripción", "Portada");
-        } else if (model.findColumn("Tipo") >= 0) {
-            moverColumnas(tabla, "ID", "Nombre", "Tipo", "Tamaño", "Precio");
-        }
-    }
-
-    private static void moverColumnas(JTable tabla, String... nombres) {
-        DefaultTableModel model = (DefaultTableModel) tabla.getModel();
-        for (int destino = 0; destino < nombres.length; destino++) {
-            int indiceModelo = model.findColumn(nombres[destino]);
-            if (indiceModelo < 0) {
-                continue;
-            }
-            int indiceVista = tabla.convertColumnIndexToView(indiceModelo);
-            if (indiceVista >= 0 && indiceVista != destino) {
-                tabla.moveColumn(indiceVista, destino);
-            }
-        }
-    }
-
-    private static void configurarAnchos(JTable tabla) {
-        for (int columna = 0; columna < tabla.getColumnModel().getColumnCount(); columna++) {
-            TableColumn columnaTabla = tabla.getColumnModel().getColumn(columna);
-            String nombre = String.valueOf(columnaTabla.getHeaderValue());
-            switch (nombre) {
-                case "ID" -> configurarColumna(columnaTabla, 42, 50, 65);
-                case "Fecha" -> configurarColumna(columnaTabla, 85, 100, 115);
-                case "Horario" -> configurarColumna(columnaTabla, 70, 82, 95);
-                case "Duración", "Capacidad", "Cantidad", "Activo" ->
-                        configurarColumna(columnaTabla, 68, 82, 100);
-                case "Película ID", "Sala ID" -> configurarColumna(columnaTabla, 72, 82, 95);
-                case "Formato", "Butaca", "Ticket" -> configurarColumna(columnaTabla, 65, 78, 92);
-                case "Idioma" -> configurarColumna(columnaTabla, 90, 110, 130);
-                case "Precio", "Subtotal" -> configurarColumna(columnaTabla, 82, 98, 115);
-                case "Estado", "Tipo", "Tamaño" -> configurarColumna(columnaTabla, 95, 125, 165);
-                case "Portada" -> configurarColumna(columnaTabla, 75, 90, 115);
-                case "Título", "Película", "Nombre", "Producto" ->
-                        configurarColumnaFlexible(columnaTabla, 120, 190);
-                case "Sala", "Categoría" -> configurarColumnaFlexible(columnaTabla, 95, 135);
-                case "Descripción", "Detalle" -> configurarColumnaFlexible(columnaTabla, 180, 300);
-                default -> configurarColumnaFlexible(columnaTabla, 80, 120);
-            }
-        }
-    }
-
-    private static void configurarColumna(TableColumn columna, int minimo, int preferido, int maximo) {
-        columna.setMinWidth(minimo);
-        columna.setPreferredWidth(preferido);
-        columna.setMaxWidth(maximo);
-    }
-
-    private static void configurarColumnaFlexible(TableColumn columna, int minimo, int preferido) {
-        columna.setMinWidth(minimo);
-        columna.setPreferredWidth(preferido);
-        columna.setMaxWidth(Integer.MAX_VALUE);
-    }
-
-    private static void configurarOrdenInicial(TableRowSorter<DefaultTableModel> sorter,
-                                                DefaultTableModel model) {
-        int fecha = model.findColumn("Fecha");
-        int horario = model.findColumn("Horario");
-        if (fecha >= 0 && horario >= 0) {
-            sorter.setSortKeys(List.of(
-                    new RowSorter.SortKey(fecha, SortOrder.ASCENDING),
-                    new RowSorter.SortKey(horario, SortOrder.ASCENDING)
-            ));
-            return;
-        }
-        int id = model.findColumn("ID");
-        if (id >= 0) {
-            sorter.setSortKeys(List.of(new RowSorter.SortKey(id, SortOrder.ASCENDING)));
-        }
-    }
-
-    private static void conectarBusquedaOpciones(JTextField campo, JComboBox<Opcion> combo,
-                                                   List<Opcion> opciones) {
-        campo.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            private void actualizar() {
-                Opcion seleccionAnterior = combo.getSelectedItem() instanceof Opcion opcion ? opcion : null;
-                String busqueda = normalizarBusqueda(campo.getText());
-
-                combo.removeAllItems();
-                opciones.stream()
-                        .filter(opcion -> normalizarBusqueda(opcion.nombre()).contains(busqueda))
-                        .forEach(combo::addItem);
-
-                if (seleccionAnterior != null) {
-                    seleccionarPorId(combo, seleccionAnterior.id());
-                }
-            }
-
-            @Override
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                actualizar();
-            }
-
-            @Override
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                actualizar();
-            }
-
-            @Override
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                actualizar();
-            }
-        });
-    }
-
-    private static String normalizarBusqueda(String texto) {
-        String normalizado = Normalizer.normalize(texto == null ? "" : texto, Normalizer.Form.NFD);
-        return normalizado.replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT).trim();
-    }
-
-    private static String nombreEstadoSala(String estado) {
-        return switch (estado) {
-            case "LIMPIEZA" -> "Limpieza";
-            case "CERRADA" -> "Cerrada";
-            case "PROBLEMA_PARTICULAR", "FUERA_DE_SERVICIO" -> "Problema particular";
-            default -> "Disponible";
-        };
-    }
-
-    private static String codigoEstadoSala(String estado) {
-        return switch (estado) {
-            case "Limpieza" -> "LIMPIEZA";
-            case "Cerrada" -> "CERRADA";
-            case "Problema particular" -> "PROBLEMA_PARTICULAR";
-            default -> "DISPONIBLE";
-        };
-    }
-
-    private static DefaultTableModel modelo(String... columnas) {
-        return new DefaultTableModel(columnas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-    }
-
-    private static void limpiar(DefaultTableModel model) {
-        model.setRowCount(0);
-    }
-
     private static int id(DefaultTableModel model, int fila) {
         return ((Number) model.getValueAt(fila, 0)).intValue();
     }
@@ -1218,240 +706,13 @@ public class AdministracionPanel extends JPanel {
         return valor == null ? "" : valor.toString();
     }
 
-    private static void seleccionarPorNombre(JComboBox<Opcion> combo, String nombre) {
-        for (int i = 0; i < combo.getItemCount(); i++) {
-            if (combo.getItemAt(i).nombre().equals(nombre)) {
-                combo.setSelectedIndex(i);
-                return;
-            }
-        }
-    }
-
-    private static void seleccionarPorId(JComboBox<Opcion> combo, int id) {
-        for (int i = 0; i < combo.getItemCount(); i++) {
-            if (combo.getItemAt(i).id() == id) {
-                combo.setSelectedIndex(i);
-                return;
-            }
-        }
-    }
-
-    private static String nombreFormato(String formato) {
-        return switch (formato) {
-            case "DOS_D" -> "2D";
-            case "TRES_D" -> "3D";
-            default -> formato;
-        };
-    }
-
-    private static String codigoFormato(String formato) {
-        return "3D".equals(formato) ? "TRES_D" : "DOS_D";
-    }
-
-    private static String nombreIdioma(String idioma) {
-        return "ESPANIOL".equals(idioma) ? "ESPAÑOL" : idioma;
-    }
-
-    private static String codigoIdioma(String idioma) {
-        return "ESPAÑOL".equals(idioma) ? "ESPANIOL" : idioma;
-    }
-
-    private static class EditorDistribucionSala extends JPanel {
-        private static final Color BUTACA_ACTIVA = new Color(35, 142, 74);
-        private static final Color BUTACA_INACTIVA = new Color(105, 111, 121);
-
-        private final JTextField nombre = new JTextField(22);
-        private final JSpinner filas;
-        private final JSpinner columnas;
-        private final JPanel mapa = new JPanel(new BorderLayout(0, 16));
-        private final Set<String> activas = new HashSet<>();
-        private int filasAnteriores;
-        private int columnasAnteriores;
-
-        private EditorDistribucionSala(String nombreSala, int cantidadFilas, int cantidadColumnas,
-                                       Set<String> posicionesActivas) {
-            super(new BorderLayout(0, 16));
-            nombre.setText(nombreSala);
-            filas = new JSpinner(new SpinnerNumberModel(cantidadFilas, 1, 26, 1));
-            columnas = new JSpinner(new SpinnerNumberModel(cantidadColumnas, 1, 40, 1));
-            filasAnteriores = cantidadFilas;
-            columnasAnteriores = cantidadColumnas;
-            activas.addAll(posicionesActivas);
-
-            JPanel controles = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
-            controles.add(new JLabel("Nombre"));
-            controles.add(nombre);
-            controles.add(new JLabel("Filas"));
-            controles.add(filas);
-            controles.add(new JLabel("Butacas por fila"));
-            controles.add(columnas);
-
-            filas.addChangeListener(event -> cambiarDimensiones());
-            columnas.addChangeListener(event -> cambiarDimensiones());
-
-            JPanel encabezado = new JPanel(new BorderLayout(0, 4));
-            encabezado.add(controles, BorderLayout.NORTH);
-            encabezado.add(etiquetaAyuda(
-                    "Ajustá las filas y butacas. Hacé clic en cada lugar para personalizar la sala: verde es butaca y gris es espacio vacío."),
-                    BorderLayout.SOUTH);
-
-            add(encabezado, BorderLayout.NORTH);
-            add(mapa, BorderLayout.CENTER);
-            dibujarMapa();
-        }
-
-        static EditorDistribucionSala nuevo() {
-            int filas = 5;
-            int columnas = 10;
-            Set<String> posiciones = new HashSet<>();
-            for (int fila = 0; fila < filas; fila++) {
-                for (int numero = 1; numero <= columnas; numero++) {
-                    posiciones.add(posicion(fila, numero));
-                }
-            }
-            return new EditorDistribucionSala("", filas, columnas, posiciones);
-        }
-
-        static EditorDistribucionSala desde(String nombre, List<JsonNode> butacas) {
-            int cantidadFilas = 1;
-            int cantidadColumnas = 1;
-            Set<String> posiciones = new HashSet<>();
-
-            for (JsonNode butaca : butacas) {
-                String fila = butaca.path("fila").asText("A").trim().toUpperCase();
-                int indiceFila = Math.max(0, fila.charAt(0) - 'A');
-                int numero = Math.max(1, butaca.path("numero").asInt(1));
-                cantidadFilas = Math.max(cantidadFilas, indiceFila + 1);
-                cantidadColumnas = Math.max(cantidadColumnas, numero);
-                posiciones.add(posicion(indiceFila, numero));
-            }
-
-            return new EditorDistribucionSala(nombre, cantidadFilas, cantidadColumnas, posiciones);
-        }
-
-        String getNombre() {
-            return nombre.getText().trim();
-        }
-
-        List<Map<String, Object>> getUbicaciones() {
-            int cantidadFilas = (Integer) filas.getValue();
-            int cantidadColumnas = (Integer) columnas.getValue();
-            return activas.stream()
-                    .map(EditorDistribucionSala::leerPosicion)
-                    .filter(posicion -> posicion.fila() < cantidadFilas && posicion.numero() <= cantidadColumnas)
-                    .sorted(Comparator.comparingInt(PosicionSala::fila).thenComparingInt(PosicionSala::numero))
-                    .map(posicion -> Map.<String, Object>of(
-                            "fila", String.valueOf((char) ('A' + posicion.fila())),
-                            "numero", posicion.numero()))
-                    .toList();
-        }
-
-        private void cambiarDimensiones() {
-            int nuevasFilas = (Integer) filas.getValue();
-            int nuevasColumnas = (Integer) columnas.getValue();
-
-            activas.removeIf(clave -> {
-                PosicionSala posicion = leerPosicion(clave);
-                return posicion.fila() >= nuevasFilas || posicion.numero() > nuevasColumnas;
-            });
-
-            for (int fila = 0; fila < nuevasFilas; fila++) {
-                for (int numero = 1; numero <= nuevasColumnas; numero++) {
-                    if (fila >= filasAnteriores || numero > columnasAnteriores) {
-                        activas.add(posicion(fila, numero));
-                    }
-                }
-            }
-
-            filasAnteriores = nuevasFilas;
-            columnasAnteriores = nuevasColumnas;
-            dibujarMapa();
-        }
-
-        private void dibujarMapa() {
-            mapa.removeAll();
-            int cantidadFilas = (Integer) filas.getValue();
-            int cantidadColumnas = (Integer) columnas.getValue();
-
-            JLabel pantalla = new JLabel("PANTALLA", JLabel.CENTER);
-            pantalla.setOpaque(true);
-            pantalla.setBackground(new Color(39, 43, 50));
-            pantalla.setForeground(Color.WHITE);
-            pantalla.setFont(pantalla.getFont().deriveFont(Font.BOLD, 15f));
-            pantalla.setPreferredSize(new Dimension(Math.max(520, cantidadColumnas * 55), 42));
-            pantalla.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
-
-            JPanel grilla = new JPanel(new GridBagLayout());
-            GridBagConstraints restricciones = new GridBagConstraints();
-            restricciones.insets = new Insets(3, 3, 3, 3);
-            restricciones.fill = GridBagConstraints.BOTH;
-
-            for (int fila = 0; fila < cantidadFilas; fila++) {
-                restricciones.gridx = 0;
-                restricciones.gridy = fila;
-                restricciones.weightx = 0;
-                JLabel etiquetaFila = new JLabel(String.valueOf((char) ('A' + fila)), JLabel.CENTER);
-                etiquetaFila.setPreferredSize(new Dimension(28, 34));
-                grilla.add(etiquetaFila, restricciones);
-
-                for (int numero = 1; numero <= cantidadColumnas; numero++) {
-                    String clave = posicion(fila, numero);
-                    JButton butaca = new JButton(String.valueOf(numero));
-                    butaca.setPreferredSize(new Dimension(48, 34));
-                    butaca.setMargin(new Insets(2, 4, 2, 4));
-                    butaca.setFocusPainted(false);
-                    pintarButaca(butaca, activas.contains(clave));
-                    butaca.addActionListener(event -> {
-                        if (!activas.remove(clave)) {
-                            activas.add(clave);
-                        }
-                        pintarButaca(butaca, activas.contains(clave));
-                    });
-
-                    restricciones.gridx = numero;
-                    restricciones.weightx = 1;
-                    grilla.add(butaca, restricciones);
-                }
-            }
-
-            JPanel contenido = new JPanel(new BorderLayout(0, 16));
-            contenido.setBorder(BorderFactory.createEmptyBorder(10, 12, 16, 12));
-            contenido.add(pantalla, BorderLayout.NORTH);
-            contenido.add(grilla, BorderLayout.CENTER);
-            mapa.add(contenido, BorderLayout.NORTH);
-            mapa.revalidate();
-            mapa.repaint();
-        }
-
-        private static void pintarButaca(JButton butaca, boolean activa) {
-            butaca.setOpaque(true);
-            butaca.setBackground(activa ? BUTACA_ACTIVA : BUTACA_INACTIVA);
-            butaca.setForeground(Color.WHITE);
-            butaca.setToolTipText(activa ? "Butaca incluida" : "Espacio sin butaca");
-        }
-
-        private static String posicion(int fila, int numero) {
-            return fila + "-" + numero;
-        }
-
-        private static PosicionSala leerPosicion(String clave) {
-            String[] partes = clave.split("-", 2);
-            return new PosicionSala(Integer.parseInt(partes[0]), Integer.parseInt(partes[1]));
-        }
-
-        private record PosicionSala(int fila, int numero) {
-        }
-    }
-
-    private record Opcion(int id, String nombre) {
-        @Override
-        public String toString() {
-            return nombre;
-        }
-    }
-
     private record DatosAdministracion(JsonNode categorias, JsonNode peliculas, JsonNode salas,
                                        JsonNode funciones, JsonNode productos) {
+    }
+
+    @FunctionalInterface
+    private interface Eliminacion {
+        void ejecutar(int id) throws Exception;
     }
 
     @FunctionalInterface

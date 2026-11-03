@@ -15,7 +15,8 @@ Es el script principal de instalación. Al ejecutarlo:
 - Carga 18 películas con sus descripciones y rutas de portada.
 - Carga 4 salas.
 - Genera las 266 butacas correspondientes a las salas.
-- Carga 18 productos de confitería.
+- Carga 19 productos de confitería.
+- Carga los planes de membresía del Club Film Zone.
 
 Este script no crea funciones, espectadores, empleados, métodos de pago, tickets ni compras de prueba.
 
@@ -38,7 +39,7 @@ Contiene las descripciones utilizadas como referencia para las películas cargad
 
 ### `portadasPeliculas/`
 
-Contiene las imágenes originales utilizadas como portadas de las películas. Las rutas almacenadas en la base apuntan a los recursos publicados por el frontend.
+Contiene las imágenes originales utilizadas como portadas de las películas. Las rutas `/images/...` almacenadas en la base apuntan a los recursos servidos por Spring Boot desde `src/main/resources/static/images/`. En desarrollo, Vite redirige esas peticiones al backend.
 
 ## Orden de ejecución en MySQL Workbench
 

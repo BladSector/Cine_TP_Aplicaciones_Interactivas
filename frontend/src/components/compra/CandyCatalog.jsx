@@ -77,7 +77,7 @@ function buildCatalogItems(products, tab) {
   return items
 }
 
-export default function CandyCatalog({ products, consumptions, onChange }) {
+export default function CandyCatalog({ products, consumos, onChange }) {
   const [tab, setTab] = useState('')
   const [selectedVariants, setSelectedVariants] = useState({})
   const catalogItems = useMemo(() => buildCatalogItems(products, tab), [products, tab])
@@ -104,15 +104,16 @@ export default function CandyCatalog({ products, consumptions, onChange }) {
         {catalogItems.map((item) => {
           const selectedId = selectedVariants[item.key]
           const activeProduct = item.variants.find((variant) => variant.id === selectedId)
-            || item.variants.find((variant) => Number(consumptions[variant.id]) > 0)
+            || item.variants.find((variant) => Number(consumos[variant.id]) > 0)
             || item.variants[0]
-          const quantity = Number(consumptions[activeProduct.id]) || 0
+          const quantity = Number(consumos[activeProduct.id]) || 0
           const totalSelected = item.variants.reduce(
-            (total, variant) => total + (Number(consumptions[variant.id]) || 0),
+            (total, variant) => total + (Number(consumos[variant.id]) || 0),
             0,
           )
           const imageUrl = activeProduct.imagenUrl || DEFAULT_PRODUCT_IMAGES[activeProduct.tipo]
           const description = productDescription(activeProduct)
+
           return (
             <article
               key={item.key}
@@ -132,7 +133,7 @@ export default function CandyCatalog({ products, consumptions, onChange }) {
               {item.variants.length > 1 && (
                 <div className="flavor-options" role="radiogroup" aria-label={`Sabor de ${item.title}`}>
                   {item.variants.map((variant) => {
-                    const variantQuantity = Number(consumptions[variant.id]) || 0
+                    const variantQuantity = Number(consumos[variant.id]) || 0
                     return (
                       <button
                         key={variant.id}

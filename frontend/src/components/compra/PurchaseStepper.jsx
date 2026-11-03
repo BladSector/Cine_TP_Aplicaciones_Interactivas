@@ -2,7 +2,7 @@ const STEPS = [
   { key: 'acceso', label: 'Acceso' },
   { key: 'funcion', label: 'Función' },
   { key: 'butacas', label: 'Butacas' },
-  { key: 'candy', label: 'Kiosco · opcional' },
+  { key: 'candy', label: 'Candy · opcional' },
   { key: 'pago', label: 'Pago' },
 ]
 

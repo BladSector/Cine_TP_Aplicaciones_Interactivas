@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Mail } from 'lucide-react'
-import { api, errorMessage } from '../../api/client'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/AuthContext'
+import EmailVerification from './auth/EmailVerification'
+import LoginForm from './auth/LoginForm'
+import PasswordRecoveryFlow from './auth/PasswordRecoveryFlow'
+import RegisterForm from './auth/RegisterForm'
 
 const EMPTY_FORM = {
   email: '',
@@ -9,12 +12,6 @@ const EMPTY_FORM = {
   nombre: '',
   apellido: '',
   contraseniaConfirmacion: '',
-}
-
-const EMPTY_RECOVERY_FORM = {
-  email: '',
-  nuevaContrasenia: '',
-  nuevaContraseniaConfirmacion: '',
 }
 
 export default function PurchaseAuthDrawer({
@@ -37,10 +34,7 @@ export default function PurchaseAuthDrawer({
   const [form, setForm] = useState(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
   const [notice, setNotice] = useState('')
-  const [recoveryStep, setRecoveryStep] = useState(null)
-  const [recoveryMail, setRecoveryMail] = useState(null)
-  const [recoveryForm, setRecoveryForm] = useState(EMPTY_RECOVERY_FORM)
-  const [recoveryError, setRecoveryError] = useState('')
+  const [recoveryOpen, setRecoveryOpen] = useState(false)
   const verifiedCompletionRef = useRef(false)
   const requiresEmailVerification = Boolean(spectator && !spectator.emailVerificado)
 
@@ -82,87 +76,54 @@ export default function PurchaseAuthDrawer({
     setMode(nextMode)
     setAuthError('')
     setNotice('')
-    closeRecovery()
+    setRecoveryOpen(false)
   }
 
   function openRecovery() {
-    setRecoveryStep('request')
-    setRecoveryMail(null)
-    setRecoveryForm({ ...EMPTY_RECOVERY_FORM, email: form.email })
-    setRecoveryError('')
+    setRecoveryOpen(true)
     setAuthError('')
     setNotice('')
   }
 
-  function closeRecovery() {
-    setRecoveryStep(null)
-    setRecoveryMail(null)
-    setRecoveryForm(EMPTY_RECOVERY_FORM)
-    setRecoveryError('')
+  function completeRecovery(email) {
+    setForm((previous) => ({ ...previous, email, contrasenia: '' }))
+    setRecoveryOpen(false)
+    setMode('login')
+    setNotice('Contraseña actualizada. Ya podés iniciar sesión.')
   }
 
-  async function requestRecovery(event) {
+  async function handleLogin(event) {
     event.preventDefault()
     setSubmitting(true)
-    setRecoveryError('')
+    setAuthError('')
+
     try {
-      const result = await api.solicitarRecuperacion(recoveryForm.email)
-      setRecoveryMail(result)
-      setRecoveryStep('mail')
+      const logged = await loginSpectator(form.email, form.contrasenia)
+      if (logged.emailVerificado) {
+        verifiedCompletionRef.current = true
+        onComplete()
+      }
     } catch (error) {
-      setRecoveryError(errorMessage(error))
+      setAuthError((current) => current || error.message || 'No se pudo iniciar sesión.')
     } finally {
       setSubmitting(false)
     }
   }
 
-  async function finishRecovery(event) {
+  async function handleRegister(event) {
     event.preventDefault()
-    setRecoveryError('')
-    if (recoveryForm.nuevaContrasenia !== recoveryForm.nuevaContraseniaConfirmacion) {
-      setRecoveryError('Las contraseñas no coinciden.')
+    setAuthError('')
+
+    if (form.contrasenia !== form.contraseniaConfirmacion) {
+      setAuthError('Las contraseñas no coinciden.')
       return
     }
 
     setSubmitting(true)
     try {
-      await api.recuperarContrasenia({
-        email: recoveryMail.email,
-        token: recoveryMail.token,
-        nuevaContrasenia: recoveryForm.nuevaContrasenia,
-        nuevaContraseniaConfirmacion: recoveryForm.nuevaContraseniaConfirmacion,
-      })
-      setForm((previous) => ({ ...previous, email: recoveryMail.email, contrasenia: '' }))
-      closeRecovery()
-      setMode('login')
-      setNotice('Contraseña actualizada. Ya podés iniciar sesión.')
+      await registerSpectator(form)
     } catch (error) {
-      setRecoveryError(errorMessage(error))
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault()
-    setSubmitting(true)
-    setAuthError('')
-
-    try {
-      if (mode === 'login') {
-        const logged = await loginSpectator(form.email, form.contrasenia)
-        if (logged.emailVerificado) {
-          verifiedCompletionRef.current = true
-          onComplete()
-        }
-      } else {
-        if (form.contrasenia !== form.contraseniaConfirmacion) {
-          throw new Error('Las contraseñas no coinciden.')
-        }
-        await registerSpectator(form)
-      }
-    } catch (error) {
-      if (!authError) setAuthError(error.message || 'No se pudo completar el acceso.')
+      setAuthError((current) => current || error.message || 'No se pudo crear la cuenta.')
     } finally {
       setSubmitting(false)
     }
@@ -176,13 +137,19 @@ export default function PurchaseAuthDrawer({
       verifiedCompletionRef.current = true
       onComplete()
     } catch {
-      // El contexto muestra el mensaje devuelto por el backend.
+      // AuthContext conserva el mensaje enviado por el backend.
     } finally {
       setSubmitting(false)
     }
   }
 
-  return (
+  const title = requiresEmailVerification
+    ? 'Verificá tu correo'
+    : recoveryOpen
+      ? 'Restablecé tu contraseña'
+      : 'Ingresá a tu cuenta'
+
+  return createPortal(
     <div className="auth-drawer-backdrop" role="presentation" onMouseDown={onClose}>
       <aside
         className="auth-drawer"
@@ -194,13 +161,7 @@ export default function PurchaseAuthDrawer({
         <header className="auth-drawer__header">
           <div>
             <p className="eyebrow">{purchase ? 'Continuar compra' : 'Mi cuenta'}</p>
-            <h2>
-              {requiresEmailVerification
-                ? 'Verificá tu correo'
-                : recoveryStep
-                  ? 'Restablecé tu contraseña'
-                  : 'Ingresá a tu cuenta'}
-            </h2>
+            <h2>{title}</h2>
           </div>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar">
             &times;
@@ -209,99 +170,18 @@ export default function PurchaseAuthDrawer({
 
         <div className="auth-drawer__body">
           {requiresEmailVerification ? (
-            <div className="stack-form">
-              <p>Confirmá tu correo para habilitar la compra.</p>
-              <div className="simulated-mail">
-                <p className="eyebrow">Correo simulado</p>
-                <strong>{spectator.email}</strong>
-              </div>
-              {authError && <div className="info-box info-box--error">{authError}</div>}
-              <button type="button" className="primary-button" onClick={handleVerify} disabled={submitting}>
-                {submitting ? 'Verificando…' : 'Confirmar correo y continuar'}
-              </button>
-            </div>
-          ) : recoveryStep ? (
-            <>
-              {recoveryStep === 'request' && (
-                <form className="stack-form" onSubmit={requestRecovery}>
-                  <p>Ingresá el correo asociado a tu cuenta.</p>
-                  <label>
-                    Correo electrónico
-                    <input
-                      type="email"
-                      value={recoveryForm.email}
-                      onChange={(event) => setRecoveryForm((previous) => ({
-                        ...previous,
-                        email: event.target.value,
-                      }))}
-                      required
-                      autoFocus
-                    />
-                  </label>
-                  {recoveryError && <div className="info-box info-box--error">{recoveryError}</div>}
-                  <button type="submit" className="primary-button" disabled={submitting}>
-                    {submitting ? 'Enviando…' : 'Enviar correo'}
-                  </button>
-                  <button type="button" className="text-button auth-recovery-link" onClick={closeRecovery}>
-                    Volver a iniciar sesión
-                  </button>
-                </form>
-              )}
-
-              {recoveryStep === 'mail' && (
-                <div className="simulated-mail simulated-mail--inbox">
-                  <div className="simulated-mail__heading">
-                    <Mail size={22} aria-hidden="true" />
-                    <div>
-                      <p className="eyebrow">Correo simulado</p>
-                      <strong>Restablecé tu contraseña</strong>
-                    </div>
-                  </div>
-                  <p>Enviamos un correo a <strong>{recoveryMail.email}</strong>.</p>
-                  <p>Usá el enlace del mensaje para elegir una contraseña nueva.</p>
-                  <button type="button" className="primary-button" onClick={() => setRecoveryStep('password')}>
-                    Restablecer contraseña
-                  </button>
-                  <small>Este correo es una simulación y no se envía fuera de la aplicación.</small>
-                </div>
-              )}
-
-              {recoveryStep === 'password' && (
-                <form className="stack-form" onSubmit={finishRecovery}>
-                  <label>
-                    Nueva contraseña
-                    <input
-                      type="password"
-                      value={recoveryForm.nuevaContrasenia}
-                      onChange={(event) => setRecoveryForm((previous) => ({
-                        ...previous,
-                        nuevaContrasenia: event.target.value,
-                      }))}
-                      minLength="4"
-                      required
-                      autoFocus
-                    />
-                  </label>
-                  <label>
-                    Repetir contraseña
-                    <input
-                      type="password"
-                      value={recoveryForm.nuevaContraseniaConfirmacion}
-                      onChange={(event) => setRecoveryForm((previous) => ({
-                        ...previous,
-                        nuevaContraseniaConfirmacion: event.target.value,
-                      }))}
-                      minLength="4"
-                      required
-                    />
-                  </label>
-                  {recoveryError && <div className="info-box info-box--error">{recoveryError}</div>}
-                  <button type="submit" className="primary-button" disabled={submitting}>
-                    {submitting ? 'Actualizando…' : 'Guardar contraseña'}
-                  </button>
-                </form>
-              )}
-            </>
+            <EmailVerification
+              email={spectator.email}
+              error={authError}
+              submitting={submitting}
+              onVerify={handleVerify}
+            />
+          ) : recoveryOpen ? (
+            <PasswordRecoveryFlow
+              initialEmail={form.email}
+              onCancel={() => setRecoveryOpen(false)}
+              onComplete={completeRecovery}
+            />
           ) : (
             <>
               <p className="muted">
@@ -309,46 +189,49 @@ export default function PurchaseAuthDrawer({
                   ? purchaseDescription || 'Necesitás una cuenta para reservar tus butacas.'
                   : 'Ingresá para consultar tus entradas, tarjetas y datos personales.'}
               </p>
+
               <div className="auth-tabs">
-                <button type="button" className={mode === 'login' ? 'is-active' : ''} onClick={() => changeMode('login')}>
+                <button
+                  type="button"
+                  className={mode === 'login' ? 'is-active' : ''}
+                  onClick={() => changeMode('login')}
+                >
                   Iniciar sesión
                 </button>
-                <button type="button" className={mode === 'register' ? 'is-active' : ''} onClick={() => changeMode('register')}>
+                <button
+                  type="button"
+                  className={mode === 'register' ? 'is-active' : ''}
+                  onClick={() => changeMode('register')}
+                >
                   Nueva cuenta
                 </button>
               </div>
 
-              {notice && <div className="info-box">{notice}</div>}
-              <form className="stack-form" onSubmit={handleSubmit}>
-                {mode === 'register' && (
-                  <>
-                    <label>Nombre<input name="nombre" value={form.nombre} onChange={updateField} required /></label>
-                    <label>Apellido<input name="apellido" value={form.apellido} onChange={updateField} required /></label>
-                  </>
-                )}
-                <label>Correo electrónico<input type="email" name="email" value={form.email} onChange={updateField} required /></label>
-                <label>Contraseña<input type="password" name="contrasenia" value={form.contrasenia} onChange={updateField} minLength="4" required /></label>
-                {mode === 'register' && (
-                  <label>Repetir contraseña<input type="password" name="contraseniaConfirmacion" value={form.contraseniaConfirmacion} onChange={updateField} minLength="4" required /></label>
-                )}
-                {authError && <div className="info-box info-box--error">{authError}</div>}
-                <button type="submit" className="primary-button" disabled={submitting}>
-                  {submitting
-                    ? 'Procesando…'
-                    : mode === 'login'
-                      ? purchase ? 'Ingresar y continuar' : 'Ingresar'
-                      : 'Crear cuenta'}
-                </button>
-                {mode === 'login' && (
-                  <button type="button" className="text-button auth-recovery-link" onClick={openRecovery}>
-                    ¿Olvidaste la contraseña?
-                  </button>
-                )}
-              </form>
+              {mode === 'login' ? (
+                <LoginForm
+                  form={form}
+                  error={authError}
+                  notice={notice}
+                  submitting={submitting}
+                  purchase={purchase}
+                  onChange={updateField}
+                  onSubmit={handleLogin}
+                  onForgotPassword={openRecovery}
+                />
+              ) : (
+                <RegisterForm
+                  form={form}
+                  error={authError}
+                  submitting={submitting}
+                  onChange={updateField}
+                  onSubmit={handleRegister}
+                />
+              )}
             </>
           )}
         </div>
       </aside>
-    </div>
+    </div>,
+    document.body,
   )
 }

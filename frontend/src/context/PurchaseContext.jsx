@@ -10,8 +10,8 @@ const initialState = {
   movieId: null,
   functionId: null,
   selectedSeats: [],
-  consumptions: {},
-  candyVisited: false,
+  consumos: {},
+  candyVisitado: false,
   returnPath: null,
   membershipId: null,
 }
@@ -20,14 +20,22 @@ function loadStoredDraft() {
   try {
     const stored = sessionStorage.getItem(STORAGE_KEY)
     if (!stored) return initialState
+
     const parsed = JSON.parse(stored)
+    const {
+      consumptions: consumosAnteriores,
+      candyVisited: candyVisitadoAnterior,
+      ...storedDraft
+    } = parsed
+    const consumos = parsed.consumos ?? consumosAnteriores
+
     return {
       ...initialState,
-      ...parsed,
+      ...storedDraft,
+      purchaseType: parsed.purchaseType === 'kiosco' ? 'candy' : parsed.purchaseType,
       selectedSeats: Array.isArray(parsed.selectedSeats) ? parsed.selectedSeats : [],
-      consumptions: parsed.consumptions && typeof parsed.consumptions === 'object'
-        ? parsed.consumptions
-        : {},
+      consumos: consumos && typeof consumos === 'object' ? consumos : {},
+      candyVisitado: parsed.candyVisitado ?? parsed.kioscoVisitado ?? candyVisitadoAnterior ?? false,
     }
   } catch {
     return initialState
@@ -66,12 +74,12 @@ export function PurchaseProvider({ children }) {
     })
   }, [])
 
-  const startCandyOnly = useCallback(() => {
-    setDraft((prev) => ({
+  const iniciarCompraCandy = useCallback(() => {
+    setDraft((previous) => ({
       ...initialState,
       purchaseType: 'candy',
-      consumptions: prev.consumptions,
-      candyVisited: true,
+      consumos: previous.consumos,
+      candyVisitado: true,
     }))
   }, [])
 
@@ -84,51 +92,51 @@ export function PurchaseProvider({ children }) {
   }, [])
 
   const selectFunction = useCallback((functionId) => {
-    setDraft((prev) => ({
-      ...prev,
+    setDraft((previous) => ({
+      ...previous,
       functionId,
       selectedSeats: [],
-      consumptions: {},
-      candyVisited: false,
+      consumos: {},
+      candyVisitado: false,
     }))
   }, [])
 
   const toggleSeat = useCallback((butaca) => {
-    setDraft((prev) => {
-      const exists = prev.selectedSeats.some((seat) => seat.id === butaca.id)
+    setDraft((previous) => {
+      const exists = previous.selectedSeats.some((seat) => seat.id === butaca.id)
       return {
-        ...prev,
+        ...previous,
         selectedSeats: exists
-          ? prev.selectedSeats.filter((seat) => seat.id !== butaca.id)
-          : [...prev.selectedSeats, butaca],
-        candyVisited: false,
+          ? previous.selectedSeats.filter((seat) => seat.id !== butaca.id)
+          : [...previous.selectedSeats, butaca],
+        candyVisitado: false,
       }
     })
   }, [])
 
-  const setConsumption = useCallback((productId, quantity) => {
-    setDraft((prev) => {
-      const next = { ...prev.consumptions }
+  const actualizarConsumo = useCallback((productId, quantity) => {
+    setDraft((previous) => {
+      const next = { ...previous.consumos }
       if (quantity > 0) next[productId] = quantity
       else delete next[productId]
-      return { ...prev, consumptions: next }
+      return { ...previous, consumos: next }
     })
   }, [])
 
-  const clearConsumptions = useCallback(() => {
-    setDraft((prev) => ({ ...prev, consumptions: {} }))
+  const limpiarConsumos = useCallback(() => {
+    setDraft((previous) => ({ ...previous, consumos: {} }))
   }, [])
 
-  const markCandyVisited = useCallback(() => {
-    setDraft((prev) => ({ ...prev, candyVisited: true }))
+  const marcarCandyVisitado = useCallback(() => {
+    setDraft((previous) => ({ ...previous, candyVisitado: true }))
   }, [])
 
   const expireSeatReservation = useCallback(() => {
-    setDraft((prev) => ({
-      ...prev,
+    setDraft((previous) => ({
+      ...previous,
       selectedSeats: [],
-      consumptions: {},
-      candyVisited: false,
+      consumos: {},
+      candyVisitado: false,
     }))
   }, [])
 
@@ -158,15 +166,16 @@ export function PurchaseProvider({ children }) {
     && draft.selectedSeats.length > 0
 
   const cartItemCount = draft.selectedSeats.length
-    + Object.values(draft.consumptions).reduce((sum, quantity) => sum + Number(quantity), 0)
+    + Object.values(draft.consumos).reduce((sum, quantity) => sum + Number(quantity), 0)
 
-  const hasCandyCart = draft.purchaseType === 'candy' && Object.keys(draft.consumptions).length > 0
+  const tieneCarritoCandy = draft.purchaseType === 'candy'
+    && Object.keys(draft.consumos).length > 0
 
   const continuePath = hasActivePurchase
-    ? draft.candyVisited
+    ? draft.candyVisitado
       ? `/compra/${draft.movieId}/pago`
       : `/compra/${draft.movieId}/candy`
-    : hasCandyCart
+    : tieneCarritoCandy
       ? '/candy/pago'
       : null
 
@@ -175,17 +184,17 @@ export function PurchaseProvider({ children }) {
       draft,
       reset,
       startFromMovie,
-      startCandyOnly,
+      iniciarCompraCandy,
       startMembership,
       selectFunction,
       toggleSeat,
-      setConsumption,
-      clearConsumptions,
-      markCandyVisited,
+      actualizarConsumo,
+      limpiarConsumos,
+      marcarCandyVisitado,
       expireSeatReservation,
       cancelActivePurchase,
       hasActivePurchase,
-      hasCandyCart,
+      tieneCarritoCandy,
       cartItemCount,
       continuePath,
       reservationError,
@@ -198,17 +207,17 @@ export function PurchaseProvider({ children }) {
       draft,
       reset,
       startFromMovie,
-      startCandyOnly,
+      iniciarCompraCandy,
       startMembership,
       selectFunction,
       toggleSeat,
-      setConsumption,
-      clearConsumptions,
-      markCandyVisited,
+      actualizarConsumo,
+      limpiarConsumos,
+      marcarCandyVisitado,
       expireSeatReservation,
       cancelActivePurchase,
       hasActivePurchase,
-      hasCandyCart,
+      tieneCarritoCandy,
       cartItemCount,
       continuePath,
       reservationError,
@@ -221,7 +230,7 @@ export function PurchaseProvider({ children }) {
 }
 
 export function usePurchase() {
-  const ctx = useContext(PurchaseContext)
-  if (!ctx) throw new Error('usePurchase debe usarse dentro de PurchaseProvider')
-  return ctx
+  const context = useContext(PurchaseContext)
+  if (!context) throw new Error('usePurchase debe usarse dentro de PurchaseProvider')
+  return context
 }

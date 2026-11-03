@@ -64,8 +64,8 @@ export default function PeliculaPage() {
       movieId,
       functionId: selected.id,
       selectedSeats: [],
-      consumptions: prev.consumptions,
-      candyVisited: false,
+      consumos: prev.consumos,
+      candyVisitado: false,
       returnPath: null,
       membershipId: null,
     }))

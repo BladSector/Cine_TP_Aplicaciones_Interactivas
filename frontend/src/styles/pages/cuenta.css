@@ -1,0 +1,229 @@
+.page-loading,
+.placeholder-page,
+/* 5. Cuenta, perfil y métodos de pago */
+.account-gate {
+  padding: 4rem 0;
+}
+
+.ticket-card,
+.ticket-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.ticket-card {
+  grid-template-columns: 1fr auto;
+  align-items: start;
+}
+
+.qr-code {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  font-size: 1.4rem;
+}
+
+.account-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  margin: 0 0 1.5rem;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.account-grid--profile {
+  grid-template-columns: minmax(0, 620px);
+}
+
+.account-grid--wallet {
+  display: block;
+}
+
+.profile-security {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.profile-security p {
+  margin: 0.2rem 0 0;
+}
+
+.profile-security .secondary-button,
+.wallet-heading .primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  flex: 0 0 auto;
+}
+
+.recovery-recipient {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.recovery-recipient div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.recovery-recipient span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.account-section--wallet {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.wallet-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.wallet-heading h2,
+.wallet-heading p:last-child {
+  margin-bottom: 0;
+}
+
+.payment-form {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.payment-form__row {
+  margin-bottom: 0;
+}
+
+.wallet-empty {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 520px;
+  padding: 1.25rem;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--surface-translucent);
+}
+
+.wallet-empty p {
+  margin: 0.2rem 0 0;
+}
+
+.success-panel {
+  max-width: 720px;
+  margin: 2rem auto;
+}
+
+/* Flujos funcionales compartidos */
+.section-heading,
+.row-title,
+.verification-banner,
+.ticket-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.section-heading {
+  margin-bottom: 1.25rem;
+}
+
+.section-heading h2,
+.section-heading p,
+.row-title p,
+.verification-banner p {
+  margin-bottom: 0;
+}
+
+.form-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 0;
+}
+
+.account-form {
+  max-width: 560px;
+}
+
+.auth-recovery-link,
+.form-inline-action {
+  justify-self: start;
+}
+
+.verification-banner {
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  border-radius: var(--radius);
+  background: rgba(201, 162, 39, 0.1);
+}
+
+.simulated-mail,
+.password-panel {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.simulated-mail code {
+  display: inline-block;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  background: var(--bg-deep);
+  color: #fff;
+  overflow-wrap: anywhere;
+}
+
+.simulated-mail--inbox {
+  display: grid;
+  gap: 1rem;
+}
+
+.simulated-mail--inbox p,
+.simulated-mail--inbox small {
+  margin: 0;
+}
+
+.simulated-mail--inbox small {
+  color: var(--muted);
+}
+
+.simulated-mail__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.simulated-mail__heading .eyebrow {
+  margin-bottom: 0.1rem;
+}
+
+.password-panel {
+  display: grid;
+  gap: 0.9rem;
+}
