@@ -30,6 +30,7 @@ const AccordionGallery = ({
   tilt = 8,
   stagger = 0.06,
   trigger = 'hover',
+  autoAdvanceMs = 2800,
   showLabels = true,
   grayscale = true,
   className = ''
@@ -46,6 +47,7 @@ const AccordionGallery = ({
   const vertical = orientation === 'vertical';
   const count = items.length;
   const [active, setActive] = useState(Math.min(Math.max(defaultIndex, 0), count - 1));
+  const [isTouchMobile, setIsTouchMobile] = useState(false);
 
   const prefersReduced =
     typeof window !== 'undefined' && window.matchMedia
@@ -155,6 +157,23 @@ const AccordionGallery = ({
     },
     []
   );
+
+  useEffect(() => {
+    if (!window.matchMedia) return undefined;
+    const media = window.matchMedia('(max-width: 640px) and (pointer: coarse)');
+    const updateMode = () => setIsTouchMobile(media.matches);
+    updateMode();
+    media.addEventListener('change', updateMode);
+    return () => media.removeEventListener('change', updateMode);
+  }, []);
+
+  useEffect(() => {
+    if (!isTouchMobile || prefersReduced || count < 2) return undefined;
+    const timer = window.setInterval(() => {
+      if (!document.hidden) setActive(current => (current + 1) % count);
+    }, autoAdvanceMs);
+    return () => window.clearInterval(timer);
+  }, [autoAdvanceMs, count, isTouchMobile, prefersReduced]);
 
   const handleEnter = i => {
     if (trigger === 'hover') setActive(i);

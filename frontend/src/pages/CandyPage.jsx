@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CandyCatalog from '../components/compra/CandyCatalog'
+import MobileCheckoutBar from '../components/compra/MobileCheckoutBar'
 import OrderSummary from '../components/compra/OrderSummary'
 import PurchaseAuthDrawer from '../components/cuenta/PurchaseAuthDrawer'
 import { useAuth } from '../context/AuthContext'
@@ -58,7 +59,7 @@ export default function CandyPage() {
   return (
     <div className="purchase-page candy-page">
       <header className="candy-page__heading">
-        <p className="eyebrow">Candy Film Zone</p>
+        <p className="eyebrow">Kiosco Film Zone</p>
         <h1>Tu película favorita también se disfruta en casa</h1>
         <p>Elegí tus productos, pagá en línea y presentá el QR para retirarlos en el cine.</p>
       </header>
@@ -108,9 +109,27 @@ export default function CandyPage() {
         />
       </div>
 
+      <MobileCheckoutBar
+        label={`${selectedItems} producto${selectedItems === 1 ? '' : 's'}`}
+        total={total}
+        disabled={selectedItems === 0}
+        onContinue={continueToPayment}
+        details={(
+          <OrderSummary
+            candyOnly
+            products={productos}
+            consumptions={draft.consumptions}
+            onClearCandy={clearConsumptions}
+            totalTickets={0}
+            totalCandy={total}
+            total={total}
+          />
+        )}
+      />
+
       <PurchaseAuthDrawer
         open={authOpen}
-        purchaseDescription="Necesitás una cuenta para comprar productos del Candy."
+        purchaseDescription="Necesitás una cuenta para comprar productos del kiosco."
         onClose={() => setAuthOpen(false)}
         onComplete={() => {
           setAuthOpen(false)

@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatFunction, formatLanguage, money, shortTime } from '../../utils/format'
 
@@ -8,6 +10,7 @@ function compactLanguage(idioma) {
 }
 
 export default function MovieCard({ movie, functions, onSelectFunction }) {
+  const [scheduleOpen, setScheduleOpen] = useState(false)
   const grouped = functions.reduce((acc, fn) => {
     const key = `${fn.formato}|${fn.idioma}`
     if (!acc[key]) acc[key] = []
@@ -34,7 +37,11 @@ export default function MovieCard({ movie, functions, onSelectFunction }) {
 
   return (
     <article className="movie-card">
-      <div className="movie-card__poster">
+      <Link
+        to={`/pelicula/${movie.id}`}
+        className="movie-card__poster"
+        aria-label={`Ver ${movie.titulo}`}
+      >
         {movie.portadaUrl ? (
           <img src={movie.portadaUrl} alt={`Portada de ${movie.titulo}`} />
         ) : (
@@ -42,7 +49,7 @@ export default function MovieCard({ movie, functions, onSelectFunction }) {
             <span>{movie.titulo}</span>
           </div>
         )}
-      </div>
+      </Link>
 
       <div className="movie-card__body">
         <div className="movie-card__meta">
@@ -53,7 +60,22 @@ export default function MovieCard({ movie, functions, onSelectFunction }) {
         <h3>{movie.titulo}</h3>
         <p className="movie-card__desc">{movie.descripcion}</p>
 
-        <div className="movie-card__schedule">
+        <button
+          type="button"
+          className="movie-card__schedule-toggle"
+          aria-expanded={scheduleOpen}
+          aria-controls={`movie-schedule-${movie.id}`}
+          onClick={() => setScheduleOpen((open) => !open)}
+        >
+          <span>{scheduleOpen ? 'Ocultar funciones' : 'Ver funciones y horarios'}</span>
+          <ChevronDown size={18} aria-hidden="true" />
+        </button>
+
+        <div
+          id={`movie-schedule-${movie.id}`}
+          className={`movie-card__schedule${scheduleOpen ? ' is-expanded' : ''}`}
+        >
+        <p className="movie-card__schedule-label">Horarios:</p>
         {groupedSessions.map(([key, list]) => {
           const [formato, idioma] = key.split('|')
           return (
@@ -83,9 +105,6 @@ export default function MovieCard({ movie, functions, onSelectFunction }) {
         </div>
 
         <div className="movie-card__footer">
-          <Link to={`/pelicula/${movie.id}`} className="text-button">
-            Ver película
-          </Link>
           <span className="movie-card__price">Desde ${money(minPrice)}</span>
         </div>
       </div>

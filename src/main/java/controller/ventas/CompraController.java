@@ -80,7 +80,8 @@ public class CompraController {
                 ticket,
                 ticketService.calcularEstado(ticket),
                 ticketService.calcularTotal(ticket),
-                items
+                items,
+                ticketService.evaluarCancelacion(ticket)
         );
     }
 

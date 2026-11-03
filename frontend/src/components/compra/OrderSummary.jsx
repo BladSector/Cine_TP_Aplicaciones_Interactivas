@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import ConfirmDialog from '../common/ConfirmDialog'
 import {
   formatDateShort,
   formatFunction,
@@ -25,6 +27,8 @@ export default function OrderSummary({
   membership = null,
   membershipQuote = null,
 }) {
+  const [showClearCandyConfirm, setShowClearCandyConfirm] = useState(false)
+
   if (membership) {
     return (
       <aside className="order-summary">
@@ -94,7 +98,7 @@ export default function OrderSummary({
         )}
         <div>
           <p className="eyebrow">{candyOnly ? 'Tu pedido' : 'Tu noche de cine'}</p>
-          <h2>{candyOnly ? 'Candy bar' : movie?.titulo}</h2>
+          <h2>{candyOnly ? 'Kiosco' : movie?.titulo}</h2>
           {!candyOnly && (
             <p className="muted">
               {movie?.duracion} min
@@ -135,8 +139,8 @@ export default function OrderSummary({
               </span>
             ))}
             {editSeatsTo && (
-              <Link to={editSeatsTo} className="text-button">
-                Editar
+              <Link to={editSeatsTo} className="order-summary__action-button">
+                Editar butacas
               </Link>
             )}
           </div>
@@ -149,18 +153,18 @@ export default function OrderSummary({
             <p className="muted">
               {candyOnly
                 ? 'Todavía no seleccionaste productos.'
-                : 'No agregaste productos del candy bar.'}
+                : 'No agregaste productos del kiosco.'}
             </p>
             {editCandyTo && (
-              <Link to={editCandyTo} className="text-button">
-                Volver al candy bar
+              <Link to={editCandyTo} className="order-summary__action-button">
+                Volver al kiosco
               </Link>
             )}
           </div>
         ) : (
           <>
             <div className="order-summary__row">
-              <span>{candyOnly ? 'Productos seleccionados' : 'Candy bar · opcional'}</span>
+              <span>{candyOnly ? 'Productos seleccionados' : 'Kiosco · opcional'}</span>
               <strong>${money(totalCandy)}</strong>
             </div>
             <ul className="order-summary__candy">
@@ -173,13 +177,17 @@ export default function OrderSummary({
             {(editCandyTo || onClearCandy) && (
               <div className="order-summary__candy-actions">
                 {editCandyTo && (
-                  <Link to={editCandyTo} className="text-button">
-                    Editar candy bar
+                  <Link to={editCandyTo} className="order-summary__action-button">
+                    Editar kiosco
                   </Link>
                 )}
                 {onClearCandy && (
-                  <button type="button" className="text-button" onClick={onClearCandy}>
-                    Quitar candy bar
+                  <button
+                    type="button"
+                    className="order-summary__action-button order-summary__action-button--danger"
+                    onClick={() => setShowClearCandyConfirm(true)}
+                  >
+                    Quitar productos
                   </button>
                 )}
               </div>
@@ -195,6 +203,21 @@ export default function OrderSummary({
       <p className="muted tiny">IVA incluido · Sin cargos adicionales</p>
 
       {footer}
+
+      {showClearCandyConfirm && (
+        <ConfirmDialog
+          title="Quitar productos"
+          message="¿Querés quitar todos los productos seleccionados del kiosco?"
+          confirmLabel="Quitar productos"
+          cancelLabel="Conservar productos"
+          danger
+          onConfirm={() => {
+            onClearCandy()
+            setShowClearCandyConfirm(false)
+          }}
+          onCancel={() => setShowClearCandyConfirm(false)}
+        />
+      )}
     </aside>
   )
 }

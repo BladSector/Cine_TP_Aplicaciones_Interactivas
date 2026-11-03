@@ -4,7 +4,7 @@ import DateStrip from '../components/cartelera/DateStrip'
 import MovieCard from '../components/cartelera/MovieCard'
 import { useCatalog } from '../context/CatalogContext'
 import { usePurchase } from '../context/PurchaseContext'
-import { formatFunction, functionHasStarted, normalizeText, todayValue } from '../utils/format'
+import { formatFunction, functionHasStarted, todayValue } from '../utils/format'
 
 import AccordionGallery from '../components/cartelera/AccordionGallery'
 import PurchaseAuthDrawer from '../components/cuenta/PurchaseAuthDrawer'
@@ -28,7 +28,6 @@ export default function CarteleraPage() {
   const [categoryId, setCategoryId] = useState('')
   const [formato, setFormato] = useState('')
   const [idioma, setIdioma] = useState('')
-  const [query, setQuery] = useState('')
   const [pendingMovieId, setPendingMovieId] = useState(null)
   const [pendingReplacement, setPendingReplacement] = useState(null)
   const [replacingPurchase, setReplacingPurchase] = useState(false)
@@ -63,13 +62,12 @@ export default function CarteleraPage() {
           if (categoryId && String(movie.categoriaId) !== categoryId) return false
           if (formato && fn.formato !== formato) return false
           if (idioma && fn.idioma !== idioma) return false
-          if (query && !normalizeText(movie.titulo).includes(normalizeText(query))) return false
           return true
         })
         return { movie, functions: movieFunctions }
       })
       .filter((item) => item.functions.length > 0)
-  }, [peliculas, funciones, selectedDate, categoryId, formato, idioma, query])
+  }, [peliculas, funciones, selectedDate, categoryId, formato, idioma])
 
   function beginPurchase(movie, fn) {
     setDraft((prev) => ({
@@ -156,15 +154,6 @@ export default function CarteleraPage() {
 
         <div className="filters">
           <label>
-            Buscar
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Nombre de película"
-            />
-          </label>
-          <label>
             Género
             <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
               <option value="">Todos</option>
@@ -201,6 +190,10 @@ export default function CarteleraPage() {
           <span className="count-pill">{moviesWithSessions.length} películas</span>
         </div>
 
+        <p className="catalog-note">
+          Seleccioná un horario para elegir tus butacas. El precio varía según la función y el formato.
+        </p>
+
         {error && <div className="info-box info-box--error">{error}</div>}
         {!error && moviesWithSessions.length === 0 && (
           <div className="info-box">No hay funciones para los filtros seleccionados.</div>
@@ -216,11 +209,6 @@ export default function CarteleraPage() {
             />
           ))}
         </div>
-
-        <p className="catalog-note">
-          Selecciona un horario para elegir tus butacas. Los precios pueden variar según la función y
-          el formato.
-        </p>
       </section>
 
       <PurchaseAuthDrawer
