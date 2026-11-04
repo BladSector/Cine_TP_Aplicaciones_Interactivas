@@ -42,7 +42,7 @@ Este README explica cada carpeta y sus archivos: dónde se usan y qué responsab
 
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
-| `AppRoutes.jsx` | Relación entre URL y pantalla. | Agregar una página, cambiar una ruta o una redirección. Conserva redirecciones de `/candy` a `/candy`. |
+| `AppRoutes.jsx` | Relación entre URL y pantalla. | Agregar una página, cambiar una ruta o una redirección. Conserva redirecciones de `/kiosco` a `/candy`. |
 
 Una ruta como `/pelicula/3` es una URL de React. `/peliculas` es un endpoint de la API. No cumplen la misma función.
 
@@ -61,7 +61,8 @@ Los Context conservan información compartida por varias pantallas.
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
 | `AuthContext.jsx` | Sesión del espectador. | Restauración del usuario, login, registro, verificación, actualización de datos y logout. El ID local ayuda a restaurar datos; la sesión real depende del backend y su cookie. |
-| `CatalogContext.jsx` | Datos del cine usados por varias páginas. | Carga/recarga de categorías, películas, funciones, salas, butacas, productos, entradas y tickets, según permisos. |
+| `CatalogContext.jsx` | Catálogo público del cine. | Carga/recarga de categorías, películas, funciones, salas, butacas y productos. No solicita tickets ni entradas privadas. Ignora recargas anteriores que terminan tarde. |
+| `AccountContext.jsx` | Historial privado del espectador. | Tickets, carga, errores y reintento mediante `reloadTickets`. Vacía el historial al cambiar/cerrar sesión y descarta respuestas anteriores. La API sigue verificando los permisos. |
 | `PurchaseContext.jsx` | Compra en curso y carrito. | Borrador, función elegida, butacas seleccionadas, cantidades de productos, continuidad, cancelación y limpieza al vencer la reserva. Persiste el borrador en `sessionStorage`. |
 
 ### Carpeta `frontend/src/hooks/`
@@ -69,6 +70,7 @@ Los Context conservan información compartida por varias pantallas.
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
 | `useCheckout.js` | Etapa final de pago de entradas, candy o membresía. | Estado del pago, comprobaciones visuales, tarjeta elegida, totales, armado de la petición y procesamiento de su resultado. No sustituye el cálculo definitivo del backend. |
+| `useDialog.js` | Modales y acceso lateral. | Foco de teclado, Tab/Escape, retorno al control que abrió la ventana y bloqueo del desplazamiento. Solo el diálogo superior captura el teclado; `closeDisabled` impide cerrar durante una operación. |
 | `useSeatReservationHeartbeat.js` | Seguimiento de las reservas durante la compra. | Consulta periódica, errores y cálculo del tiempo restante. Consulta cada cinco segundos y actualiza el contador cada segundo; no renueva el vencimiento. |
 
 Los diez minutos de reserva se definen en el backend, en `service/ventas/ReservaButacaService.java`, no en el componente que dibuja el contador.
@@ -78,6 +80,7 @@ Los diez minutos de reserva se definen en el backend, en `service/ventas/Reserva
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
 | `format.js` | Presentación y comparaciones compartidas. | Formato de dinero, fechas, idiomas, 2D/3D, etiquetas de butacas, normalización de búsquedas y comprobaciones auxiliares de fechas. |
+| `payment.js` | Tarjetas del perfil y del pago. | Estado vacío, formato del número, vencimiento y número de vista previa. No procesa cobros ni persiste tarjetas. |
 
 ## Páginas
 
@@ -147,7 +150,6 @@ Elementos compartidos entre páginas.
 | `MobileCheckoutBar.jsx` | Barra inferior en celular. | Total compacto, botón de continuar y despliegue de detalles. |
 | `PaymentMethodSelector.jsx` | Método de pago en checkout. | Tarjetas guardadas, nueva tarjeta, vista previa y opción de guardarla. |
 | `ExpiryMonthPicker.jsx` | Vencimiento de tarjeta. | Selector de mes/año y navegación del calendario. |
-| `CheckoutMoviePreview.jsx` | Vista breve de película donde se incorpora este componente. | Portada y datos breves. Su existencia no implica que aparezca en todas las variantes del pago. |
 | `MembershipCheckout.jsx` | Pago o cambio de membresía. | Componente de presentación y hook exportado `useMembershipCheckout`: consulta plan/cotización y muestra el mensaje recibido. No fija las reglas del cambio en el servidor. |
 | `PurchaseSuccess.jsx` | Compra o membresía confirmada. | Mensajes, resultado y composición del ticket. El detalle del comprobante está en `TicketDetails`. |
 
@@ -165,12 +167,12 @@ Elementos compartidos entre páginas.
 
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
-| `LoginForm.jsx` | Formulario del acceso lateral. | Campos de correo/contraseña, mensajes y enlace de recuperación. Recibe el envío por props. |
-| `RegisterForm.jsx` | Registro del acceso lateral. | Datos de cuenta y repetición de contraseña. La coordinación está en el drawer. |
-| `PasswordRecoveryFlow.jsx` | Recuperación antes del login en el acceso lateral. | Etapas de solicitud, correo simulado y contraseña nueva; realiza las peticiones de recuperación. |
+| `LoginForm.jsx` | Acceso lateral y página de cuenta. | Campos de correo/contraseña, mensajes y enlace de recuperación. Recibe el envío por props. |
+| `RegisterForm.jsx` | Registro lateral y página de cuenta. | Datos de cuenta y repetición de contraseña. `groupNameFields` conserva las dos columnas de nombre/apellido en la cuenta; la coordinación pertenece a la pantalla. |
+| `PasswordRecoveryFlow.jsx` | Acceso lateral, página de cuenta y perfil. | Solicitud, correo simulado y contraseña nueva; realiza las peticiones de recuperación. `fixedEmail` utiliza el correo de la sesión en perfil sin pedirlo de nuevo. |
 | `EmailVerification.jsx` | Confirmación de correo en el acceso lateral. | Presentación del correo simulado y botón que ejecuta el callback de verificación. |
 
-Estos archivos separan el flujo lateral. `CuentaPage` conserva también sus propios flujos de acceso: modificar un formulario del drawer no cambia automáticamente el formulario de esa página.
+Los formularios de acceso y registro son compartidos por `CuentaPage` y `PurchaseAuthDrawer`. La recuperación también se comparte con `PerfilForm`: su lógica de solicitud, token y contraseña nueva vive en un solo componente. Cada pantalla conserva la apertura, el cierre y la acción posterior a completar el flujo.
 
 ### Carpeta `frontend/src/components/tickets/`
 
@@ -184,8 +186,9 @@ El QR visible se representa en React. El PDF se solicita al backend; su diseño 
 
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
-| `Modal.jsx` | Ventanas emergentes compartidas. | Portal, estructura, cierre por fondo/tecla Escape y espacio de acciones. |
+| `Modal.jsx` | Ventanas emergentes compartidas. | Portal, estructura y acciones; delega teclado/foco/desplazamiento en `useDialog`. Puede bloquear el cierre mientras procesa. |
 | `ConfirmDialog.jsx` | Confirmaciones de operaciones. | Mensaje, botones y estado de procesamiento. La acción concreta llega por callback. |
+| `PaymentCard.jsx` | Tarjetas del perfil y checkout. | Apariencia común de tarjetas guardadas y vistas previas, titular, vencimiento y selección. Recibe los controles de eliminación como `children`; no hace llamadas HTTP. |
 | `Loader.jsx` | Pantalla/indicador de carga reutilizado. | Marcado y presentación de la carga. |
 | `Loader.css` | Solo el loader. | Apariencia y animación. |
 | `ScrollToTop.jsx` | Desplazamiento al navegar. | Cuándo corresponde subir la página según el cambio de ruta. No es el único lugar del proyecto que puede desplazarla. |
@@ -199,7 +202,8 @@ El QR visible se representa en React. El PDF se solicita al backend; su diseño 
 | `global.css` | Entrada de estilos importada por `main.jsx`. | Orden de los `@import`. No agregar aquí todas las reglas de las pantallas. |
 | `theme.css` | Temas claro/oscuro y variables compartidas. | Colores, superficies, fuentes y valores generales del tema. |
 | `base.css` | Base común del documento. | Reset, texto, enlaces, formularios y clases generales. |
-| `responsive.css` | Ajustes por ancho de pantalla. | Distribución y tamaños para tablet/celular. Incluye cortes de 900, 640 y 390 px; también puede haber ajustes locales en otras hojas. |
+| `responsive.css` | Índice de adaptaciones. | Importa en orden las hojas de `responsive/`; no concentra reglas de todas las pantallas. |
+| `responsive/` | Tablet y celular por sección. | Diez archivos detallados en [el mapa de estilos](src/styles/README.md). Conservan los cortes de 900, 640 y 390 px y la cascada previa. |
 | `layout/header.css` | Encabezado y controles relacionados. | Navegación, lupa, menú de usuario, carrito y posiciones del layout. |
 | `layout/footer.css` | Footer. | Distribución, márgenes y espaciado del pie. |
 | `pages/cartelera.css` | Cartelera. | Filtros, películas, fechas y funciones desplegables. |
@@ -230,9 +234,11 @@ index.html -> main.jsx -> App.jsx -> AppRoutes.jsx -> SiteLayout.jsx
 ```
 
 - Una página coordina una pantalla; un componente presenta una parte reutilizable.
-- Los Context comparten sesión, catálogo y compra. Los hooks agrupan coordinación, efectos y estado de un caso de uso.
+- Los Context separan sesión (`Auth`), catálogo público (`Catalog`), tickets privados (`Account`) y compra en curso (`Purchase`). Los hooks agrupan coordinación, efectos y estado de un caso de uso.
 - `PurchaseContext` conserva `draft` en `sessionStorage`: seleccionar entradas no crea un ticket pagado. Las reservas temporales, cuentas y tarjetas sí pueden guardarse antes.
+- `startMoviePurchase(movieId, functionId)` inicia la compra desde cartelera o detalle de película. Las páginas no modifican directamente el borrador del contexto.
 - `useCheckout.handlePay` confirma la compra; `PurchaseSuccess` muestra el resultado y utiliza `CompraExitosaPage` para la animación y `TicketDetails` para el comprobante.
+- Durante el pago, `PurchaseContext.paymentInProgress` pausa el control de vencimiento. Si falla, se reactiva; si se confirma, se limpia el borrador. El mapa consulta los IDs ocupados en `GET /funciones/{id}/butacas-ocupadas`, junto con las reservas temporales, e ignora respuestas de selecciones anteriores.
 - La interfaz ayuda a validar datos, pero los permisos, precios y disponibilidad definitivos pertenecen al backend.
 - React no accede directamente a MySQL ni debe contener credenciales secretas de base de datos o correo.
 
@@ -278,3 +284,4 @@ Orden de lectura: inicio -> rutas -> Context/API -> una página -> componentes -
 - [Detalle de estilos](src/styles/README.md).
 - [Inicio del proyecto completo](../GUIA_EJECUCION.md).
 - [Verificaciones y límites de las pruebas](../VERIFICACION_INTERFACES.md).
+- [Recorrido para presentar el código](../GUIA_PRESENTACION.md).

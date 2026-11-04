@@ -1,27 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, errorMessage } from '../api/client'
 import { useMembershipCheckout } from '../components/compra/MembershipCheckout'
 import { useAuth } from '../context/AuthContext'
 import { useCatalog } from '../context/CatalogContext'
+import { useAccount } from '../context/AccountContext'
 import { usePurchase } from '../context/PurchaseContext'
 import { functionHasStarted, paymentIsExpired } from '../utils/format'
-
-const EMPTY_CARD = {
-  numero: '',
-  fechaVencimiento: '',
-  nombreTitular: '',
-  cvv: '',
-}
+import { EMPTY_CARD } from '../utils/payment'
 
 export function useCheckout({ movieId, candyOnly, membershipOnly }) {
   const { spectator, isSpectator, refreshSpectator } = useAuth()
   const { peliculas, funciones, productos, reload, loading: catalogLoading } = useCatalog()
+  const { reloadTickets } = useAccount()
   const {
     draft,
     limpiarConsumos,
     reset,
     reservationError,
     remainingSeconds,
+    paymentInProgress,
+    setPaymentInProgress,
   } = usePurchase()
 
   const [accepted, setAccepted] = useState(false)
@@ -34,6 +32,7 @@ export function useCheckout({ movieId, candyOnly, membershipOnly }) {
   const [ticket, setTicket] = useState(null)
   const [subscription, setSubscription] = useState(null)
   const [calculatedTickets, setCalculatedTickets] = useState(null)
+  const submittingRef = useRef(false)
 
   const membershipCheckout = useMembershipCheckout({
     enabled: membershipOnly,
@@ -118,6 +117,7 @@ export function useCheckout({ movieId, candyOnly, membershipOnly }) {
 
   async function handlePay(event) {
     event.preventDefault()
+    if (submittingRef.current || paymentInProgress) return
 
     if (!withoutFunction && functionHasStarted(funcion)) {
       setError('La función seleccionada ya comenzó. Elegí otro horario para continuar.')
@@ -132,6 +132,8 @@ export function useCheckout({ movieId, candyOnly, membershipOnly }) {
       return
     }
 
+    submittingRef.current = true
+    setPaymentInProgress(true)
     setLoading(true)
     setError('')
     let temporaryPaymentMethodId = null
@@ -184,6 +186,7 @@ export function useCheckout({ movieId, candyOnly, membershipOnly }) {
       else if (!membershipOnly) reset()
 
       await reload()
+      await reloadTickets()
       await refreshSpectator(spectator.id)
     } catch (err) {
       if (temporaryPaymentMethodId) {
@@ -196,6 +199,8 @@ export function useCheckout({ movieId, candyOnly, membershipOnly }) {
       }
       setError(errorMessage(err))
     } finally {
+      submittingRef.current = false
+      setPaymentInProgress(false)
       setLoading(false)
     }
   }

@@ -51,8 +51,6 @@ export default function SiteLayout() {
               Cartelera
             </NavLink>
             <NavLink to="/candy" onClick={() => setNavOpen(false)}>Candy</NavLink>
-            <NavLink to="/proximamente" onClick={() => setNavOpen(false)}>Próximamente</NavLink>
-            <NavLink to="/experiencias" onClick={() => setNavOpen(false)}>Experiencias</NavLink>
             <NavLink to="/club" onClick={() => setNavOpen(false)}>Club Film Zone</NavLink>
           </nav>
 

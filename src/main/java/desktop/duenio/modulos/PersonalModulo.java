@@ -52,7 +52,7 @@ public final class PersonalModulo extends ModuloSwing {
     }
 
     private void cargarEmpleados() {
-        ejecutar("Cargando empleados...", personalApi::listarEmpleados, respuesta -> {
+        consultar("empleados", "Cargando empleados...", personalApi::listarEmpleados, respuesta -> {
             limpiar(empleadosModel);
             respuesta.forEach(empleado -> empleadosModel.addRow(new Object[]{
                     empleado.path("id").asInt(), empleado.path("nombre").asText(),

@@ -7,9 +7,6 @@ import desktop.comun.modulos.VentasModulo;
 import desktop.duenio.modulos.ActividadModulo;
 import desktop.duenio.modulos.PersonalModulo;
 
-import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
-import java.awt.Component;
 import java.util.function.Consumer;
 
 public class DuenioPanel extends PanelPersonalBase {
@@ -21,8 +18,7 @@ public class DuenioPanel extends PanelPersonalBase {
 
     public DuenioPanel(ApiClient apiClient, Consumer<String> estado) {
         super(true);
-        JTabbedPane administracion = new JTabbedPane();
-        administracionPanel = new AdministracionPanel(apiClient, administracion, estado);
+        administracionPanel = new AdministracionPanel(apiClient, estado);
         salasModulo = new SalasModulo(apiClient, false, this, estado);
         ventasModulo = new VentasModulo(apiClient, false, this, estado);
         personalModulo = new PersonalModulo(apiClient, this, estado);
@@ -32,14 +28,14 @@ public class DuenioPanel extends PanelPersonalBase {
         agregarSeccion("Ventas y tickets", ventasModulo.panelTickets());
         agregarSeccion("Consumos", ventasModulo.panelConsumos());
         agregarGrupo("CARTELERA");
-        agregarSeccion("Funciones", extraerPestania(administracion, "Funciones"));
-        agregarSeccion("Películas", extraerPestania(administracion, "Películas"));
-        agregarSeccion("Categorías", extraerPestania(administracion, "Categorías"));
+        agregarSeccion("Funciones", administracionPanel.panelFunciones());
+        agregarSeccion("Películas", administracionPanel.panelPeliculas());
+        agregarSeccion("Categorías", administracionPanel.panelCategorias());
         agregarGrupo("INSTALACIONES");
-        agregarSeccion("Salas", extraerPestania(administracion, "Salas"));
+        agregarSeccion("Salas", administracionPanel.panelSalas());
         agregarSeccion("Butacas", salasModulo.panelButacas());
         agregarGrupo("CONFITERÍA");
-        agregarSeccion("Productos", extraerPestania(administracion, "Confitería"));
+        agregarSeccion("Productos", administracionPanel.panelProductos());
         agregarGrupo("ADMINISTRACIÓN");
         agregarSeccion("Empleados", personalModulo.panel());
         agregarSeccion("Actividad", actividadModulo.panel());
@@ -53,14 +49,4 @@ public class DuenioPanel extends PanelPersonalBase {
         recargar();
     }
 
-    private JPanel extraerPestania(JTabbedPane origen, String titulo) {
-        for (int indice = 0; indice < origen.getTabCount(); indice++) {
-            if (titulo.equals(origen.getTitleAt(indice))) {
-                Component contenido = origen.getComponentAt(indice);
-                origen.removeTabAt(indice);
-                return (JPanel) contenido;
-            }
-        }
-        throw new IllegalStateException("No se encontró el módulo " + titulo + ".");
-    }
 }

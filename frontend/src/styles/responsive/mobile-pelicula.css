@@ -1,0 +1,128 @@
+@media (max-width: 640px) {
+  .movie-detail__layout {
+    grid-template-columns: clamp(110px, 32vw, 124px) minmax(0, 1fr);
+    gap: 0.85rem;
+  }
+
+  .movie-detail__poster {
+    width: 100%;
+    max-width: 124px;
+  }
+
+  .movie-detail__summary h1 {
+    margin-bottom: 0.2rem;
+    font-size: 1.72rem;
+    line-height: 1;
+  }
+
+  .movie-detail .back-link {
+    margin: 0.7rem 0 0.8rem;
+    font-size: 0.78rem;
+  }
+
+  .movie-detail__summary .eyebrow {
+    margin-bottom: 0.2rem;
+    font-size: 0.72rem;
+  }
+
+  .movie-detail__meta {
+    margin-bottom: 0.3rem;
+    font-size: 0.86rem;
+  }
+
+  .movie-detail__description {
+    margin-bottom: 0.45rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    -webkit-line-clamp: 2;
+  }
+
+  .movie-detail__booking {
+    grid-column: 1 / -1;
+    padding-top: 0.7rem;
+  }
+
+  .movie-detail__booking > h2 {
+    margin-bottom: 0.4rem;
+    font-size: 1.2rem;
+  }
+
+  .movie-detail .date-strip {
+    gap: 0.35rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .movie-detail .date-chip {
+    min-width: 46px;
+    padding: 0.3rem 0.35rem;
+  }
+
+  .movie-detail .date-chip__num {
+    font-size: 1.05rem;
+  }
+
+  .movie-detail .function-picker {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+    margin: 0.55rem 0;
+  }
+
+  .movie-detail .function-option {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    height: 70px;
+    min-height: 70px;
+    align-items: center;
+    gap: 0.05rem 0.55rem;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid var(--line);
+    background: var(--surface-raised);
+  }
+
+  .movie-detail .function-option__time {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    font-size: 1.15rem;
+  }
+
+  .movie-detail .function-option__format {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .movie-detail .function-option__room {
+    grid-column: 2;
+    grid-row: 2;
+    font-size: 0.78rem;
+  }
+
+  .movie-detail .function-option__price {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    margin: 0;
+    font-size: 0.88rem;
+  }
+
+  .movie-detail .function-option.is-selected {
+    background: var(--bg-deep);
+    color: #fff;
+    border-color: var(--accent);
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  .movie-detail__cta {
+    align-items: flex-start;
+    flex-direction: row;
+    margin-top: 0.6rem;
+  }
+
+  .movie-detail__cta .primary-button {
+    width: auto;
+    min-height: 42px;
+    padding: 0.58rem 0.95rem;
+    font-size: 0.9rem;
+  }
+}

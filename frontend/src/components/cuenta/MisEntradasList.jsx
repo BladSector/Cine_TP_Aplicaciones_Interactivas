@@ -1,20 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Modal from '../common/Modal'
 import TicketDetails from '../tickets/TicketDetails'
 import { useCatalog } from '../../context/CatalogContext'
+import { useAccount } from '../../context/AccountContext'
 import { formatDateShort, money, shortTime } from '../../utils/format'
 
 export default function MisEntradasList() {
-  const { tickets, peliculas, reload } = useCatalog()
+  const { peliculas } = useCatalog()
+  const { tickets, loading, error, reloadTickets } = useAccount()
   const [selected, setSelected] = useState(null)
   const myTickets = [...(tickets || [])].sort((a, b) => b.id - a.id)
+
+  useEffect(() => { reloadTickets() }, [reloadTickets])
 
   return (
     <section id="entradas" className="account-section">
       <div className="section-heading">
         <div><p className="eyebrow">Historial</p><h2>Mis tickets</h2></div>
       </div>
-      {myTickets.length === 0 ? (
+      {error ? (
+        <div className="info-box info-box--error" role="alert">
+          {error}
+          <button type="button" className="secondary-button" onClick={reloadTickets}>Reintentar</button>
+        </div>
+      ) : loading && myTickets.length === 0 ? (
+        <p role="status">Cargando tus tickets…</p>
+      ) : myTickets.length === 0 ? (
         <div className="info-box">Todavía no tenés compras. Elegí una función en cartelera.</div>
       ) : (
         <div className="ticket-list">
@@ -68,7 +79,7 @@ export default function MisEntradasList() {
             )}
             onCancelled={async (updatedTicket) => {
               setSelected(updatedTicket)
-              await reload()
+              await reloadTickets()
             }}
           />
         </Modal>

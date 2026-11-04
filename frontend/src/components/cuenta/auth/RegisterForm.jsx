@@ -4,9 +4,11 @@ export default function RegisterForm({
   submitting,
   onChange,
   onSubmit,
+  className = '',
+  groupNameFields = false,
 }) {
-  return (
-    <form className="stack-form" onSubmit={onSubmit}>
+  const nameFields = (
+    <>
       <label>
         Nombre
         <input name="nombre" value={form.nombre} onChange={onChange} required />
@@ -16,6 +18,14 @@ export default function RegisterForm({
         Apellido
         <input name="apellido" value={form.apellido} onChange={onChange} required />
       </label>
+    </>
+  )
+
+  return (
+    <form className={`stack-form ${className}`.trim()} onSubmit={onSubmit}>
+      {groupNameFields
+        ? <div className="form-grid form-grid--two">{nameFields}</div>
+        : nameFields}
 
       <label>
         Correo electrónico

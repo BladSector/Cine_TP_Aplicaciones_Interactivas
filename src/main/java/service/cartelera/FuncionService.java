@@ -53,6 +53,12 @@ public class FuncionService {
         );
     }
 
+    public List<Integer> listarButacasOcupadas(int id) {
+        buscarPorId(id);
+        return entradaRepository.buscarButacasOcupadas(
+                id, List.of(EstadoEntrada.REEMBOLSADA, EstadoEntrada.CANCELADA));
+    }
+
     public Funcion guardar(LocalDate fecha, LocalTime horario, int peliculaId, int salaId, FormatoFuncion formato, IdiomaFuncion idioma, double precioEntrada) {
         validarDatos(fecha, horario, formato, idioma, precioEntrada);
         Pelicula pelicula = buscarPelicula(peliculaId);

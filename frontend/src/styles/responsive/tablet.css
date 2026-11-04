@@ -1,0 +1,311 @@
+@media (max-width: 900px) {
+  .site-header__inner {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.85rem 0;
+  }
+
+  .site-nav {
+    position: static;
+    width: 100%;
+    transform: none;
+  }
+
+  .header-utility {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .header-search {
+    order: 2;
+    align-self: auto;
+    width: 42px;
+  }
+
+  .header-search__field {
+    width: min(240px, calc(100vw - 2rem));
+  }
+
+  .header-search__results {
+    right: 0;
+    left: auto;
+    width: min(430px, calc(100vw - 2rem));
+    max-height: 55vh;
+  }
+
+  .header-actions {
+    order: 1;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  .theme-toggle {
+    order: 3;
+  }
+
+  .filters,
+  .form-grid,
+  .movie-card,
+  .movie-detail__layout,
+  .purchase-grid,
+  .purchase-grid--wide,
+  .account-grid,
+  .ticket-card,
+  .membership-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .function-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .movie-card__price {
+    margin-left: 0;
+  }
+
+  .wallet-heading,
+  .profile-security {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .wallet-heading .primary-button,
+  .profile-security .secondary-button {
+    width: 100%;
+  }
+
+  .movie-card__poster {
+    width: min(180px, 55vw);
+    justify-self: center;
+  }
+
+  .movie-card__sessions {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .checkout-customer,
+  .saved-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-card-options,
+  .checkout-new-card {
+    grid-template-columns: 1fr;
+  }
+
+  .hero__content {
+    padding-top: 3.5rem;
+  }
+}
+
+/* Responsive layout */
+
+.mobile-nav-toggle {
+  display: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface-translucent);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  html {
+    scroll-padding-top: 126px;
+  }
+
+  h1 {
+    font-size: 3.75rem;
+  }
+
+  h2 {
+    font-size: 2.1rem;
+  }
+
+  .site-header__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.65rem 0.8rem;
+    min-height: auto;
+    padding: 0.65rem 0;
+  }
+
+  .brand {
+    grid-column: 1;
+    grid-row: 1;
+    width: fit-content;
+  }
+
+  .mobile-nav-toggle {
+    display: grid;
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .mobile-nav-toggle:hover,
+  .mobile-nav-toggle:focus-visible {
+    border-color: var(--accent);
+    outline: 0;
+    color: var(--accent);
+  }
+
+  .site-nav {
+    position: absolute;
+    top: 100%;
+    right: calc((100vw - 100%) / -2);
+    left: calc((100vw - 100%) / -2);
+    z-index: 70;
+    display: none;
+    width: auto;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.25rem;
+    padding: 0.75rem max(1rem, calc((100vw - 100%) / 2)) 1rem;
+    transform: none;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-translucent-strong);
+    box-shadow: 0 18px 34px rgba(18, 20, 26, 0.16);
+    backdrop-filter: blur(16px);
+  }
+
+  .site-nav.is-open {
+    display: flex;
+  }
+
+  .site-nav a,
+  .site-nav a.btn-cartelera {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0.7rem 0.85rem;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ink);
+    font-size: 1rem;
+  }
+
+  .site-nav a.active,
+  .site-nav a:hover,
+  .site-nav a.btn-cartelera.active,
+  .site-nav a.btn-cartelera:hover {
+    background: var(--surface-soft);
+    color: var(--accent);
+  }
+
+  .header-utility {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .header-search__results,
+  .header-cart__panel {
+    max-height: calc(100vh - 145px);
+  }
+
+  .site-main {
+    padding-top: 24px !important;
+  }
+
+  .cartelera-page {
+    margin-top: -24px;
+  }
+
+  .hero {
+    min-height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 0 1rem 2rem;
+  }
+
+  .hero__content,
+  .hero__gallery {
+    width: min(100%, 680px);
+    max-width: none;
+    margin-inline: auto;
+  }
+
+  .hero__content {
+    padding: 3.25rem 0 2rem;
+  }
+
+  .hero__brand {
+    font-size: 6rem;
+  }
+
+  .hero__headline {
+    max-width: 22ch;
+    font-size: 2.8rem;
+  }
+
+  .filters,
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .movie-card {
+    grid-template-columns: 150px minmax(0, 1fr);
+  }
+
+  .movie-card__poster {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .movie-detail__layout {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+
+  .movie-detail__poster {
+    max-width: 180px;
+  }
+
+  .purchase-stepper {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.45rem;
+    scrollbar-width: thin;
+  }
+
+  .purchase-stepper__item {
+    flex: 0 0 auto;
+  }
+
+  .purchase-grid,
+  .purchase-grid--wide {
+    grid-template-columns: 1fr;
+  }
+
+  .order-summary {
+    order: 2;
+  }
+
+  .checkout-new-card {
+    grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  }
+
+  .account-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .membership-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .legal-page__content {
+    grid-template-columns: 1fr;
+  }
+}

@@ -25,7 +25,7 @@ export default function PeliculaPage() {
   const { spectator, isSpectator } = useAuth()
   const {
     draft,
-    setDraft,
+    startMoviePurchase,
     hasActivePurchase,
     continuePath,
     cancelActivePurchase,
@@ -59,16 +59,7 @@ export default function PeliculaPage() {
 
   function beginSelectedPurchase() {
     if (!selected) return
-    setDraft((prev) => ({
-      purchaseType: 'movie',
-      movieId,
-      functionId: selected.id,
-      selectedSeats: [],
-      consumos: prev.consumos,
-      candyVisitado: false,
-      returnPath: null,
-      membershipId: null,
-    }))
+    startMoviePurchase(movieId, selected.id)
     if (!isSpectator || !spectator.emailVerificado) {
       setAuthOpen(true)
       return

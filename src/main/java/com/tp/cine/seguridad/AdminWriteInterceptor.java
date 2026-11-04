@@ -22,6 +22,12 @@ public class AdminWriteInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         if (METODOS_DE_ESCRITURA.contains(request.getMethod())) {
             var sesion = request.getSession(false);
+            if ("PUT".equals(request.getMethod())
+                    && request.getRequestURI().matches("/tickets/\\d+/cancelar-compra")
+                    && sesionService.obtenerEspectadorId(sesion) != null) {
+                // El service valida que sea su ticket y que aún pueda cancelarlo.
+                return true;
+            }
             if (sesionService.esDuenio(sesion)) {
                 return true;
             }

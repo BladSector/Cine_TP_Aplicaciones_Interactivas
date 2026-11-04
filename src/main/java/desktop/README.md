@@ -4,6 +4,8 @@ Cliente Java de escritorio para el dueño y los empleados. Utiliza la misma API 
 
 Este README explica cada carpeta y archivo de `src/main/java/desktop/`, su aplicación y qué modificar allí. Las rutas de los encabezados parten de la raíz del repositorio. Este `README.md` es documentación, no una clase ejecutable.
 
+Para preparar una explicación completa, seguir [la guía de presentación](../../../../GUIA_PRESENTACION.md): conecta los archivos Swing con la compra web y los endpoints que procesan el QR.
+
 ## Índice
 
 - [Inicio y estructura](#inicio-y-estructura)
@@ -58,8 +60,8 @@ Estas clases **no son los services del backend**. No acceden a repositories ni a
 
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
-| `ModuloSwing.java` | Base de los coordinadores operativos. | Ejecución con `SwingWorker`, avisos, detalles, selección de IDs y control de módulo activo. No es un panel visual. |
-| `SalasModulo.java` | Salas, consulta de funciones y butacas. | Carga de datos, selección, dibujo del plano y coordinación de cambios de estado/incidencias. |
+| `ModuloSwing.java` | Base de los coordinadores operativos. | Ejecución con `SwingWorker`, avisos, detalles, selección de IDs y control de módulo activo. `consultar` versiona cada listado para ignorar respuestas antiguas; `ejecutar` se usa para operaciones. No es un panel visual. |
+| `SalasModulo.java` | Salas, consulta de funciones y butacas. | Carga de datos, filtro por sala, selección, permisos y cambios de estado/incidencias. Delega el dibujo en `MapaButacasPanel`. |
 | `VentasModulo.java` | Tickets y Consumos de ambos roles. | Consultas, selección, lectura de QR, advertencias, validación, entrega y reembolso con sus recargas. |
 
 Un módulo conserva estado de pantalla y coordina acciones. No es una entidad persistente. `SwingWorker.doInBackground` realiza HTTP y `done` actualiza la interfaz en el EDT, evitando bloquear la ventana.
@@ -83,6 +85,7 @@ Un módulo conserva estado de pantalla y coordina acciones. No es una entidad pe
 | `PanelConTabla.java` | Secciones con tablas. | Título, ayuda, buscador y contenedor con desplazamiento. |
 | `BuscadorTabla.java` | Búsqueda en tablas. | Campo y filtro literal por columnas, integración con el orden inicial. |
 | `VisorDetalle.java` | Cuadros de información. | Presentación HTML de solo lectura; no es un navegador ni el frontend web. |
+| `MapaButacasPanel.java` | Plano de butacas para ambos roles. | Pantalla del cine, filas, espacios vacíos, botones, colores y leyenda. Recibe butacas/selección y emite callbacks de clic/doble clic; no consulta la API ni modifica estados. |
 
 ### Carpeta `src/main/java/desktop/comun/dialogos/`
 
@@ -109,7 +112,7 @@ Un módulo conserva estado de pantalla y coordina acciones. No es una entidad pe
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
 | `DuenioPanel.java` | Composición del rol Dueño. | Grupos, orden de secciones, creación de módulos y registro de su ciclo de vida. |
-| `AdministracionPanel.java` | CRUD de categorías, películas, funciones, salas y productos. | Selección, apertura de formularios, armado de cuerpos HTTP y recarga de modelos. Delega rutas y formularios a sus clases específicas. |
+| `AdministracionPanel.java` | Composición de los cinco CRUD del dueño. | Creación de módulos, carga conjunta de datos y cierre. Expone los paneles directamente al menú; no contiene formularios ni cuerpos HTTP de edición. |
 
 La carpeta usa `duenio` como nombre de paquete; el texto visible es Dueño.
 
@@ -119,6 +122,13 @@ La carpeta usa `duenio` como nombre de paquete; el texto visible es Dueño.
 | --- | --- | --- |
 | `PersonalModulo.java` | Empleados. | Carga de cuentas, creación, activación/desactivación y recuperación de contraseñas. |
 | `ActividadModulo.java` | Actividad del sistema. | Carga de auditoría, presentación por actor y detalles amigables de acciones. |
+| `CrudModulo.java` | Base de los cinco CRUD. | Modelo/tabla, detalle con acciones, confirmación de eliminación y recarga. Hereda las tareas asíncronas de `ModuloSwing`; conserva el registro mostrado aunque se recargue la tabla. |
+| `DatosAdministracion.java` | Resultado de la carga conjunta. | Categorías, películas, salas, funciones y productos recibidos de la API; genera las opciones de los combos. No es una entidad de base de datos. |
+| `CategoriasModulo.java` | Gestión de categorías. | Filas, detalle de películas asociadas, formulario y peticiones de alta/edición/baja. |
+| `PeliculasModulo.java` | Gestión de películas. | Detalle y funciones asociadas, categoría, portada y peticiones del formulario. |
+| `FuncionesModulo.java` | Gestión de funciones. | Datos de función, comprobación y advertencia por entradas vendidas, formulario y peticiones. |
+| `SalasAdministracionModulo.java` | Salas del dueño. | Alta, distribución, estado, destinatarios de avisos y funciones programadas. No confundir con `comun/modulos/SalasModulo`, que coordina las vistas operativas y el mapa de butacas. |
+| `ProductosModulo.java` | Productos de confitería. | Tabla, detalle, imagen y peticiones de alta/edición/baja. |
 
 ### Carpeta `src/main/java/desktop/duenio/paneles/`
 
@@ -181,13 +191,13 @@ inicio/CineDesktopApplication
   -> inicio/LoginFrame -> comun/api/SesionApi -> comun/ApiClient
   -> comun/PrincipalFrame
   -> duenio/DuenioPanel o empleado/EmpleadoPanel
-  -> panel visual -> módulo/AdministracionPanel -> diálogo o cliente API
+  -> panel visual -> módulo del dominio -> diálogo o cliente API
   -> backend -> respuesta -> actualización del modelo visual
 ```
 
 ### Ejemplo: editar una película
 
-`PeliculasPanel` ofrece la acción. `AdministracionPanel` conserva el ID, prepara y abre `PeliculaDialog`. El formulario devuelve `Optional<Datos>`; al cancelar no guarda. El coordinador construye la petición y llama a `CarteleraApi`, que delega el transporte en `ApiClient`. Tras la respuesta se recarga el modelo.
+`PeliculasPanel` ofrece la acción. `PeliculasModulo` conserva el registro, prepara y abre `PeliculaDialog`. El formulario devuelve `Optional<Datos>`; al cancelar no guarda. El módulo construye la petición y llama a `CarteleraApi`, que delega el transporte en `ApiClient`. Tras la respuesta, `AdministracionPanel` recarga el catálogo compartido y cada módulo actualiza su modelo.
 
 ### Ejemplo: QR y entrega
 
@@ -197,7 +207,7 @@ inicio/CineDesktopApplication
 
 - Los paneles del rol crean sus módulos; cada instancia conserva sus propias tablas y selecciones.
 - `PanelPersonalBase` utiliza `CardLayout`: cambiar de sección no destruye el módulo.
-- `ModuloSwing` no hereda de `JPanel`: coordina tareas y detalles. `AdministracionPanel` sí es un panel y también coordina el CRUD administrativo.
+- `ModuloSwing` y `CrudModulo` no son vistas. Los paneles construyen controles; los módulos coordinan acciones. `AdministracionPanel` conserva su tipo `JPanel` como componente padre de los diálogos, pero el menú muestra los cinco paneles devueltos por sus getters, sin crear pestañas temporales.
 - Los IDs se capturan antes de consultas y confirmaciones: una recarga no debe redirigir una acción a otra fila.
 - La selección de Tickets utiliza `Consumer<Integer>`: si se limpia la fila, informa `null`. Validar manualmente o reembolsar requiere una selección.
 - `detener()` impide recargas y actualizaciones tardías; `AvisosModulo` detiene su temporizador. No revierte una petición ya procesada por el servidor.

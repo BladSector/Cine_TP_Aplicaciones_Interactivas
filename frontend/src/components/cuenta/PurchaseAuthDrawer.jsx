@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../context/AuthContext'
+import useDialog from '../../hooks/useDialog'
 import EmailVerification from './auth/EmailVerification'
 import LoginForm from './auth/LoginForm'
 import PasswordRecoveryFlow from './auth/PasswordRecoveryFlow'
@@ -35,25 +36,19 @@ export default function PurchaseAuthDrawer({
   const [submitting, setSubmitting] = useState(false)
   const [notice, setNotice] = useState('')
   const [recoveryOpen, setRecoveryOpen] = useState(false)
+  const [recoveryBusy, setRecoveryBusy] = useState(false)
+  const busy = submitting || recoveryBusy
+  const { dialogRef, requestClose } = useDialog({ open, onClose, closeDisabled: busy })
   const verifiedCompletionRef = useRef(false)
   const requiresEmailVerification = Boolean(spectator && !spectator.emailVerificado)
 
   useEffect(() => {
-    if (!open) return undefined
-
-    function handleKey(event) {
-      if (event.key === 'Escape') onClose()
-    }
-
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    document.addEventListener('keydown', handleKey)
-
-    return () => {
-      document.body.style.overflow = previousOverflow
-      document.removeEventListener('keydown', handleKey)
-    }
-  }, [open, onClose])
+    if (open) return
+    setForm(EMPTY_FORM)
+    setMode('login')
+    setNotice('')
+    setRecoveryOpen(false)
+  }, [open])
 
   useEffect(() => {
     if (!open) {
@@ -74,6 +69,7 @@ export default function PurchaseAuthDrawer({
 
   function changeMode(nextMode) {
     setMode(nextMode)
+    setForm((previous) => ({ ...EMPTY_FORM, email: previous.email }))
     setAuthError('')
     setNotice('')
     setRecoveryOpen(false)
@@ -150,12 +146,14 @@ export default function PurchaseAuthDrawer({
       : 'Ingresá a tu cuenta'
 
   return createPortal(
-    <div className="auth-drawer-backdrop" role="presentation" onMouseDown={onClose}>
+    <div className="auth-drawer-backdrop" role="presentation" onMouseDown={requestClose}>
       <aside
+        ref={dialogRef}
+        tabIndex={-1}
         className="auth-drawer"
         role="dialog"
         aria-modal="true"
-        aria-label="Ingresar para continuar la compra"
+        aria-label={title}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="auth-drawer__header">
@@ -163,7 +161,7 @@ export default function PurchaseAuthDrawer({
             <p className="eyebrow">{purchase ? 'Continuar compra' : 'Mi cuenta'}</p>
             <h2>{title}</h2>
           </div>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar">
+          <button type="button" className="modal-close" onClick={requestClose} disabled={busy} aria-label="Cerrar">
             &times;
           </button>
         </header>
@@ -181,6 +179,7 @@ export default function PurchaseAuthDrawer({
               initialEmail={form.email}
               onCancel={() => setRecoveryOpen(false)}
               onComplete={completeRecovery}
+              onBusyChange={setRecoveryBusy}
             />
           ) : (
             <>
@@ -195,6 +194,7 @@ export default function PurchaseAuthDrawer({
                   type="button"
                   className={mode === 'login' ? 'is-active' : ''}
                   onClick={() => changeMode('login')}
+                  disabled={busy}
                 >
                   Iniciar sesión
                 </button>
@@ -202,6 +202,7 @@ export default function PurchaseAuthDrawer({
                   type="button"
                   className={mode === 'register' ? 'is-active' : ''}
                   onClick={() => changeMode('register')}
+                  disabled={busy}
                 >
                   Nueva cuenta
                 </button>

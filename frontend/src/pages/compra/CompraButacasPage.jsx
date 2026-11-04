@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import OrderSummary from '../../components/compra/OrderSummary'
 import PurchaseStepper from '../../components/compra/PurchaseStepper'
@@ -17,7 +17,7 @@ export default function CompraButacasPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { isSpectator } = useAuth()
-  const { peliculas, funciones, butacas, entradas, productos, reload, loading: catalogLoading } = useCatalog()
+  const { peliculas, funciones, butacas, productos, reload, loading: catalogLoading } = useCatalog()
   const {
     draft,
     toggleSeat,
@@ -25,6 +25,10 @@ export default function CompraButacasPage() {
     remainingSeconds,
   } = usePurchase()
   const [reservations, setReservations] = useState([])
+  const [occupiedSeatIds, setOccupiedSeatIds] = useState([])
+  const [availabilityReady, setAvailabilityReady] = useState(false)
+  const selectionRef = useRef(null)
+  const availabilityRequestRef = useRef(0)
   const [pendingSeatIds, setPendingSeatIds] = useState([])
   const [reservationError, setReservationError] = useState('')
 
@@ -35,16 +39,38 @@ export default function CompraButacasPage() {
   const movie = peliculas.find((item) => item.id === Number(movieId))
   const funcion = funciones.find((item) => item.id === draft.functionId)
 
+  useEffect(() => {
+    const selection = { functionId: funcion?.id }
+    selectionRef.current = selection
+    setReservations([])
+    setOccupiedSeatIds([])
+    setAvailabilityReady(false)
+    setPendingSeatIds([])
+    return () => {
+      selectionRef.current = null
+    }
+  }, [funcion?.id, movieId])
+
   const loadReservations = useCallback(async () => {
     if (!isSpectator || !funcion?.id) return
+    const selection = selectionRef.current
+    const requestId = ++availabilityRequestRef.current
     try {
-      const data = await api.getReservasButacas(funcion.id)
-      if (!Array.isArray(data)) {
+      const [data, occupied] = await Promise.all([
+        api.getReservasButacas(funcion.id),
+        api.getButacasOcupadas(funcion.id),
+      ])
+      if (selectionRef.current !== selection || availabilityRequestRef.current !== requestId) return
+      if (!Array.isArray(data) || !Array.isArray(occupied)) {
         throw new Error('No se pudo obtener la disponibilidad de las butacas.')
       }
       setReservations(data)
+      setOccupiedSeatIds(occupied)
+      setAvailabilityReady(true)
     } catch (error) {
-      setReservationError(errorMessage(error))
+      if (selectionRef.current === selection && availabilityRequestRef.current === requestId) {
+        setReservationError(errorMessage(error))
+      }
     }
   }, [isSpectator, funcion?.id])
 
@@ -68,29 +94,28 @@ export default function CompraButacasPage() {
     )
 
   function isUnavailable(butaca) {
+    if (!availabilityReady) return true
     if (butaca.estado !== 'DISPONIBLE') return true
     if (reservations.some((reservation) => reservation.butacaId === butaca.id && !reservation.propia)) {
       return true
     }
-    return entradas.some(
-      (entrada) =>
-        entrada.funcionId === funcion.id &&
-        entrada.butacaId === butaca.id &&
-        entrada.estado !== 'REEMBOLSADA' &&
-        entrada.estado !== 'CANCELADA',
-    )
+    return occupiedSeatIds.includes(butaca.id)
   }
 
   async function handleToggleSeat(butaca) {
+    const selection = selectionRef.current
+    if (!selection || selection.functionId !== funcion.id) return
     const selected = draft.selectedSeats.some((seat) => seat.id === butaca.id)
     setPendingSeatIds((ids) => [...ids, butaca.id])
     setReservationError('')
     try {
       if (selected) {
         await api.liberarReservaButaca(funcion.id, butaca.id)
+        if (selectionRef.current !== selection) return
         setReservations((current) => current.filter((item) => item.butacaId !== butaca.id))
       } else {
         const reservation = await api.reservarButaca(funcion.id, butaca.id)
+        if (selectionRef.current !== selection) return
         if (!reservation || typeof reservation !== 'object') {
           throw new Error('No se pudo reservar la butaca seleccionada.')
         }
@@ -101,10 +126,13 @@ export default function CompraButacasPage() {
       }
       toggleSeat(butaca)
     } catch (error) {
+      if (selectionRef.current !== selection) return
       setReservationError(errorMessage(error))
       await loadReservations()
     } finally {
-      setPendingSeatIds((ids) => ids.filter((id) => id !== butaca.id))
+      if (selectionRef.current === selection) {
+        setPendingSeatIds((ids) => ids.filter((id) => id !== butaca.id))
+      }
     }
   }
 

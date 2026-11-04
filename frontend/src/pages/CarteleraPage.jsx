@@ -19,7 +19,7 @@ export default function CarteleraPage() {
   const { spectator, isSpectator } = useAuth()
   const {
     draft,
-    setDraft,
+    startMoviePurchase,
     hasActivePurchase,
     continuePath,
     cancelActivePurchase,
@@ -70,16 +70,7 @@ export default function CarteleraPage() {
   }, [peliculas, funciones, selectedDate, categoryId, formato, idioma])
 
   function beginPurchase(movie, fn) {
-    setDraft((prev) => ({
-      purchaseType: 'movie',
-      movieId: movie.id,
-      functionId: fn.id,
-      selectedSeats: [],
-      consumos: prev.consumos,
-      candyVisitado: false,
-      returnPath: null,
-      membershipId: null,
-    }))
+    startMoviePurchase(movie.id, fn.id)
     if (!isSpectator || !spectator.emailVerificado) {
       setPendingMovieId(movie.id)
       return
@@ -152,46 +143,51 @@ export default function CarteleraPage() {
       <section className="catalog-panel">
         <DateStrip selectedDate={selectedDate} onChange={setSelectedDate} />
 
-        <div className="filters">
-          <label>
-            Género
-            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">Todos</option>
-              {categorias.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Formato
-            <select value={formato} onChange={(e) => setFormato(e.target.value)}>
-              <option value="">Todos los formatos</option>
-              <option value="DOS_D">{formatFunction('DOS_D')}</option>
-              <option value="TRES_D">{formatFunction('TRES_D')}</option>
-            </select>
-          </label>
-          <label>
-            Idioma
-            <select value={idioma} onChange={(e) => setIdioma(e.target.value)}>
-              <option value="">Todos los idiomas</option>
-              <option value="ESPANIOL">Doblada</option>
-              <option value="SUBTITULADA">Subtitulada</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="catalog-heading">
-          <div>
-            <p className="eyebrow">En pantalla</p>
-            <h2>Sesiones para {selectedDate === todayValue() ? 'hoy' : selectedDate}</h2>
+        <div className="catalog-toolbar">
+          <div className="filters">
+            <p className="filters__intro">Buscar por:</p>
+            <label>
+              Género
+              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                <option value="">Todos</option>
+                {categorias.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Formato
+              <select value={formato} onChange={(e) => setFormato(e.target.value)}>
+                <option value="">Todos los formatos</option>
+                <option value="DOS_D">{formatFunction('DOS_D')}</option>
+                <option value="TRES_D">{formatFunction('TRES_D')}</option>
+              </select>
+            </label>
+            <label>
+              Idioma
+              <select value={idioma} onChange={(e) => setIdioma(e.target.value)}>
+                <option value="">Todos los idiomas</option>
+                <option value="ESPANIOL">Doblada</option>
+                <option value="SUBTITULADA">Subtitulada</option>
+              </select>
+            </label>
           </div>
-          <span className="count-pill">{moviesWithSessions.length} películas</span>
+
+          <div className="catalog-heading">
+            <div>
+              <p className="eyebrow">En pantalla</p>
+              <h2>Sesiones para {selectedDate === todayValue() ? 'hoy' : selectedDate}</h2>
+            </div>
+            <span className="count-pill">{moviesWithSessions.length} películas</span>
+          </div>
         </div>
 
         <p className="catalog-note">
-          Seleccioná un horario para elegir tus butacas. El precio varía según la función y el formato.
+          Seleccioná un horario para elegir tus butacas.
+          <br />
+          El precio varía según la función y el formato.
         </p>
 
         {error && <div className="info-box info-box--error">{error}</div>}

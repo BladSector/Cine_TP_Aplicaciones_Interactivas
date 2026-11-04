@@ -605,53 +605,6 @@
   overflow-wrap: anywhere;
 }
 
-.checkout-movie-preview {
-  display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
-  align-items: center;
-  gap: 1rem;
-  margin: 1.15rem 0;
-  padding: 1rem 0;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
-
-.checkout-movie-preview--confirmed {
-  grid-template-columns: 108px minmax(0, 1fr);
-}
-
-.checkout-movie-preview__poster {
-  width: 100%;
-  aspect-ratio: 2 / 3;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  border-radius: 6px;
-  background: var(--bg-deep);
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.72rem;
-  text-align: center;
-}
-
-.checkout-movie-preview__poster img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.checkout-movie-preview__details {
-  min-width: 0;
-}
-
-.checkout-movie-preview__details h2,
-.checkout-movie-preview__details p {
-  margin-bottom: 0.3rem;
-}
-
-.checkout-movie-preview__details h2 {
-  font-size: 1.75rem;
-}
-
 .checkout-card-options {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 270px));

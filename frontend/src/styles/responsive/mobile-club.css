@@ -1,0 +1,37 @@
+@media (max-width: 640px) {
+  .membership-grid {
+    display: grid;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(240px, 82vw);
+    align-items: stretch;
+    margin-right: -0.625rem;
+    padding: 0.2rem 0.625rem 0.75rem 0.1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+
+  .membership-card {
+    min-width: 0;
+    padding: 1rem;
+    scroll-snap-align: start;
+  }
+
+  .membership-card h2 {
+    font-size: 1.9rem;
+  }
+
+  .membership-card__price {
+    font-size: 2rem;
+  }
+
+  .expiry-picker__popover {
+    position: fixed;
+    top: 50%;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    transform: translateY(-50%);
+  }
+}

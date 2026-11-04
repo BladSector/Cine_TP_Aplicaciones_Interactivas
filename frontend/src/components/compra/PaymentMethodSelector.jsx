@@ -1,25 +1,7 @@
-import { Check, CreditCard } from 'lucide-react'
 import { nextMonthValue, paymentIsExpired } from '../../utils/format'
+import { formatCardNumber } from '../../utils/payment'
+import PaymentCard from '../common/PaymentCard'
 import ExpiryMonthPicker from './ExpiryMonthPicker'
-
-function formatCardNumber(value) {
-  return value
-    .replace(/\D/g, '')
-    .slice(0, 16)
-    .replace(/(.{4})/g, '$1 ')
-    .trim()
-}
-
-function formatExpiry(value) {
-  if (!value || !value.includes('-')) return 'MM/AA'
-  const [year, month] = value.split('-')
-  return `${month}/${year.slice(-2)}`
-}
-
-function cardPreviewNumber(value) {
-  if (!value) return '•••• •••• •••• ••••'
-  return formatCardNumber(value).padEnd(19, '•')
-}
 
 export default function PaymentMethodSelector({
   methods,
@@ -75,53 +57,14 @@ export default function PaymentMethodSelector({
                   disabled={expired}
                   onChange={(event) => onSelectedMethodChange(event.target.value)}
                 />
-                <div className={`payment-card${expired ? ' is-expired' : ''}`}>
-                  <div className="payment-card__top">
-                    <span className="payment-card__chip" aria-hidden="true" />
-                    <CreditCard size={22} aria-hidden="true" />
-                  </div>
-                  <div className="payment-card__number">•••• •••• •••• {method.ultimosNumeros}</div>
-                  <div className="payment-card__details">
-                    <div>
-                      <span>Titular</span>
-                      <strong>{method.titular || `${method.nombre} ${method.apellido || ''}`}</strong>
-                    </div>
-                    <div>
-                      <span>Vence</span>
-                      <strong>{formatExpiry(method.fechaVencimiento)}</strong>
-                    </div>
-                  </div>
-                  {expired && <span className="payment-card__status">Vencida</span>}
-                  {selected && !expired && (
-                    <span className="payment-card__selected">
-                      <Check size={14} aria-hidden="true" />
-                      Seleccionada
-                    </span>
-                  )}
-                </div>
+                <PaymentCard method={method} selected={selected} />
               </label>
             )
           })}
         </div>
       ) : (
         <div className="checkout-new-card">
-          <div className="payment-card payment-card--preview" aria-label="Vista previa de la tarjeta">
-            <div className="payment-card__top">
-              <span className="payment-card__chip" aria-hidden="true" />
-              <CreditCard size={22} aria-hidden="true" />
-            </div>
-            <div className="payment-card__number">{cardPreviewNumber(card.numero)}</div>
-            <div className="payment-card__details">
-              <div>
-                <span>Titular</span>
-                <strong>{card.nombreTitular || 'NOMBRE Y APELLIDO'}</strong>
-              </div>
-              <div>
-                <span>Vence</span>
-                <strong>{formatExpiry(card.fechaVencimiento)}</strong>
-              </div>
-            </div>
-          </div>
+          <PaymentCard card={card} />
 
           <div className="form-grid payment-card-grid">
             <label className="full">

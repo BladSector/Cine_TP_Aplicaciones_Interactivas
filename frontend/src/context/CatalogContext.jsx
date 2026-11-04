@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { api, errorMessage } from '../api/client'
 
 const CatalogContext = createContext(null)
@@ -10,12 +10,12 @@ export function CatalogProvider({ children }) {
   const [salas, setSalas] = useState([])
   const [butacas, setButacas] = useState([])
   const [productos, setProductos] = useState([])
-  const [entradas, setEntradas] = useState([])
-  const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const requestVersion = useRef(0)
 
   const reload = useCallback(async () => {
+    const version = ++requestVersion.current
     setError('')
     setLoading(true)
     try {
@@ -35,33 +35,23 @@ export function CatalogProvider({ children }) {
         api.getProductos(),
       ])
 
+      if (version !== requestVersion.current) return
       setCategorias(categoriasData || [])
       setPeliculas(peliculasData || [])
       setFunciones(funcionesData || [])
       setSalas(salasData || [])
       setButacas(butacasData || [])
       setProductos(productosData || [])
-
-      try {
-        const [entradasData, ticketsData] = await Promise.all([
-          api.getEntradas(),
-          api.getTickets(),
-        ])
-        setEntradas(entradasData || [])
-        setTickets(ticketsData || [])
-      } catch {
-        setEntradas([])
-        setTickets([])
-      }
     } catch (err) {
-      setError(errorMessage(err))
+      if (version === requestVersion.current) setError(errorMessage(err))
     } finally {
-      setLoading(false)
+      if (version === requestVersion.current) setLoading(false)
     }
   }, [])
 
   useEffect(() => {
     reload()
+    return () => { requestVersion.current += 1 }
   }, [reload])
 
   const value = useMemo(
@@ -72,13 +62,9 @@ export function CatalogProvider({ children }) {
       salas,
       butacas,
       productos,
-      entradas,
-      tickets,
       loading,
       error,
       reload,
-      setEntradas,
-      setTickets,
     }),
     [
       categorias,
@@ -87,8 +73,6 @@ export function CatalogProvider({ children }) {
       salas,
       butacas,
       productos,
-      entradas,
-      tickets,
       loading,
       error,
       reload,

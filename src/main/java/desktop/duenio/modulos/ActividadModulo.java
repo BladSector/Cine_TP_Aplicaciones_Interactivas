@@ -49,7 +49,7 @@ public final class ActividadModulo extends ModuloSwing {
     }
 
     private void cargarAuditorias() {
-        ejecutar("Cargando actividad...", auditoriaApi::listarActividad, respuesta -> {
+        consultar("actividad", "Cargando actividad...", auditoriaApi::listarActividad, respuesta -> {
             limpiar(auditoriasModel);
             respuesta.forEach(auditoria -> {
                 String usuario = auditoria.path("usuario").asText();

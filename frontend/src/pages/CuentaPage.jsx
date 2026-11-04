@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { api, errorMessage } from '../api/client'
+import { useLocation } from 'react-router-dom'
+import { errorMessage } from '../api/client'
 import Modal from '../components/common/Modal'
 import MembresiaPanel from '../components/cuenta/MembresiaPanel'
 import MetodosPagoList from '../components/cuenta/MetodosPagoList'
 import MisEntradasList from '../components/cuenta/MisEntradasList'
 import PerfilForm from '../components/cuenta/PerfilForm'
+import LoginForm from '../components/cuenta/auth/LoginForm'
+import RegisterForm from '../components/cuenta/auth/RegisterForm'
+import PasswordRecoveryFlow from '../components/cuenta/auth/PasswordRecoveryFlow'
 import { useAuth } from '../context/AuthContext'
-import { useCatalog } from '../context/CatalogContext'
 
 const EMPTY_FORM = {
   email: '',
@@ -24,29 +26,17 @@ export default function CuentaPage() {
     loginSpectator,
     registerSpectator,
     verifySpectatorEmail,
-    logout,
     authError,
     setAuthError,
   } = useAuth()
-  const { reload } = useCatalog()
   const location = useLocation()
   const [mode, setMode] = useState('login')
   const [form, setForm] = useState(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
   const [notice, setNotice] = useState('')
   const [showVerification, setShowVerification] = useState(false)
-  const [recovery, setRecovery] = useState(null)
-  const [recoveryForm, setRecoveryForm] = useState({
-    email: '',
-    token: '',
-    nuevaContrasenia: '',
-    nuevaContraseniaConfirmacion: '',
-  })
-  const [recoveryError, setRecoveryError] = useState('')
-
-  useEffect(() => {
-    if (spectator) reload()
-  }, [spectator, reload])
+  const [recoveryOpen, setRecoveryOpen] = useState(false)
+  const [recoveryBusy, setRecoveryBusy] = useState(false)
 
   useEffect(() => {
     if (!location.hash) return
@@ -60,6 +50,7 @@ export default function CuentaPage() {
 
   function changeMode(nextMode) {
     setMode(nextMode)
+    setForm((previous) => ({ ...EMPTY_FORM, email: previous.email }))
     setAuthError('')
     setNotice('')
   }
@@ -102,39 +93,11 @@ export default function CuentaPage() {
     }
   }
 
-  async function requestRecovery(event) {
-    event.preventDefault()
-    setRecoveryError('')
-    try {
-      const result = await api.solicitarRecuperacion(recoveryForm.email)
-      setRecovery(result)
-      setRecoveryForm((prev) => ({ ...prev, token: result.token }))
-    } catch (error) {
-      setRecoveryError(errorMessage(error))
-    }
-  }
-
-  async function finishRecovery(event) {
-    event.preventDefault()
-    setRecoveryError('')
-    if (recoveryForm.nuevaContrasenia !== recoveryForm.nuevaContraseniaConfirmacion) {
-      setRecoveryError('Las contraseñas no coinciden.')
-      return
-    }
-    try {
-      await api.recuperarContrasenia(recoveryForm)
-      closeRecovery()
-      setNotice('Contraseña actualizada. Ya podés iniciar sesión.')
-      setMode('login')
-    } catch (error) {
-      setRecoveryError(errorMessage(error))
-    }
-  }
-
-  function closeRecovery() {
-    setRecovery(null)
-    setRecoveryError('')
-    setRecoveryForm({ email: '', token: '', nuevaContrasenia: '', nuevaContraseniaConfirmacion: '' })
+  function completeRecovery(email) {
+    setRecoveryOpen(false)
+    setForm({ ...EMPTY_FORM, email })
+    setNotice('Contraseña actualizada. Ya podés iniciar sesión.')
+    setMode('login')
   }
 
   if (!isSpectator) {
@@ -144,55 +107,40 @@ export default function CuentaPage() {
         <h1>Tu cine, en un solo lugar</h1>
         <p className="muted">Ingresá para comprar, administrar tus tarjetas y consultar tus entradas.</p>
         <div className="auth-tabs">
-          <button type="button" className={mode === 'login' ? 'is-active' : ''} onClick={() => changeMode('login')}>Iniciar sesión</button>
-          <button type="button" className={mode === 'register' ? 'is-active' : ''} onClick={() => changeMode('register')}>Nueva cuenta</button>
+          <button type="button" className={mode === 'login' ? 'is-active' : ''} onClick={() => changeMode('login')} disabled={submitting}>Iniciar sesión</button>
+          <button type="button" className={mode === 'register' ? 'is-active' : ''} onClick={() => changeMode('register')} disabled={submitting}>Nueva cuenta</button>
         </div>
         {notice && <div className="info-box">{notice}</div>}
-        <form className="stack-form account-form" onSubmit={handleAuth}>
-          {mode === 'register' && (
-            <div className="form-grid form-grid--two">
-              <label>Nombre<input name="nombre" value={form.nombre} onChange={updateForm} required /></label>
-              <label>Apellido<input name="apellido" value={form.apellido} onChange={updateForm} required /></label>
-            </div>
-          )}
-          <label>Email<input type="email" name="email" value={form.email} onChange={updateForm} required /></label>
-          <label>Contraseña<input type="password" name="contrasenia" value={form.contrasenia} onChange={updateForm} minLength="4" required /></label>
-          {mode === 'register' && (
-            <label>Repetir contraseña<input type="password" name="contraseniaConfirmacion" value={form.contraseniaConfirmacion} onChange={updateForm} minLength="4" required /></label>
-          )}
-          {authError && <div className="info-box info-box--error">{authError}</div>}
-          <button type="submit" className="primary-button" disabled={submitting}>
-            {submitting ? 'Procesando…' : mode === 'login' ? 'Ingresar' : 'Crear cuenta'}
-          </button>
-          {mode === 'login' && (
-            <button type="button" className="text-button auth-recovery-link" onClick={() => setRecovery({})}>¿Olvidaste la contraseña?</button>
-          )}
-        </form>
+        {mode === 'login' ? (
+          <LoginForm
+            form={form}
+            error={authError}
+            submitting={submitting}
+            className="account-form"
+            onChange={updateForm}
+            onSubmit={handleAuth}
+            onForgotPassword={() => setRecoveryOpen(true)}
+          />
+        ) : (
+          <RegisterForm
+            form={form}
+            error={authError}
+            submitting={submitting}
+            className="account-form"
+            groupNameFields
+            onChange={updateForm}
+            onSubmit={handleAuth}
+          />
+        )}
 
-        {recovery && (
-          <Modal title="Recuperar contraseña" onClose={closeRecovery}>
-            {!recovery.token ? (
-              <form className="stack-form" onSubmit={requestRecovery}>
-                <p>Ingresá el correo asociado a tu cuenta.</p>
-                <label>Email<input type="email" value={recoveryForm.email} onChange={(e) => setRecoveryForm((p) => ({ ...p, email: e.target.value }))} required /></label>
-                {recoveryError && <div className="info-box info-box--error">{recoveryError}</div>}
-                <button className="primary-button" type="submit">Enviar correo</button>
-              </form>
-            ) : (
-              <form className="stack-form" onSubmit={finishRecovery}>
-                <div className="simulated-mail">
-                  <p className="eyebrow">Correo simulado</p>
-                  <strong>{recovery.email}</strong>
-                  <p>Usá este código para restablecer tu contraseña:</p>
-                  <code>{recovery.token}</code>
-                </div>
-                <label>Código<input value={recoveryForm.token} onChange={(e) => setRecoveryForm((p) => ({ ...p, token: e.target.value }))} required /></label>
-                <label>Nueva contraseña<input type="password" value={recoveryForm.nuevaContrasenia} onChange={(e) => setRecoveryForm((p) => ({ ...p, nuevaContrasenia: e.target.value }))} minLength="4" required /></label>
-                <label>Repetir contraseña<input type="password" value={recoveryForm.nuevaContraseniaConfirmacion} onChange={(e) => setRecoveryForm((p) => ({ ...p, nuevaContraseniaConfirmacion: e.target.value }))} minLength="4" required /></label>
-                {recoveryError && <div className="info-box info-box--error">{recoveryError}</div>}
-                <button className="primary-button" type="submit">Cambiar contraseña</button>
-              </form>
-            )}
+        {recoveryOpen && (
+          <Modal title="Recuperar contraseña" onClose={() => setRecoveryOpen(false)} closeDisabled={recoveryBusy}>
+            <PasswordRecoveryFlow
+              initialEmail={form.email}
+              onCancel={() => setRecoveryOpen(false)}
+              onComplete={completeRecovery}
+              onBusyChange={setRecoveryBusy}
+            />
           </Modal>
         )}
       </section>
@@ -216,13 +164,13 @@ export default function CuentaPage() {
         </div>
       )}
       {notice && <div className="info-box">{notice}</div>}
-      {activeSection === '#entradas' && <MisEntradasList />}
+      {activeSection === '#entradas' && <MisEntradasList key={spectator.id} />}
       {activeSection === '#membresia' && <MembresiaPanel />}
       {activeSection === '#perfil' && <div className="account-grid account-grid--profile"><PerfilForm /></div>}
       {activeSection === '#pagos' && <div className="account-grid account-grid--wallet"><MetodosPagoList /></div>}
 
       {showVerification && (
-        <Modal title="Confirmá tu correo" onClose={() => setShowVerification(false)}>
+        <Modal title="Confirmá tu correo" onClose={() => setShowVerification(false)} closeDisabled={submitting}>
           <div className="simulated-mail">
             <p className="eyebrow">Correo simulado</p>
             <strong>{spectator.email}</strong>

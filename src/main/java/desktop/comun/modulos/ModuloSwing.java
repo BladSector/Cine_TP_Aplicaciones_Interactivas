@@ -13,6 +13,9 @@ import javax.swing.SwingWorker;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.util.concurrent.ExecutionException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -20,6 +23,7 @@ public abstract class ModuloSwing {
     protected final Component padre;
     private final Consumer<String> estadoExterno;
     private boolean activo = true;
+    private final Map<String, Long> versionesConsultas = new HashMap<>();
 
     protected ModuloSwing(Component padre, Consumer<String> estadoExterno) {
         this.padre = padre;
@@ -127,7 +131,17 @@ public abstract class ModuloSwing {
         }
     }
 
+    protected <T> void consultar(String clave, String mensaje, Operacion<T> operacion, Consumer<T> alCompletar) {
+        long version = versionesConsultas.merge(clave, 1L, Long::sum);
+        ejecutar(mensaje, operacion, alCompletar, () -> versionesConsultas.get(clave) == version);
+    }
+
     protected <T> void ejecutar(String mensaje, Operacion<T> operacion, Consumer<T> alCompletar) {
+        ejecutar(mensaje, operacion, alCompletar, () -> true);
+    }
+
+    private <T> void ejecutar(String mensaje, Operacion<T> operacion, Consumer<T> alCompletar,
+                             BooleanSupplier vigente) {
         if (!activo) {
             return;
         }
@@ -141,7 +155,7 @@ public abstract class ModuloSwing {
 
             @Override
             protected void done() {
-                if (!activo) {
+                if (!activo || !vigente.getAsBoolean()) {
                     return;
                 }
                 try {

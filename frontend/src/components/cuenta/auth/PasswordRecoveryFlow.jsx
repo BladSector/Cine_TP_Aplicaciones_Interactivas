@@ -1,5 +1,5 @@
 import { Mail } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../../../api/client'
 
 const EMPTY_FORM = {
@@ -8,12 +8,24 @@ const EMPTY_FORM = {
   nuevaContraseniaConfirmacion: '',
 }
 
-export default function PasswordRecoveryFlow({ initialEmail, onCancel, onComplete }) {
+export default function PasswordRecoveryFlow({
+  initialEmail = '',
+  fixedEmail = false,
+  cancelLabel = 'Volver a iniciar sesión',
+  onCancel,
+  onComplete,
+  onBusyChange,
+}) {
   const [step, setStep] = useState('request')
   const [mail, setMail] = useState(null)
   const [form, setForm] = useState({ ...EMPTY_FORM, email: initialEmail })
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    onBusyChange?.(submitting)
+    return () => onBusyChange?.(false)
+  }, [submitting, onBusyChange])
 
   function updateField(field, value) {
     setForm((previous) => ({ ...previous, [field]: value }))
@@ -63,25 +75,40 @@ export default function PasswordRecoveryFlow({ initialEmail, onCancel, onComplet
   if (step === 'request') {
     return (
       <form className="stack-form" onSubmit={requestRecovery}>
-        <p>Ingresá el correo asociado a tu cuenta.</p>
-        <label>
-          Correo electrónico
-          <input
-            type="email"
-            value={form.email}
-            onChange={(event) => updateField('email', event.target.value)}
-            required
-            autoFocus
-          />
-        </label>
+        {fixedEmail ? (
+          <>
+            <div className="recovery-recipient">
+              <Mail size={20} aria-hidden="true" />
+              <div>
+                <span>Enviar correo a</span>
+                <strong>{form.email}</strong>
+              </div>
+            </div>
+            <p className="muted">Recibirás un enlace para elegir una contraseña nueva.</p>
+          </>
+        ) : (
+          <>
+            <p>Ingresá el correo asociado a tu cuenta.</p>
+            <label>
+              Correo electrónico
+              <input
+                type="email"
+                value={form.email}
+                onChange={(event) => updateField('email', event.target.value)}
+                required
+                autoFocus
+              />
+            </label>
+          </>
+        )}
 
         {error && <div className="info-box info-box--error">{error}</div>}
 
         <button type="submit" className="primary-button" disabled={submitting}>
           {submitting ? 'Enviando…' : 'Enviar correo'}
         </button>
-        <button type="button" className="text-button auth-recovery-link" onClick={onCancel}>
-          Volver a iniciar sesión
+        <button type="button" className="text-button auth-recovery-link" onClick={onCancel} disabled={submitting}>
+          {cancelLabel}
         </button>
       </form>
     )

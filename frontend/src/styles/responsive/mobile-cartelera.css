@@ -1,0 +1,220 @@
+@media (max-width: 640px) {
+  .site-main {
+    padding-top: 18px !important;
+    padding-bottom: 0.45rem;
+  }
+
+  .cartelera-page {
+    margin-top: -18px;
+  }
+
+  .catalog-panel {
+    padding-bottom: 0.55rem;
+  }
+
+  .catalog-note {
+    margin: 0.35rem 0 0.9rem;
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .hero {
+    margin-bottom: 1.25rem;
+    padding: 0 0.625rem 1.25rem;
+  }
+
+  .hero__content {
+    padding: 2.5rem 0 1.5rem;
+  }
+
+  .hero__kicker {
+    letter-spacing: 0.18em;
+  }
+
+  .hero__brand {
+    font-size: 4.4rem;
+  }
+
+  .hero__headline {
+    font-size: 2.2rem;
+  }
+
+  .hero__support {
+    font-size: 1rem;
+  }
+
+  .hero__empty-gallery {
+    min-height: 300px;
+  }
+
+  .date-strip__list {
+    scroll-snap-type: x proximity;
+  }
+
+  .date-chip {
+    min-width: 50px;
+    padding: 0.4rem 0.45rem;
+    border-radius: 9px;
+    scroll-snap-align: start;
+  }
+
+  .date-chip__day {
+    font-size: 0.7rem;
+  }
+
+  .date-chip__num {
+    font-size: 1.05rem;
+  }
+
+  .form-grid,
+  .form-grid--two,
+  .checkout-customer,
+  .payment-card-grid,
+  .checkout-new-card {
+    grid-template-columns: 1fr;
+  }
+
+  .filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .filters__intro {
+    grid-column: 1 / -1;
+    min-height: 0;
+    font-size: 0.8rem;
+  }
+
+  .filters label {
+    gap: 0.2rem;
+    min-width: 0;
+    font-size: 0.78rem;
+  }
+
+  .filters input,
+  .filters select {
+    min-width: 0;
+    min-height: 38px;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.84rem;
+  }
+
+  .section-heading,
+  .account-header,
+  .wallet-heading,
+  .profile-security {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .catalog-heading {
+    align-items: center;
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .catalog-heading > div {
+    min-width: 0;
+  }
+
+  .catalog-heading h2 {
+    margin-bottom: 0;
+    font-size: 1.45rem;
+  }
+
+  .catalog-heading .count-pill {
+    flex: 0 0 auto;
+    align-self: center;
+    min-height: 26px;
+    padding-inline: 0.6rem;
+    font-size: 0.76rem;
+  }
+
+  .movie-card {
+    grid-template-columns: clamp(124px, 36vw, 140px) minmax(0, 1fr);
+    gap: 0.8rem;
+    padding: 0.7rem;
+  }
+
+  .movie-card__body h3 {
+    font-size: 1.16rem;
+  }
+
+  .movie-card__desc {
+    margin-bottom: 0.35rem;
+    font-size: 0.9rem;
+    -webkit-line-clamp: 1;
+  }
+
+  .function-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .movie-card__schedule-toggle {
+    display: flex;
+    width: 100%;
+    min-height: 34px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.3rem;
+    padding: 0.35rem 0;
+    border: 0;
+    border-top: 1px solid var(--line);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 800;
+    text-align: left;
+  }
+
+  .movie-card__schedule-toggle svg {
+    flex: 0 0 auto;
+    transition: transform 160ms ease;
+  }
+
+  .movie-card__schedule-toggle[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+  }
+
+  .movie-card__schedule {
+    display: none;
+    margin-top: 0;
+  }
+
+  .movie-card__schedule.is-expanded {
+    display: block;
+  }
+
+  .movie-card__sessions {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+    padding: 0.45rem 0;
+  }
+
+  .movie-card__footer,
+  .movie-detail__cta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .movie-card__footer {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 0.45rem;
+    font-size: 0.84rem;
+  }
+
+  .movie-card__price {
+    margin-left: auto;
+    text-align: right;
+  }
+
+  .movie-card__footer .primary-button {
+    width: 100%;
+  }
+}

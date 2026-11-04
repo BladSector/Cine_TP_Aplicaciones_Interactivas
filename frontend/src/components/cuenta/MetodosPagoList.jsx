@@ -5,32 +5,8 @@ import { useAuth } from '../../context/AuthContext'
 import { nextMonthValue, paymentIsExpired } from '../../utils/format'
 import Modal from '../common/Modal'
 import ConfirmDialog from '../common/ConfirmDialog'
-
-const EMPTY_CARD = {
-  numero: '',
-  fechaVencimiento: '',
-  nombreTitular: '',
-  cvv: '',
-}
-
-function formatCardNumber(value) {
-  return value
-    .replace(/\D/g, '')
-    .slice(0, 16)
-    .replace(/(.{4})/g, '$1 ')
-    .trim()
-}
-
-function formatExpiry(value) {
-  if (!value || !value.includes('-')) return 'MM/AA'
-  const [year, month] = value.split('-')
-  return `${month}/${year.slice(-2)}`
-}
-
-function cardPreviewNumber(value) {
-  if (!value) return '•••• •••• •••• ••••'
-  return formatCardNumber(value).padEnd(19, '•')
-}
+import PaymentCard from '../common/PaymentCard'
+import { EMPTY_CARD, formatCardNumber } from '../../utils/payment'
 
 export default function MetodosPagoList() {
   const { spectator, refreshSpectator } = useAuth()
@@ -120,38 +96,19 @@ export default function MetodosPagoList() {
 
       {paymentMethods.length > 0 ? (
         <ul className="saved-card-grid">
-          {paymentMethods.map((metodo) => {
-            const expired = paymentIsExpired(metodo.fechaVencimiento)
-            return (
-              <li key={metodo.id} className={`payment-card${expired ? ' is-expired' : ''}`}>
-                <div className="payment-card__top">
-                  <span className="payment-card__chip" aria-hidden="true" />
-                  <CreditCard size={23} aria-hidden="true" />
-                </div>
-                <div className="payment-card__number">•••• •••• •••• {metodo.ultimosNumeros}</div>
-                <div className="payment-card__details">
-                  <div>
-                    <span>Titular</span>
-                    <strong>{metodo.titular || `${metodo.nombre} ${metodo.apellido || ''}`}</strong>
-                  </div>
-                  <div>
-                    <span>Vence</span>
-                    <strong>{formatExpiry(metodo.fechaVencimiento)}</strong>
-                  </div>
-                </div>
-                {expired && <span className="payment-card__status">Vencida</span>}
-                <button
-                  type="button"
-                  className="payment-card__delete"
-                  onClick={() => setCardToDelete(metodo)}
-                  aria-label={`Eliminar tarjeta terminada en ${metodo.ultimosNumeros}`}
-                  title="Eliminar tarjeta"
-                >
-                  <Trash2 size={18} aria-hidden="true" />
-                </button>
-              </li>
-            )
-          })}
+          {paymentMethods.map((metodo) => (
+            <PaymentCard as="li" key={metodo.id} method={metodo} iconSize={23}>
+              <button
+                type="button"
+                className="payment-card__delete"
+                onClick={() => setCardToDelete(metodo)}
+                aria-label={`Eliminar tarjeta terminada en ${metodo.ultimosNumeros}`}
+                title="Eliminar tarjeta"
+              >
+                <Trash2 size={18} aria-hidden="true" />
+              </button>
+            </PaymentCard>
+          ))}
         </ul>
       ) : (
         <div className="wallet-empty">
@@ -164,24 +121,8 @@ export default function MetodosPagoList() {
       )}
 
       {showCardForm && (
-        <Modal title="Agregar método de pago" onClose={closeCardForm}>
-          <div className="payment-card payment-card--preview" aria-label="Vista previa de la tarjeta">
-            <div className="payment-card__top">
-              <span className="payment-card__chip" aria-hidden="true" />
-              <CreditCard size={23} aria-hidden="true" />
-            </div>
-            <div className="payment-card__number">{cardPreviewNumber(card.numero)}</div>
-            <div className="payment-card__details">
-              <div>
-                <span>Titular</span>
-                <strong>{card.nombreTitular || 'NOMBRE Y APELLIDO'}</strong>
-              </div>
-              <div>
-                <span>Vence</span>
-                <strong>{formatExpiry(card.fechaVencimiento)}</strong>
-              </div>
-            </div>
-          </div>
+        <Modal title="Agregar método de pago" onClose={closeCardForm} closeDisabled={submitting}>
+          <PaymentCard card={card} iconSize={23} />
 
           <form className="stack-form payment-form" onSubmit={handleAddCard}>
             <label>

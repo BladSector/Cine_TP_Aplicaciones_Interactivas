@@ -162,7 +162,7 @@ public final class VentasModulo extends ModuloSwing {
     }
 
     private void cargarConsumos() {
-        ejecutar("Cargando consumos...", ticketsApi::listarConsumos, respuesta -> {
+        consultar("consumos", "Cargando consumos...", ticketsApi::listarConsumos, respuesta -> {
             limpiar(consumosModel);
             respuesta.forEach(item -> consumosModel.addRow(new Object[]{
                     item.path("id").asInt(), item.path("productoNombre").asText(),
@@ -173,7 +173,7 @@ public final class VentasModulo extends ModuloSwing {
     }
 
     private void cargarTickets() {
-        ejecutar("Cargando tickets...", ticketsApi::listarTickets, respuesta -> {
+        consultar("tickets", "Cargando tickets...", ticketsApi::listarTickets, respuesta -> {
             limpiar(ticketsModel);
             ticketsActuales.clear();
             respuesta.forEach(ticket -> {

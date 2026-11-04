@@ -82,8 +82,70 @@ La revisión se centró en cambios de selección y recargas mientras una operaci
 
 Las rutas anteriores parten de `src/main/java/`. Se agregaron, fuera del repositorio, siete pruebas de regresión con consultas demoradas y cambios de tabla/selección. Verifican categoría, sala, función, butaca, reembolso, ausencia de selección y separación entre QR de Consumos y selección de Tickets.
 
+## Correcciones de la revisión del 3 de noviembre de 2026
+
+- React pausa la comprobación de vencimiento mientras procesa el pago y la reactiva si falla. Así, la eliminación normal de reservas después de una compra no oculta su confirmación.
+- La selección de butacas ignora respuestas de una pantalla o función anterior. La carga de disponibilidad también descarta consultas superadas por una más reciente.
+- `GET /funciones/{id}/butacas-ocupadas` devuelve solo IDs de butacas con entradas activas. El mapa lo consulta junto con las reservas temporales, sin depender de las entradas privadas del espectador. Las entradas canceladas o reembolsadas no bloquean el asiento.
+- El panel lateral de autenticación limpia sus campos al cerrarse y las contraseñas al cambiar de formulario.
+- Los módulos Swing versionan sus consultas por listado; administración hace lo mismo con su carga conjunta. Una respuesta anterior no reemplaza datos más nuevos ni muestra un error obsoleto.
+- El espectador puede acceder a `PUT /tickets/{id}/cancelar-compra`. El service conserva las verificaciones de propiedad, estado y límite de dos horas; la entrega y validación siguen reservadas al personal.
+
+Verificación: compilaciones de React y Java correctas; seis escenarios de regresión en navegador con API simulada; recargas desordenadas sobre `PersonalModulo`; siete regresiones previas de selección y 31 comprobaciones de ciclo de vida Swing. La integración real completó 49 comprobaciones de HTTP/MySQL/JPA y paneles Swing, incluyendo cancelación propia, rechazo de tickets ajenos, plazo de dos horas y cancelación de candy no entregado.
+
+Las pruebas automatizadas se mantuvieron fuera del repositorio. La integración utilizó una base temporal aleatoria y la eliminó al finalizar; no ejecutó la seed sobre `tp_cine_api`.
+
+## Limpieza posterior: componentes compartidos y código sin uso
+
+Se reutilizaron `LoginForm` y `RegisterForm` en la cuenta y el acceso lateral. La recuperación del panel lateral, cuenta y perfil ahora utiliza `PasswordRecoveryFlow`. Las tarjetas del perfil y checkout comparten `PaymentCard`, y sus formatos pertenecen a `utils/payment.js`. Se conservaron las clases CSS, dimensiones de las tarjetas, bloqueo de tarjetas vencidas y contratos HTTP.
+
+El inicio de compra desde cartelera y película se centralizó en `PurchaseContext.startMoviePurchase`. Se eliminaron el componente no utilizado `CheckoutMoviePreview` con sus estilos, utilidades/API sin consumidores y la variante independiente no utilizada de administración Swing. Se conservaron las rutas antiguas de compatibilidad y los endpoints del backend.
+
+Verificación: seis recorridos en navegador con API simulada comprobaron recuperación desde las tres entradas, registro y verificación de cuenta, y tarjetas de perfil/pago a 1440 y 390 px. Se repitieron las seis regresiones de reserva/pago. El análisis de imports no encontró archivos JS/JSX desconectados de `main.jsx` ni imports/variables sin uso, excepto parámetros `_` intencionalmente ignorados.
+
+## Separación de la administración Swing
+
+`AdministracionPanel` pasó de 715 a 63 líneas. Compone cinco coordinadores en `desktop/duenio/modulos/`: categorías, películas, funciones, salas administrativas y productos. `CrudModulo` comparte tabla, detalle, acciones sobre el registro capturado y confirmación de eliminación; reutiliza el ejecutor y las consultas versionadas de `ModuloSwing`. `DatosAdministracion` lleva una misma carga de catálogo a los cinco módulos y genera opciones de combos.
+
+`DuenioPanel` recibe cada panel directamente: ya no construye ni extrae pestañas temporales por su título. Se mantuvieron las columnas, formularios, orden del menú, advertencia por entradas vendidas, imágenes locales y contratos HTTP. La asociación de películas/categorías y funciones/salas en los detalles utiliza IDs, no nombres que podrían repetirse.
+
+Verificación: compilación Java correcta; siete regresiones de selección (26 comprobaciones), 31 de ciclo de vida, 27 escenarios de formularios/CRUD (85 comprobaciones), 56 de personal/operación (121 comprobaciones) y 18 comprobaciones específicas de registro capturado en detalles, relaciones por ID y recargas administrativas fuera de orden. La integración HTTP/MySQL/JPA y paneles de ambos roles volvió a completar 49 comprobaciones sobre una base temporal; al finalizar se verificó que no quedaran bases de verificación.
+
+Las pruebas siguen fuera del repositorio. No se modificaron las reglas del backend ni la base `tp_cine_api` en esta reorganización.
+
+## Extracción del mapa de butacas Swing
+
+El dibujo del plano se movió desde `SalasModulo` a `comun/componentes/MapaButacasPanel`. El componente dibuja pantalla, filas, huecos, botones y leyenda; recibe los datos y el ID seleccionado, y notifica selección/detalle por callbacks. No realiza HTTP, no modifica estados y no decide permisos. `SalasModulo` conserva datos, filtrado por sala, selección y operaciones de ambos roles. Al quedar sin sala se limpia la selección y el resumen.
+
+Se mantuvieron tamaños, etiquetas, colores y acciones. Verificación: compilación correcta; 17 comprobaciones del mapa (incluido dibujo real en imagen, colores y callbacks), siete regresiones de selección con 26 comprobaciones, 31 de ciclo de vida y 56 escenarios de personal/operación con 121 comprobaciones. Las pruebas utilizaron datos simulados, sin MySQL ni llamadas a la API real.
+
+## Organización final para estudio y presentación
+
+Se realizaron cinco etapas sin crear commits ni hacer push:
+
+1. **Estilos:** `responsive.css` pasó a ser un índice de diez hojas en `styles/responsive/`. Se comparó la estructura CSS y se conservaron las 260 reglas, condiciones y orden de cascada. Se normalizó la indentación sin cambiar declaraciones.
+2. **Dependencias:** se dejó de seguir en Git el `node_modules/` de la raíz, conservando sus archivos locales. Se agregaron exclusiones y se quitaron los manifiestos npm duplicados de la raíz. Las dependencias de React permanecen en `frontend/package.json` y su lockfile.
+3. **Ventanas:** `useDialog` comparte foco, Tab/Escape, restauración del foco y bloqueo de desplazamiento. Solo la ventana superior captura el teclado. Los formularios y confirmaciones bloquean el cierre mientras procesan; el panel lateral usa la misma coordinación.
+4. **Estado público/privado:** `CatalogContext` conserva solo catálogo público. `AccountContext` carga los tickets de la sesión con error/reintento, cancelación de consultas y descarte de respuestas tardías. El historial se oculta al cambiar o cerrar cuenta. La recarga del perfil tampoco repone una sesión que ya se cerró. Se eliminó la petición React no utilizada de entradas privadas; el endpoint del backend se conserva.
+5. **Documentación y comprobación:** se agregó `README.md` y `GUIA_PRESENTACION.md`, y se actualizaron las guías React/Swing/CSS y los nombres Candy que todavía figuraban como Kiosco. Se quitó la afirmación de datos cifrados del pago y se indicó su carácter de demostración.
+
+Verificaciones realizadas en esta etapa:
+
+- `npm.cmd run build` y compilación Maven correctos. Vite conserva una advertencia de tamaño del paquete JavaScript, no un error de compilación; no se ocultó cambiando su límite.
+- Seis regresiones React de reserva/pago y seis recorridos de recuperación, registro, verificación y tarjetas compartidas.
+- Pruebas aisladas de catálogo sin peticiones privadas anónimas, cambio de cuenta con respuestas tardías, fallo/reintento de historial y cierre de sesión durante una consulta de perfil.
+- La repetición del recorrido perfil-pago detectó una carrera en la restauración de sesión: una petición obsoleta podía finalizar la carga antes de recibir el usuario vigente y desviar el pago a acceso/butacas. Se corrigió la limpieza del efecto de arranque en `AuthContext`. Dos casos deterministas (primera respuesta exitosa o fallida y segunda demorada) y diez recorridos repetidos entre escritorio/celular comprobaron la corrección, sin instrumentar el código de la aplicación.
+- Pruebas de teclado, ventanas anidadas, bloqueo del cierre ocupado, devolución del foco y limpieza del desplazamiento al desmontar.
+- 48 combinaciones de ruta/ancho/tema: cartelera, película, butacas, Candy, pago y tarjetas de cuenta; anchos de 1440, 900, 640 y 390 px en claro/oscuro. Sin errores de navegador ni desbordamiento horizontal del documento. Se guardaron y revisaron capturas fuera del repositorio.
+- Swing: siete regresiones de selección (26 comprobaciones), 31 de ciclo de vida, 27 escenarios de formularios (85 comprobaciones), 56 de personal/operación (121), 205 de componentes/tablas, 354 comparaciones de formato, 49 métodos API (169 comprobaciones), 18 de CRUD administrativo, 17 del mapa y descarte de una recarga antigua de empleados.
+- Análisis de imports: no quedaron archivos JS/JSX sin conexión con el arranque ni bindings sin uso, salvo parámetros `_` intencionalmente ignorados. `git diff --check` no informó errores de espacios; mostró avisos de conversión LF/CRLF de Windows.
+
+Estas pruebas utilizaron APIs simuladas o servidores locales aislados; no modificaron `tp_cine_api`. La integración real HTTP/MySQL indicada en las secciones anteriores no se repitió para esta etapa de organización del frontend. Los arneses automatizados continuaron fuera del repositorio.
+
 ## Límites
 
 No se probó un lector físico de QR, correo SMTP real ni cobro bancario real. El código se introdujo como texto, el correo se mantuvo simulado y las tarjetas fueron datos de prueba. El viewport móvil no sustituye una prueba en un teléfono físico. Tampoco se realizó una prueba de carga o de concurrencia masiva.
+
+La limpieza de interfaces no constituye una auditoría de seguridad de producción. Antes de publicar deben revisarse los flujos de verificación/recuperación, las credenciales predeterminadas, revocación de sesiones y tratamiento de datos de tarjetas. No utilizar cuentas ni tarjetas reales para la demostración.
 
 Para repetir manualmente los recorridos con una base preparada para pruebas, seguir [la guía de ejecución](GUIA_EJECUCION.md). No ejecutar la seed sobre una base que se quiera conservar.

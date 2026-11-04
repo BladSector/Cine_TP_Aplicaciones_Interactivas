@@ -1,0 +1,25 @@
+@media (max-width: 390px) {
+  .header-search__field {
+    position: fixed;
+    top: 58px;
+    right: 0.625rem;
+    left: 0.625rem;
+    width: auto;
+    transform: none;
+  }
+
+  .header-search__results {
+    top: 108px;
+    max-height: calc(100vh - 120px);
+  }
+
+  .function-option {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .function-option__price {
+    grid-column: 2;
+    grid-row: 3;
+    justify-self: start;
+  }
+}

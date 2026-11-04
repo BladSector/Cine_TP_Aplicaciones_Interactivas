@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { AuthProvider } from './context/AuthContext'
+import { AccountProvider } from './context/AccountContext'
 import { CatalogProvider } from './context/CatalogContext'
 import { PurchaseProvider } from './context/PurchaseContext'
 import './styles/global.css'
@@ -19,9 +20,11 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <CatalogProvider>
-          <PurchaseProvider>
-            <App />
-          </PurchaseProvider>
+          <AccountProvider>
+            <PurchaseProvider>
+              <App />
+            </PurchaseProvider>
+          </AccountProvider>
         </CatalogProvider>
       </AuthProvider>
     </BrowserRouter>

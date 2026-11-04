@@ -53,6 +53,8 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
     isScheduledChange,
   } = checkout
 
+  if (loading && !ticket && !subscription) return <Loader />
+
   if (!isSpectator) {
     return (
       <Navigate
@@ -206,7 +208,7 @@ export default function CompraPagoPage({ candyOnly = false, membershipOnly = fal
                   ? 'Programar cambio'
                   : `Pagar $${money(total)}`}
             </button>
-            <p className="muted tiny">Pago seguro · Datos cifrados</p>
+            <p className="muted tiny">Pago de demostración · Usá datos de prueba</p>
           </form>
         </section>
 

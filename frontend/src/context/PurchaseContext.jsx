@@ -12,7 +12,6 @@ const initialState = {
   selectedSeats: [],
   consumos: {},
   candyVisitado: false,
-  returnPath: null,
   membershipId: null,
 }
 
@@ -44,6 +43,7 @@ function loadStoredDraft() {
 
 export function PurchaseProvider({ children }) {
   const [draft, setDraft] = useState(loadStoredDraft)
+  const [paymentInProgress, setPaymentInProgress] = useState(false)
   const [reservationExpiredNotice, setReservationExpiredNotice] = useState(false)
   const {
     reservationError,
@@ -52,7 +52,7 @@ export function PurchaseProvider({ children }) {
   } = useSeatReservationHeartbeat(
     draft.functionId,
     draft.selectedSeats,
-    draft.purchaseType === 'movie' && draft.selectedSeats.length > 0,
+    draft.purchaseType === 'movie' && draft.selectedSeats.length > 0 && !paymentInProgress,
   )
 
   const reset = useCallback(() => {
@@ -65,13 +65,14 @@ export function PurchaseProvider({ children }) {
     else sessionStorage.removeItem(STORAGE_KEY)
   }, [draft])
 
-  const startFromMovie = useCallback((movieId, returnPath = null) => {
-    setDraft({
+  const startMoviePurchase = useCallback((movieId, functionId) => {
+    setDraft((previous) => ({
       ...initialState,
       purchaseType: 'movie',
       movieId,
-      returnPath,
-    })
+      functionId,
+      consumos: previous.consumos,
+    }))
   }, [])
 
   const iniciarCompraCandy = useCallback(() => {
@@ -89,16 +90,6 @@ export function PurchaseProvider({ children }) {
       purchaseType: 'membership',
       membershipId,
     })
-  }, [])
-
-  const selectFunction = useCallback((functionId) => {
-    setDraft((previous) => ({
-      ...previous,
-      functionId,
-      selectedSeats: [],
-      consumos: {},
-      candyVisitado: false,
-    }))
   }, [])
 
   const toggleSeat = useCallback((butaca) => {
@@ -141,10 +132,10 @@ export function PurchaseProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    if (!expired || draft.selectedSeats.length === 0) return
+    if (paymentInProgress || !expired || draft.selectedSeats.length === 0) return
     setReservationExpiredNotice(true)
     expireSeatReservation()
-  }, [draft.selectedSeats.length, expired, expireSeatReservation])
+  }, [draft.selectedSeats.length, expired, expireSeatReservation, paymentInProgress])
 
   const cancelActivePurchase = useCallback(async () => {
     const functionId = draft.functionId
@@ -183,10 +174,9 @@ export function PurchaseProvider({ children }) {
     () => ({
       draft,
       reset,
-      startFromMovie,
+      startMoviePurchase,
       iniciarCompraCandy,
       startMembership,
-      selectFunction,
       toggleSeat,
       actualizarConsumo,
       limpiarConsumos,
@@ -199,17 +189,17 @@ export function PurchaseProvider({ children }) {
       continuePath,
       reservationError,
       remainingSeconds,
+      paymentInProgress,
+      setPaymentInProgress,
       reservationExpiredNotice,
       dismissReservationExpiredNotice: () => setReservationExpiredNotice(false),
-      setDraft,
     }),
     [
       draft,
       reset,
-      startFromMovie,
+      startMoviePurchase,
       iniciarCompraCandy,
       startMembership,
-      selectFunction,
       toggleSeat,
       actualizarConsumo,
       limpiarConsumos,
@@ -222,6 +212,7 @@ export function PurchaseProvider({ children }) {
       continuePath,
       reservationError,
       remainingSeconds,
+      paymentInProgress,
       reservationExpiredNotice,
     ],
   )

@@ -15,6 +15,7 @@ export default function ConfirmDialog({
       title={title}
       compact
       onClose={onCancel}
+      closeDisabled={loading}
       actions={(
         <>
           <button type="button" className="secondary-button" onClick={onCancel} disabled={loading}>

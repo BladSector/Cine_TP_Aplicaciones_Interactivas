@@ -52,6 +52,8 @@ npm.cmd run dev
 
 Abrir `http://localhost:5173`, o la dirección que muestre Vite si eligió otro puerto. `npm.cmd install` es necesario al preparar la PC y cuando cambian las dependencias; no hace falta repetirlo en cada inicio.
 
+Las dependencias JavaScript se administran únicamente en `frontend/package.json`. La raíz usa Maven; no ejecutar `npm install` allí. `node_modules/` y `dist/` no se versionan.
+
 El proxy de `frontend/vite.config.js` envía las peticiones al backend. El frontend no necesita conocer la contraseña de MySQL. El envío y la confirmación de correo se simulan en la aplicación con la configuración de desarrollo.
 
 ## 4. Iniciar Swing
@@ -79,7 +81,7 @@ Cerrar sesión vuelve al login; Salir o cerrar la ventana principal termina Swin
 ## 5. Prueba corta entre las dos interfaces
 
 1. En React, crear una cuenta de espectador y confirmar el correo en la ventana simulada.
-2. Elegir una función futura, seleccionar butacas, pasar por el kiosco y pagar con una tarjeta de prueba no vencida.
+2. Elegir una función futura, seleccionar butacas, pasar por el Candy y pagar con una tarjeta de prueba no vencida.
 3. Copiar el código completo `TCK-...` del ticket o de Mi cuenta.
 4. En Swing, iniciar sesión y abrir Consumos para validar la entrega por QR, si se compraron productos.
 5. Abrir Ventas y tickets (Dueño) o Control de acceso (Empleado), pegar el mismo código y validar las entradas.

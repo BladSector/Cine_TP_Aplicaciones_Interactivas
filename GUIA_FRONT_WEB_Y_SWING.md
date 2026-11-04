@@ -66,7 +66,7 @@ Las rutas de archivo de esta guía parten de la raíz del repositorio. En cada t
 
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
-| `AppRoutes.jsx` | Relación entre URL y pantalla. | Agregar una página, cambiar una ruta o una redirección. Conserva redirecciones de `/candy` a `/kiosco`. |
+| `AppRoutes.jsx` | Relación entre URL y pantalla. | Agregar una página, cambiar una ruta o una redirección. Conserva redirecciones de `/kiosco` a `/candy`. |
 
 Una ruta como `/pelicula/3` es una URL de React. `/peliculas` es un endpoint de la API. No cumplen la misma función.
 
@@ -85,14 +85,16 @@ Los Context conservan información compartida por varias pantallas.
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
 | `AuthContext.jsx` | Sesión del espectador. | Restauración del usuario, login, registro, verificación, actualización de datos y logout. El ID local ayuda a restaurar datos; la sesión real depende del backend y su cookie. |
-| `CatalogContext.jsx` | Datos del cine usados por varias páginas. | Carga/recarga de categorías, películas, funciones, salas, butacas, productos, entradas y tickets, según permisos. |
+| `CatalogContext.jsx` | Catálogo público del cine. | Categorías, películas, funciones, salas, butacas y productos; ignora recargas antiguas. No solicita compras privadas. |
+| `AccountContext.jsx` | Tickets del espectador autenticado. | Historial, carga, error y `reloadTickets`; descarta respuestas tardías y oculta la cuenta anterior al cambiar/cerrar sesión. |
 | `PurchaseContext.jsx` | Compra en curso y carrito. | Borrador, función elegida, butacas seleccionadas, cantidades de productos, continuidad, cancelación y limpieza al vencer la reserva. Persiste el borrador en `sessionStorage`. |
 
 ### Carpeta `frontend/src/hooks/`
 
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
-| `useCheckout.js` | Etapa final de pago de entradas, kiosco o membresía. | Estado del pago, comprobaciones visuales, tarjeta elegida, totales, armado de la petición y procesamiento de su resultado. No sustituye el cálculo definitivo del backend. |
+| `useCheckout.js` | Etapa final de pago de entradas, candy o membresía. | Estado del pago, comprobaciones visuales, tarjeta elegida, totales, armado de la petición y procesamiento de su resultado. No sustituye el cálculo definitivo del backend. |
+| `useDialog.js` | Ventanas emergentes y acceso lateral. | Foco, Tab/Escape, retorno al control anterior, desplazamiento y bloqueo de cierre mientras procesa. Gestiona ventanas anidadas. |
 | `useSeatReservationHeartbeat.js` | Seguimiento de las reservas durante la compra. | Consulta periódica, errores y cálculo del tiempo restante. Consulta cada cinco segundos y actualiza el contador cada segundo; no renueva el vencimiento. |
 
 Los diez minutos de reserva se definen en el backend, en `service/ventas/ReservaButacaService.java`, no en el componente que dibuja el contador.
@@ -102,6 +104,7 @@ Los diez minutos de reserva se definen en el backend, en `service/ventas/Reserva
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
 | `format.js` | Presentación y comparaciones compartidas. | Formato de dinero, fechas, idiomas, 2D/3D, etiquetas de butacas, normalización de búsquedas y comprobaciones auxiliares de fechas. |
+| `payment.js` | Tarjetas de perfil y pago. | Estado vacío de tarjeta y formatos de número, vencimiento y vista previa. |
 
 ## 4. Web: páginas
 
@@ -113,7 +116,7 @@ Una página coordina una pantalla asociada a una ruta; delega partes visuales en
 | --- | --- | --- |
 | `CarteleraPage.jsx` | `/`: página principal. | Composición de cartelera, filtros, fecha y listado de películas. La tarjeta individual está en `MovieCard`. |
 | `PeliculaPage.jsx` | `/pelicula/:id`. | Ficha, día, función seleccionada y continuación hacia butacas o autenticación. |
-| `KioscoPage.jsx` | `/kiosco`. | Compra de productos sin entradas y paso al pago. El catálogo visual se reutiliza desde `KioscoCatalog`. |
+| `CandyPage.jsx` | `/candy`. | Compra de productos sin entradas y paso al pago. El catálogo visual se reutiliza desde `CandyCatalog`. |
 | `ClubPage.jsx` | `/club`. | Presentación y elección de planes de membresía. Las condiciones definitivas y la cotización vienen del backend. |
 | `CuentaPage.jsx` | `/cuenta` y sus secciones por fragmento `#perfil`, `#pagos`, `#entradas` o `#membresia`. | Composición de la cuenta y sus flujos de acceso, recuperación y verificación. No confundir con el panel lateral `PurchaseAuthDrawer`. |
 | `AboutPage.jsx` | `/nosotros`. | Presentación de la empresa y datos del equipo. |
@@ -126,10 +129,10 @@ Una página coordina una pantalla asociada a una ruta; delega partes visuales en
 | --- | --- | --- |
 | `CompraAccesoPage.jsx` | `/compra/:movieId/acceso`. | Redirección a la película con la indicación de abrir el panel de autenticación. No es un formulario de login independiente. |
 | `CompraButacasPage.jsx` | Selección de asientos. | Carga de la sala, disponibilidad, reserva/liberación al hacer clic y continuación. El dibujo está en `SeatMap`. |
-| `CompraKioscoPage.jsx` | Productos dentro de una compra de entradas. | Visita de la etapa, cantidades, resumen y continuación al pago. Los productos son opcionales, visitar el paso no. |
-| `CompraPagoPage.jsx` | Pago de entradas, kiosco y membresías. | Protección del paso y composición de formulario, resumen y resultado. La operación está en `useCheckout`. |
+| `CompraCandyPage.jsx` | Productos dentro de una compra de entradas. | Visita de la etapa, cantidades, resumen y continuación al pago. Los productos son opcionales, visitar el paso no. |
+| `CompraPagoPage.jsx` | Pago de entradas, candy y membresías. | Protección del paso y composición de formulario, resumen y resultado. La operación está en `useCheckout`. |
 
-Butacas, kiosco y pago esperan el catálogo cuando faltan datos antes de redirigir: así una recarga no confunde datos todavía no recibidos con una compra inválida.
+Butacas, candy y pago esperan el catálogo cuando faltan datos antes de redirigir: así una recarga no confunde datos todavía no recibidos con una compra inválida.
 
 ## 5. Web: componentes
 
@@ -163,13 +166,12 @@ Elementos compartidos entre páginas.
 | `SeatMap.jsx` | Plano de la sala. | Pantalla, filas, nombres y botones de butacas; apariencia de selección/disponibilidad. Recibe callbacks, no decide por sí solo la reserva en MySQL. |
 | `SeatReservationTimer.jsx` | Contador de la compra. | Presentación del tiempo recibido y estado de advertencia. |
 | `PurchaseStepper.jsx` | Pasos del flujo. | Etiquetas, enlaces y estado visual de las etapas. |
-| `KioscoCatalog.jsx` | Catálogo de productos, con o sin entradas. | Pestañas, imágenes, grupos por tamaño, variantes dulces/saladas, descripciones y cantidades. |
+| `CandyCatalog.jsx` | Catálogo de productos, con o sin entradas. | Pestañas, imágenes, grupos por tamaño, variantes dulces/saladas, descripciones y cantidades. |
 | `OrderSummary.jsx` | Resumen reutilizable. | Película, función, butacas, productos, totales y acciones de edición/eliminación con confirmación. |
 | `CheckoutSummary.jsx` | Resumen conectado al pago. | Obtención de datos de los Context y enlaces/callbacks que pasa a `OrderSummary`. |
 | `MobileCheckoutBar.jsx` | Barra inferior en celular. | Total compacto, botón de continuar y despliegue de detalles. |
 | `PaymentMethodSelector.jsx` | Método de pago en checkout. | Tarjetas guardadas, nueva tarjeta, vista previa y opción de guardarla. |
 | `ExpiryMonthPicker.jsx` | Vencimiento de tarjeta. | Selector de mes/año y navegación del calendario. |
-| `CheckoutMoviePreview.jsx` | Vista breve de película donde se incorpora este componente. | Portada y datos breves. Su existencia no implica que aparezca en todas las variantes del pago. |
 | `MembershipCheckout.jsx` | Pago o cambio de membresía. | Componente de presentación y hook exportado `useMembershipCheckout`: consulta plan/cotización y muestra el mensaje recibido. No fija las reglas del cambio en el servidor. |
 | `PurchaseSuccess.jsx` | Compra o membresía confirmada. | Mensajes, resultado y composición del ticket. El detalle del comprobante está en `TicketDetails`. |
 
@@ -180,19 +182,19 @@ Elementos compartidos entre páginas.
 | `PurchaseAuthDrawer.jsx` | Acceso lateral desde encabezado o compra. | Coordinación de login, registro, recuperación, verificación y continuación. Usa un portal al `body` para no quedar limitado por el encabezado. |
 | `PerfilForm.jsx` | Datos personales del espectador. | Edición de perfil y flujos de confirmación/cambio de contraseña por correo simulado. |
 | `MetodosPagoList.jsx` | Tarjetas de Mi cuenta. | Listado, alta, presentación y baja de métodos de pago. |
-| `MisEntradasList.jsx` | Historial de compras. | Listado de tickets, identificación de compras del kiosco y apertura del detalle. |
+| `MisEntradasList.jsx` | Historial de compras. | Listado de tickets, identificación de compras del candy y apertura del detalle. |
 | `MembresiaPanel.jsx` | Membresía en Mi cuenta. | Información y acciones relacionadas con el plan del espectador. |
 
 ### Carpeta `frontend/src/components/cuenta/auth/`
 
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
-| `LoginForm.jsx` | Formulario del acceso lateral. | Campos de correo/contraseña, mensajes y enlace de recuperación. Recibe el envío por props. |
-| `RegisterForm.jsx` | Registro del acceso lateral. | Datos de cuenta y repetición de contraseña. La coordinación está en el drawer. |
-| `PasswordRecoveryFlow.jsx` | Recuperación antes del login en el acceso lateral. | Etapas de solicitud, correo simulado y contraseña nueva; realiza las peticiones de recuperación. |
+| `LoginForm.jsx` | Acceso lateral y página de cuenta. | Campos de correo/contraseña, mensajes y enlace de recuperación. Recibe el envío por props. |
+| `RegisterForm.jsx` | Registro lateral y página de cuenta. | Datos de cuenta y repetición de contraseña. La coordinación pertenece a la pantalla. |
+| `PasswordRecoveryFlow.jsx` | Acceso lateral, cuenta y perfil. | Solicitud, correo simulado y contraseña nueva. En perfil usa el correo de la sesión mediante `fixedEmail`. |
 | `EmailVerification.jsx` | Confirmación de correo en el acceso lateral. | Presentación del correo simulado y botón que ejecuta el callback de verificación. |
 
-Estos archivos separan el flujo lateral. `CuentaPage` conserva también sus propios flujos de acceso: modificar un formulario del drawer no cambia automáticamente el formulario de esa página.
+Los formularios de acceso y registro se comparten entre la página de cuenta y el panel lateral. La recuperación también se comparte con perfil; cada pantalla conserva solamente la apertura, cierre y acción posterior al flujo.
 
 ### Carpeta `frontend/src/components/tickets/`
 
@@ -211,6 +213,7 @@ El QR visible se representa en React. El PDF se solicita al backend; su diseño 
 | `Loader.jsx` | Pantalla/indicador de carga reutilizado. | Marcado y presentación de la carga. |
 | `Loader.css` | Solo el loader. | Apariencia y animación. |
 | `ScrollToTop.jsx` | Desplazamiento al navegar. | Cuándo corresponde subir la página según el cambio de ruta. No es el único lugar del proyecto que puede desplazarla. |
+| `PaymentCard.jsx` | Tarjetas en perfil y pago. | Presentación común de tarjeta guardada, vista previa, vencimiento y selección; recibe controles por `children`. |
 
 ## 6. Web: estilos y recursos
 
@@ -221,7 +224,8 @@ El QR visible se representa en React. El PDF se solicita al backend; su diseño 
 | `global.css` | Entrada de estilos importada por `main.jsx`. | Orden de los `@import`. No agregar aquí todas las reglas de las pantallas. |
 | `theme.css` | Temas claro/oscuro y variables compartidas. | Colores, superficies, fuentes y valores generales del tema. |
 | `base.css` | Base común del documento. | Reset, texto, enlaces, formularios y clases generales. |
-| `responsive.css` | Ajustes por ancho de pantalla. | Distribución y tamaños para tablet/celular. Incluye cortes de 900, 640 y 390 px; también puede haber ajustes locales en otras hojas. |
+| `responsive.css` | Índice de adaptaciones. | Importa `responsive/` en un orden fijo para conservar la cascada. |
+| `responsive/` | Tablet y celular por sección. | Diez hojas descritas en `frontend/src/styles/README.md`, con cortes de 900, 640 y 390 px. |
 | `layout/header.css` | Encabezado y controles relacionados. | Navegación, lupa, menú de usuario, carrito y posiciones del layout. |
 | `layout/footer.css` | Footer. | Distribución, márgenes y espaciado del pie. |
 | `pages/cartelera.css` | Cartelera. | Filtros, películas, fechas y funciones desplegables. |
@@ -287,7 +291,7 @@ Estas clases **no son los services del backend**. No acceden a repositories ni a
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
 | `ModuloSwing.java` | Base de los coordinadores operativos. | Ejecución con `SwingWorker`, avisos, detalles, selección de IDs y control de módulo activo. No es un panel visual. |
-| `SalasModulo.java` | Salas, consulta de funciones y butacas. | Carga de datos, selección, dibujo del plano y coordinación de cambios de estado/incidencias. |
+| `SalasModulo.java` | Salas, consulta de funciones y butacas. | Datos, filtro por sala, selección, permisos y cambios de estado/incidencias. El dibujo se delega en `MapaButacasPanel`. |
 | `VentasModulo.java` | Tickets y Consumos de ambos roles. | Consultas, selección, lectura de QR, advertencias, validación, entrega y reembolso con sus recargas. |
 
 Un módulo conserva estado de pantalla y coordina acciones. No es una entidad persistente. `SwingWorker.doInBackground` realiza HTTP y `done` actualiza la interfaz en el EDT, evitando bloquear la ventana.
@@ -311,6 +315,7 @@ Un módulo conserva estado de pantalla y coordina acciones. No es una entidad pe
 | `PanelConTabla.java` | Secciones con tablas. | Título, ayuda, buscador y contenedor con desplazamiento. |
 | `BuscadorTabla.java` | Búsqueda en tablas. | Campo y filtro literal por columnas, integración con el orden inicial. |
 | `VisorDetalle.java` | Cuadros de información. | Presentación HTML de solo lectura; no es un navegador ni el frontend web. |
+| `MapaButacasPanel.java` | Plano de ambos roles. | Pantalla, filas, espacios vacíos, botones, colores y leyenda; callbacks de selección y detalle, sin HTTP ni reglas de permisos. |
 
 ### Carpeta `src/main/java/desktop/comun/dialogos/`
 
@@ -337,7 +342,7 @@ Un módulo conserva estado de pantalla y coordina acciones. No es una entidad pe
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
 | `DuenioPanel.java` | Composición del rol Dueño. | Grupos, orden de secciones, creación de módulos y registro de su ciclo de vida. |
-| `AdministracionPanel.java` | CRUD de categorías, películas, funciones, salas y productos. | Selección, apertura de formularios, armado de cuerpos HTTP y recarga de modelos. Delega rutas y formularios a sus clases específicas. |
+| `AdministracionPanel.java` | Composición de la administración. | Construye los cinco módulos, carga sus datos conjuntamente y los detiene al cerrar. Expone paneles directamente, sin pestañas temporales. |
 
 La carpeta usa `duenio` como nombre de paquete; el texto visible es Dueño.
 
@@ -347,6 +352,13 @@ La carpeta usa `duenio` como nombre de paquete; el texto visible es Dueño.
 | --- | --- | --- |
 | `PersonalModulo.java` | Empleados. | Carga de cuentas, creación, activación/desactivación y recuperación de contraseñas. |
 | `ActividadModulo.java` | Actividad del sistema. | Carga de auditoría, presentación por actor y detalles amigables de acciones. |
+| `CrudModulo.java` | Base de los CRUD administrativos. | Tabla, detalle, acciones sobre el registro original, eliminación confirmada y recarga. Reutiliza `ModuloSwing`. |
+| `DatosAdministracion.java` | Datos compartidos de administración. | Resultado de categorías, películas, salas, funciones y productos; opciones para combos. |
+| `CategoriasModulo.java` | Categorías. | Filas, películas asociadas, formularios y peticiones. |
+| `PeliculasModulo.java` | Películas. | Categoría, portada, funciones asociadas, formularios y peticiones. |
+| `FuncionesModulo.java` | Funciones. | Advertencia por ventas existentes, horarios, formularios y peticiones. |
+| `SalasAdministracionModulo.java` | Salas del dueño. | Alta, distribución, estado, avisos y funciones programadas. |
+| `ProductosModulo.java` | Confitería. | Imagen, datos del producto, formularios y peticiones. |
 
 ### Carpeta `src/main/java/desktop/duenio/paneles/`
 
@@ -357,7 +369,7 @@ La carpeta usa `duenio` como nombre de paquete; el texto visible es Dueño.
 | `PeliculasPanel.java` | Películas. | Configuración visual y callbacks de esa sección. |
 | `FuncionesAdminPanel.java` | Funciones del dueño. | Configuración visual y callbacks del CRUD de funciones. |
 | `SalasAdminPanel.java` | Salas del dueño. | Configuración visual y callbacks de administración de salas. |
-| `ProductosPanel.java` | Productos. | Configuración visual y callbacks del catálogo del kiosco. |
+| `ProductosPanel.java` | Productos. | Configuración visual y callbacks del catálogo del candy. |
 | `EmpleadosPanel.java` | Personal. | Controles de alta, contraseña, activación/desactivación y recarga. |
 | `ActividadPanel.java` | Auditoría. | Distribución de tabla y referencia visual de actores. |
 
@@ -411,7 +423,7 @@ CarteleraPage -> MovieCard -> PeliculaPage
   -> PurchaseAuthDrawer, si falta acceso/verificación
   -> PurchaseContext: película, función y borrador
   -> CompraButacasPage -> SeatMap -> api/client: reservar
-  -> CompraKioscoPage -> KioscoCatalog: cantidades
+  -> CompraCandyPage -> CandyCatalog: cantidades
   -> CompraPagoPage -> useCheckout -> api/client: comprar
   -> backend: valida y guarda
   -> PurchaseSuccess -> TicketDetails: resultado y QR
@@ -435,9 +447,9 @@ Validar el acceso no entrega productos. La entrega se hace en `ConsumosPanel`, t
 
 ```text
 DuenioPanel -> PeliculasPanel
-  -> AdministracionPanel -> PeliculaDialog
+  -> PeliculasModulo -> PeliculaDialog
   -> Optional<Datos>
-  -> AdministracionPanel -> CarteleraApi -> ApiClient
+  -> PeliculasModulo -> CarteleraApi -> ApiClient
   -> backend -> recarga del catálogo administrativo
 ```
 
@@ -452,17 +464,17 @@ Las operaciones conservan el ID original antes de esperar una consulta o un diá
 | Colores del modo oscuro | `styles/theme.css`. |
 | Tamaños o distribución solo en celular | Hoja del componente/página y `styles/responsive.css`. |
 | Película de cartelera y sus horarios desplegables | `MovieCard.jsx` y `pages/cartelera.css`. |
-| Cantidades y variantes de pochoclos | `KioscoCatalog.jsx`; si faltan productos, revisar también los datos del backend. |
+| Cantidades y variantes de pochoclos | `CandyCatalog.jsx`; si faltan productos, revisar también los datos del backend. |
 | QR en pantalla | `TicketDetails.jsx` y `components/tickets.css`. |
 | QR o estructura del PDF | `service/comunicacion/TicketPdfService.java`, en el backend. |
-| Recuperación de contraseña lateral | `cuenta/auth/PasswordRecoveryFlow.jsx`; para la página de cuenta, revisar también `CuentaPage.jsx`. |
+| Recuperación de contraseña | `cuenta/auth/PasswordRecoveryFlow.jsx`, compartido por acceso lateral, cuenta y perfil. |
 | Qué conserva una compra al navegar | `PurchaseContext.jsx`. |
 | Orden del menú del dueño/empleado | `DuenioPanel.java` o `EmpleadoPanel.java`. |
 | Ventana, cabecera o salida de Swing | `PrincipalFrame.java`. |
 | Columnas y anchos de tablas Swing | `ConfiguradorTablas.java`. |
 | Buscador sin tildes en Swing | `BuscadorTabla.java`, `TextoBusqueda.java` y los combos de `FormularioDialogo.java`. |
 | Campos de un formulario Swing | Su clase en `dialogos/`. |
-| Qué hace un botón Swing | Callback en el panel y método del módulo/`AdministracionPanel`. |
+| Qué hace un botón Swing | Callback en el panel y método del módulo de su dominio. `AdministracionPanel` solo compone y recarga los CRUD. |
 | URL utilizada por una operación Swing | Cliente correspondiente en `desktop/comun/api/`. |
 | Reglas, permisos o duración de reserva | Services y autorización del backend, no los paneles visuales. |
 
@@ -473,7 +485,7 @@ Para cada archivo responder: **qué recibe**, **qué estado conserva**, **dónde
 Orden recomendado:
 
 1. Web: `main.jsx` -> `App.jsx` -> `AppRoutes.jsx` -> `SiteLayout.jsx`.
-2. Leer los tres Context y `api/client.js` para identificar datos y sesión.
+2. Leer los cuatro Context y `api/client.js` para identificar datos y sesión.
 3. Seguir una compra completa; después cuenta, tickets y membresías.
 4. Localizar clases JSX y sus hojas CSS para entender la presentación.
 5. Swing: `CineDesktopApplication` -> `LoginFrame` -> `PrincipalFrame` -> panel del rol.
@@ -481,6 +493,8 @@ Orden recomendado:
 7. Revisar `SwingWorker`, captura de IDs, `detener()` y limpieza de temporizadores.
 
 Documentos complementarios:
+
+- [Recorrido corto para presentar el código](GUIA_PRESENTACION.md).
 
 - [Guía conceptual y preguntas de estudio](frontend/GUIA_ESTUDIO_FRONTEND.md).
 - [Mapa específico de Swing](src/main/java/desktop/README.md).

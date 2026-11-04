@@ -7,12 +7,13 @@ export default function LoginForm({
   onChange,
   onSubmit,
   onForgotPassword,
+  className = '',
 }) {
   return (
     <>
       {notice && <div className="info-box">{notice}</div>}
 
-      <form className="stack-form" onSubmit={onSubmit}>
+      <form className={`stack-form ${className}`.trim()} onSubmit={onSubmit}>
         <label>
           Correo electrónico
           <input
@@ -46,6 +47,7 @@ export default function LoginForm({
           type="button"
           className="text-button auth-recovery-link"
           onClick={onForgotPassword}
+          disabled={submitting}
         >
           ¿Olvidaste la contraseña?
         </button>

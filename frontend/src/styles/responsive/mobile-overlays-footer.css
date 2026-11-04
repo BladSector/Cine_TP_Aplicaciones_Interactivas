@@ -1,0 +1,108 @@
+@media (max-width: 640px) {
+  .ticket-detail__movie {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .ticket-receipt__highlight strong {
+    font-size: 2.5rem;
+  }
+
+  .ticket-qr {
+    width: min(220px, 70vw);
+    max-width: 220px;
+    justify-self: center;
+  }
+
+  .ticket-qr svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .modal-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .modal-panel,
+  .modal-panel--compact {
+    width: 100%;
+    max-height: min(88vh, 760px);
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-actions,
+  .auth-drawer__header,
+  .auth-drawer__body {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+
+  .auth-drawer {
+    width: 100%;
+    border-left: 0;
+  }
+
+  .reservation-expired-toast,
+  .cart-resume-toast {
+    right: 0.625rem;
+    bottom: 0.625rem;
+    width: calc(100vw - 1.25rem);
+  }
+
+  .site-footer {
+    padding: 1.1rem 0 calc(1.35rem + env(safe-area-inset-bottom));
+  }
+
+  .brand--footer {
+    font-size: 1.45rem;
+  }
+
+  .site-footer__tagline {
+    margin: 0.15rem 0 0.6rem;
+    font-size: 0.78rem;
+  }
+
+  .site-footer__links {
+    margin: 0.45rem 0 0.65rem;
+  }
+
+  .site-footer__links-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: flex-start;
+    gap: 0.35rem 0.75rem;
+    font-size: 0.74rem;
+  }
+
+  .site-footer__about-link {
+    margin-top: 0.55rem;
+    font-size: 0.78rem;
+  }
+
+  .site-footer__copy {
+    margin: 0.65rem 0 0;
+    font-size: 0.68rem;
+  }
+
+  .about-hero {
+    min-height: 460px;
+  }
+
+  .about-hero__content {
+    padding: 2rem 1rem;
+  }
+}

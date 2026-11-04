@@ -112,20 +112,3 @@ export function normalizeText(value) {
     .toLowerCase()
     .trim()
 }
-
-export function formatStatus(value) {
-  const labels = {
-    DISPONIBLE: 'Disponible',
-    LIMPIEZA: 'Limpieza',
-    CERRADA: 'Cerrada',
-    PROBLEMA_PARTICULAR: 'Problema particular',
-    PAGADO: 'Pagado',
-    PROCESADO: 'Procesado',
-    REEMBOLSADO: 'Reembolsado',
-    PENDIENTE: 'Pendiente',
-    ENTREGADO: 'Entregado',
-    PAGADA: 'Pagada',
-    ESCANEADA: 'Escaneada',
-  }
-  return labels[value] || String(value || '').replaceAll('_', ' ')
-}

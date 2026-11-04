@@ -45,6 +45,11 @@ public class FuncionController {
         return new EntradasActivasResponse(funcionService.contarEntradasActivas(id));
     }
 
+    @GetMapping("/{id}/butacas-ocupadas")
+    public List<Integer> listarButacasOcupadas(@PathVariable int id) {
+        return funcionService.listarButacasOcupadas(id);
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public FuncionResponse guardar(@RequestBody FuncionRequest request) {

@@ -17,6 +17,13 @@ public interface EntradaRepository extends JpaRepository<Entrada, Integer> {
     long countByFuncionIdAndEstadoNotIn(int funcionId, List<EstadoEntrada> estados);
 
     @Query("""
+            SELECT DISTINCT e.butaca.id FROM Entrada e
+            WHERE e.funcion.id = :funcionId AND e.estado NOT IN :estadosLibres
+            """)
+    List<Integer> buscarButacasOcupadas(@Param("funcionId") int funcionId,
+                                      @Param("estadosLibres") List<EstadoEntrada> estadosLibres);
+
+    @Query("""
             SELECT COUNT(e) > 0
             FROM Entrada e
             WHERE e.funcion.id = :funcionId

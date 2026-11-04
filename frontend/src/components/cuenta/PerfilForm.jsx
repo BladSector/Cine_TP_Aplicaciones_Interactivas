@@ -3,11 +3,7 @@ import { KeyRound, Mail } from 'lucide-react'
 import { api, errorMessage } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import Modal from '../common/Modal'
-
-const EMPTY_PASSWORD_FORM = {
-  nuevaContrasenia: '',
-  nuevaContraseniaConfirmacion: '',
-}
+import PasswordRecoveryFlow from './auth/PasswordRecoveryFlow'
 
 export default function PerfilForm() {
   const { spectator, refreshSpectator, verifySpectatorEmail } = useAuth()
@@ -17,11 +13,8 @@ export default function PerfilForm() {
   const [verificationEmail, setVerificationEmail] = useState('')
   const [verificationError, setVerificationError] = useState('')
   const [verificationLoading, setVerificationLoading] = useState(false)
-  const [recoveryStep, setRecoveryStep] = useState(null)
-  const [recoveryMail, setRecoveryMail] = useState(null)
-  const [passwordForm, setPasswordForm] = useState(EMPTY_PASSWORD_FORM)
-  const [recoveryError, setRecoveryError] = useState('')
-  const [recoveryLoading, setRecoveryLoading] = useState(false)
+  const [recoveryOpen, setRecoveryOpen] = useState(false)
+  const [recoveryBusy, setRecoveryBusy] = useState(false)
 
   useEffect(() => {
     if (spectator) {
@@ -71,58 +64,6 @@ export default function PerfilForm() {
     }
   }
 
-  function openRecovery() {
-    setRecoveryStep('request')
-    setRecoveryMail(null)
-    setPasswordForm(EMPTY_PASSWORD_FORM)
-    setRecoveryError('')
-  }
-
-  function closeRecovery() {
-    setRecoveryStep(null)
-    setRecoveryMail(null)
-    setPasswordForm(EMPTY_PASSWORD_FORM)
-    setRecoveryError('')
-  }
-
-  async function requestRecovery() {
-    setRecoveryLoading(true)
-    setRecoveryError('')
-    try {
-      const result = await api.solicitarRecuperacion(spectator.email)
-      setRecoveryMail(result)
-      setRecoveryStep('mail')
-    } catch (err) {
-      setRecoveryError(errorMessage(err))
-    } finally {
-      setRecoveryLoading(false)
-    }
-  }
-
-  async function finishRecovery(event) {
-    event.preventDefault()
-    setRecoveryError('')
-    if (passwordForm.nuevaContrasenia !== passwordForm.nuevaContraseniaConfirmacion) {
-      setRecoveryError('Las contraseñas no coinciden.')
-      return
-    }
-
-    setRecoveryLoading(true)
-    try {
-      await api.recuperarContrasenia({
-        email: spectator.email,
-        token: recoveryMail.token,
-        ...passwordForm,
-      })
-      closeRecovery()
-      setMessage('Tu contraseña se restableció correctamente.')
-    } catch (err) {
-      setRecoveryError(errorMessage(err))
-    } finally {
-      setRecoveryLoading(false)
-    }
-  }
-
   return (
     <section id="perfil" className="account-section">
       <h2>Editar perfil</h2>
@@ -152,69 +93,30 @@ export default function PerfilForm() {
           <strong>Contraseña</strong>
           <p className="muted">Te enviaremos un correo para restablecerla de forma segura.</p>
         </div>
-        <button type="button" className="secondary-button" onClick={openRecovery}>
+        <button type="button" className="secondary-button" onClick={() => setRecoveryOpen(true)}>
           <KeyRound size={18} aria-hidden="true" />
           Cambiar contraseña
         </button>
       </div>
 
-      {recoveryStep && (
-        <Modal title="Restablecer contraseña" onClose={closeRecovery}>
-          {recoveryStep === 'request' && (
-            <div className="stack-form">
-              <div className="recovery-recipient">
-                <Mail size={20} aria-hidden="true" />
-                <div>
-                  <span>Enviar correo a</span>
-                  <strong>{spectator.email}</strong>
-                </div>
-              </div>
-              <p className="muted">Recibirás un enlace para elegir una contraseña nueva.</p>
-              {recoveryError && <div className="info-box info-box--error">{recoveryError}</div>}
-              <button type="button" className="primary-button" disabled={recoveryLoading} onClick={requestRecovery}>
-                {recoveryLoading ? 'Enviando…' : 'Enviar correo'}
-              </button>
-            </div>
-          )}
-
-          {recoveryStep === 'mail' && (
-            <div className="simulated-mail simulated-mail--inbox">
-              <div className="simulated-mail__heading">
-                <Mail size={22} aria-hidden="true" />
-                <div>
-                  <p className="eyebrow">Correo simulado</p>
-                  <strong>Restablecé tu contraseña</strong>
-                </div>
-              </div>
-              <p>Hola, {spectator.nombre}. Recibimos una solicitud para cambiar tu contraseña.</p>
-              <button type="button" className="primary-button" onClick={() => setRecoveryStep('password')}>
-                Restablecer contraseña
-              </button>
-              <small>Este correo es una simulación y no se envía fuera de la aplicación.</small>
-            </div>
-          )}
-
-          {recoveryStep === 'password' && (
-            <form className="stack-form" onSubmit={finishRecovery}>
-              <label>
-                Nueva contraseña
-                <input type="password" name="nuevaContrasenia" value={passwordForm.nuevaContrasenia} onChange={update(setPasswordForm)} minLength="4" required autoFocus />
-              </label>
-              <label>
-                Repetir contraseña
-                <input type="password" name="nuevaContraseniaConfirmacion" value={passwordForm.nuevaContraseniaConfirmacion} onChange={update(setPasswordForm)} minLength="4" required />
-              </label>
-              {recoveryError && <div className="info-box info-box--error">{recoveryError}</div>}
-              <button type="submit" className="primary-button" disabled={recoveryLoading}>
-                {recoveryLoading ? 'Actualizando…' : 'Guardar contraseña'}
-              </button>
-            </form>
-          )}
+      {recoveryOpen && (
+        <Modal title="Restablecer contraseña" onClose={() => setRecoveryOpen(false)} closeDisabled={recoveryBusy}>
+          <PasswordRecoveryFlow
+            initialEmail={spectator.email}
+            fixedEmail
+            cancelLabel="Cancelar"
+            onBusyChange={setRecoveryBusy}
+            onCancel={() => setRecoveryOpen(false)}
+            onComplete={() => {
+              setRecoveryOpen(false)
+              setMessage('Tu contraseña se restableció correctamente.')
+            }}
+          />
         </Modal>
       )}
 
       {verificationEmail && (
-        <Modal title="Confirmá tu nuevo correo" onClose={() => setVerificationEmail('')}>
+        <Modal title="Confirmá tu nuevo correo" onClose={() => setVerificationEmail('')} closeDisabled={verificationLoading}>
           <div className="simulated-mail simulated-mail--inbox">
             <div className="simulated-mail__heading">
               <Mail size={22} aria-hidden="true" />

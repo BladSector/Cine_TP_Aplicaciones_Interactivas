@@ -16,7 +16,7 @@ Esta guía refleja la separación actual de componentes React y módulos Swing. 
 | Detalle de la separación de Swing | [31. Formularios](#31-formularios-administrativos-de-swing), [32. Diálogos](#32-diálogos-del-personal), [33. Componentes](#33-componentes-comunes-de-swing), [34. API](#34-clientes-de-la-api-para-swing), [35. Estado y módulos](#35-estado-y-coordinación-por-módulo). |
 | Práctica por archivo y límites de responsabilidad | [36. Recorridos guiados](#36-recorridos-guiados-por-archivo). |
 
-Las rutas `src/...` de los apartados React son relativas a `frontend/`; las rutas `desktop/...` son relativas a `src/main/java/`. Las rutas que empiezan por `frontend/` o `src/main/java/` parten de la raíz del repositorio. Una ruta web como `/kiosco` no es una carpeta Java ni un endpoint de la API.
+Las rutas `src/...` de los apartados React son relativas a `frontend/`; las rutas `desktop/...` son relativas a `src/main/java/`. Las rutas que empiezan por `frontend/` o `src/main/java/` parten de la raíz del repositorio. Una ruta web como `/candy` no es una carpeta Java ni un endpoint de la API.
 
 ## 1. Idea general
 
@@ -51,7 +51,7 @@ Usuario
 7. `src/context/CatalogContext.jsx`: catálogo global.
 8. `src/context/PurchaseContext.jsx`: compra en curso.
 9. Páginas de cartelera y película.
-10. Flujo de compra: acceso, butacas, kiosco y pago.
+10. Flujo de compra: acceso, butacas, candy y pago.
 11. Cuenta, tickets y métodos de pago.
 12. Componentes reutilizables, utilidades y CSS.
 
@@ -59,10 +59,10 @@ No conviene comenzar por `responsive.css`: primero hay que entender qué compone
 
 ### Convención de vocabulario
 
-- **Kiosco** se usa en textos, rutas, páginas, componentes y nombres derivados, por ejemplo `KioscoPage`, `KioscoCatalog` y `totalKiosco`.
+- **Candy** se usa en textos, rutas, páginas, componentes y nombres derivados, por ejemplo `CandyPage`, `CandyCatalog` y `totalCandy`.
 - **Consumos** representa internamente el mapa de productos y cantidades guardado en `draft.consumos`.
-- `itemsConsumo` y `/compras/candy` se conservan únicamente porque forman parte del contrato actual con el backend.
-- Las rutas antiguas con `/candy` redirigen a `/kiosco` para mantener compatibles los enlaces guardados.
+- `itemsConsumo` es el detalle que devuelve el backend; `draft.consumos` es el mapa de cantidades del carrito. No representan exactamente la misma estructura.
+- Las rutas antiguas con `/kiosco` redirigen a `/candy` para mantener compatibles los enlaces guardados.
 
 ## 3. Carpetas y responsabilidades
 
@@ -82,7 +82,7 @@ Una página representa una pantalla asociada a una ruta.
 
 - `CarteleraPage.jsx`: fechas, filtros y películas disponibles.
 - `PeliculaPage.jsx`: detalle de película y elección de función.
-- `KioscoPage.jsx`: compra exclusiva de productos del kiosco.
+- `CandyPage.jsx`: compra exclusiva de productos del candy.
 - `ClubPage.jsx`: membresías.
 - `CuentaPage.jsx`: acceso, registro y secciones de la cuenta.
 - `AboutPage.jsx`, `LegalPage.jsx` y `PlaceholderPage.jsx`: contenido institucional.
@@ -105,12 +105,14 @@ Los Context almacenan información que varias páginas necesitan compartir sin p
 
 - `AuthContext`: usuario autenticado y operaciones de sesión.
 - `CatalogContext`: películas, funciones, salas, butacas y productos.
+- `AccountContext`: tickets privados, carga, errores y reintento por cuenta autenticada.
 - `PurchaseContext`: borrador de compra, reservas y carrito.
 
 ### `src/hooks`
 
 - `useSeatReservationHeartbeat.js`: consulta periódicamente si las reservas siguen vigentes y calcula el tiempo restante.
 - `useCheckout.js`: coordina el estado del pago, totales, comprobaciones visuales y la petición de compra. Delega la cotización de membresías a `useMembershipCheckout`, exportado desde `components/compra/MembershipCheckout.jsx`.
+- `useDialog.js`: coordina foco, teclado, desplazamiento y cierre de las ventanas, incluyendo ventanas anidadas y operaciones pendientes.
 
 ### `src/utils`
 
@@ -123,7 +125,7 @@ Los Context almacenan información que varias páginas necesitan compartir sin p
 - `layout/`: encabezado y footer compartidos.
 - `pages/`: estilos separados por pantalla o caso de uso.
 - `components/`: tarjetas, modales y tickets reutilizables.
-- `responsive.css`: adaptaciones globales para tablet y celular.
+- `responsive.css`: índice ordenado de diez hojas en `responsive/`, separadas por sección y tamaño. La división conserva las mismas reglas y su orden.
 - `README.md`: mapa detallado de la carpeta y criterio para ubicar cada regla.
 - Algunos componentes complejos conservan un CSS propio, como `AccordionGallery` y `Loader`.
 
@@ -137,9 +139,11 @@ Los proveedores se anidan de esta manera:
 <BrowserRouter>
   <AuthProvider>
     <CatalogProvider>
-      <PurchaseProvider>
-        <App />
-      </PurchaseProvider>
+      <AccountProvider>
+        <PurchaseProvider>
+          <App />
+        </PurchaseProvider>
+      </AccountProvider>
     </CatalogProvider>
   </AuthProvider>
 </BrowserRouter>
@@ -148,6 +152,7 @@ Los proveedores se anidan de esta manera:
 - `BrowserRouter` habilita la navegación por URL.
 - `AuthProvider` administra la sesión.
 - `CatalogProvider` carga datos del cine.
+- `AccountProvider` carga únicamente los tickets de la cuenta activa.
 - `PurchaseProvider` conserva el estado de la compra.
 - `App` muestra las rutas.
 
@@ -190,6 +195,12 @@ El ID se conserva en `localStorage`, mientras que la sesión real también depen
 
 `reload()` vuelve a solicitar los datos después de una operación que puede modificar el sistema, por ejemplo una compra.
 
+### Historial privado
+
+`AccountContext.jsx` usa la sesión de `AuthContext` y consulta `GET /tickets` solo si hay espectador. `MisEntradasList` consume `useAccount`, no el catálogo público. `reloadTickets()` actualiza el historial tras una compra o cancelación.
+
+Al cambiar o cerrar sesión se ocultan los tickets anteriores inmediatamente. `AbortController` cancela la petición pendiente y una versión descarta respuestas tardías. Si falla la carga se muestra el error y la opción de reintentar, en lugar de afirmar que no hay compras. La API mantiene la autorización efectiva.
+
 ### Compra
 
 `PurchaseContext.jsx` contiene un `draft` con:
@@ -201,15 +212,14 @@ El ID se conserva en `localStorage`, mientras que la sesión real también depen
   functionId,
   selectedSeats,
   consumos,
-  kioscoVisitado,
-  returnPath,
+  candyVisitado,
   membershipId,
 }
 ```
 
 El borrador se guarda en `sessionStorage`. Sobrevive a una recarga de la pestaña, pero no representa una compra confirmada en la base de datos.
 
-La compra real se crea solamente en la etapa de pago, cuando se ejecuta `api.comprar`, `api.comprarKiosco` o `api.comprarMembresia`. Esto no significa que no haya escrituras anteriores: la cuenta, el método de pago y las reservas temporales pueden guardarse antes. El borrador no crea entradas ni un ticket pagado.
+La compra real se crea solamente en la etapa de pago, cuando se ejecuta `api.comprar`, `api.comprarCandy` o `api.comprarMembresia`. Esto no significa que no haya escrituras anteriores: la cuenta, el método de pago y las reservas temporales pueden guardarse antes. El borrador no crea entradas ni un ticket pagado.
 
 ## 7. Flujo completo de compra
 
@@ -241,11 +251,11 @@ Al continuar:
 
 La primera butaca inicia una reserva de 10 minutos, duración definida por `MINUTOS_RESERVA` en `service/ventas/ReservaButacaService.java`. `useSeatReservationHeartbeat` consulta las reservas cada 5 segundos y actualiza el contador cada segundo. Consultar no renueva el vencimiento. Si vence, `PurchaseContext` limpia las butacas y los consumos de esa compra y activa el aviso correspondiente.
 
-### Paso 4: kiosco
+### Paso 4: candy
 
-`CompraKioscoPage.jsx` usa `KioscoCatalog` para modificar las cantidades guardadas en `draft.consumos`.
+`CompraCandyPage.jsx` usa `CandyCatalog` para modificar las cantidades guardadas en `draft.consumos`.
 
-Los productos son opcionales, pero la etapa debe visitarse antes del pago. Eso se controla con `kioscoVisitado`.
+Los productos son opcionales, pero la etapa debe visitarse antes del pago. Eso se controla con `candyVisitado`.
 
 ### Paso 5: pago
 
@@ -308,7 +318,7 @@ Mantiene estable una función utilizada por efectos o componentes. Aparece en lo
 
 ### `useContext`
 
-Permite consumir sesión, catálogo o compra mediante `useAuth`, `useCatalog` y `usePurchase`.
+Permite consumir sesión, catálogo, historial privado o compra mediante `useAuth`, `useCatalog`, `useAccount` y `usePurchase`.
 
 ### `useRef`
 
@@ -320,7 +330,7 @@ Conserva una referencia sin provocar renderizados. Se usa para enfocar inputs, d
 - **Estado:** información que puede cambiar y provoca un nuevo renderizado.
 - **Dato derivado:** valor calculado a partir de props o estado; no debe duplicarse innecesariamente en otro `useState`.
 
-Ejemplo: el total del kiosco se calcula a partir de productos y cantidades. No hace falta guardarlo como estado independiente.
+Ejemplo: el total del candy se calcula a partir de productos y cantidades. No hace falta guardarlo como estado independiente.
 
 ## 12. Formularios y validación
 
@@ -391,7 +401,7 @@ Explicar siguiendo estos recorridos:
 
 1. Inicio: `index.html` -> `main.jsx` -> Providers -> `App` -> `AppRoutes` -> `SiteLayout`.
 2. Datos: `CatalogContext` -> `api/client.js` -> backend -> estado -> página.
-3. Compra: `PeliculaPage` -> `PurchaseContext` -> butacas -> kiosco -> pago -> ticket.
+3. Compra: `PeliculaPage` -> `PurchaseContext` -> butacas -> candy -> pago -> ticket.
 4. Sesión: formulario -> `AuthContext` -> API -> `spectator` -> interfaz autenticada.
 5. Responsive: componente -> clase CSS -> regla base -> media query.
 
@@ -453,7 +463,7 @@ React está orientado a la experiencia de compra del cliente. Swing está orient
 
 ### Inicio y navegación
 
-- `frontend/src/main.jsx`: monta React, define el tema inicial y registra los tres Context globales.
+- `frontend/src/main.jsx`: monta React, define el tema inicial y registra los cuatro Context globales.
 - `frontend/src/App.jsx`: agrega el comportamiento de desplazamiento y las rutas.
 - `frontend/src/routes/AppRoutes.jsx`: relaciona cada URL con su página.
 - `frontend/src/components/common/ScrollToTop.jsx`: sube la página al cambiar de ruta cuando corresponde.
@@ -462,7 +472,8 @@ React está orientado a la experiencia de compra del cliente. Swing está orient
 
 - `frontend/src/api/client.js`: único punto de comunicación HTTP con Spring Boot.
 - `frontend/src/context/AuthContext.jsx`: restaura la sesión, inicia y cierra sesión, registra al espectador y verifica el correo.
-- `frontend/src/context/CatalogContext.jsx`: carga películas, funciones, salas, butacas, entradas y productos.
+- `frontend/src/context/CatalogContext.jsx`: carga categorías, películas, funciones, salas, butacas y productos públicos.
+- `frontend/src/context/AccountContext.jsx`: carga tickets privados de la sesión; maneja errores y evita reutilizar datos de otra cuenta.
 - `frontend/src/context/PurchaseContext.jsx`: conserva el borrador, carrito, butacas reservadas y vencimiento de la reserva.
 - `frontend/src/hooks/useSeatReservationHeartbeat.js`: mantiene actualizada la reserva temporal de butacas.
 
@@ -470,7 +481,7 @@ React está orientado a la experiencia de compra del cliente. Swing está orient
 
 - `CarteleraPage.jsx`: portada principal, filtros y listado de películas con funciones.
 - `PeliculaPage.jsx`: ficha de una película, días, formatos, idiomas y horarios.
-- `KioscoPage.jsx`: compra independiente de productos del kiosco.
+- `CandyPage.jsx`: compra independiente de productos del candy.
 - `ClubPage.jsx`: planes de membresía y cambios de plan.
 - `CuentaPage.jsx`: acceso a perfil, tarjetas, membresía y tickets.
 - `AboutPage.jsx`: información de Film Zone y del equipo.
@@ -481,7 +492,7 @@ React está orientado a la experiencia de compra del cliente. Swing está orient
 
 - `pages/compra/CompraAccesoPage.jsx`: entrada protegida al flujo cuando falta autenticación.
 - `pages/compra/CompraButacasPage.jsx`: carga la sala, reserva y libera butacas.
-- `pages/compra/CompraKioscoPage.jsx`: incorpora productos a una compra de entradas.
+- `pages/compra/CompraCandyPage.jsx`: incorpora productos a una compra de entradas.
 - `pages/compra/CompraPagoPage.jsx`: coordina redirecciones y componentes de la etapa de pago.
 - `hooks/useCheckout.js`: concentra estado, validaciones, totales y operación final de compra.
 
@@ -495,15 +506,15 @@ React está orientado a la experiencia de compra del cliente. Swing está orient
 
 - `SeatMap.jsx`: representación visual de pantalla y butacas.
 - `SeatReservationTimer.jsx`: contador visible de la reserva.
-- `KioscoCatalog.jsx`: categorías, variantes y cantidades de productos.
+- `CandyCatalog.jsx`: categorías, variantes y cantidades de productos.
 - `OrderSummary.jsx`: resumen de entradas, butacas, consumos y total.
 - `MobileCheckoutBar.jsx`: resumen fijo y compacto para celular.
 - `PaymentMethodSelector.jsx`: tarjetas guardadas y tarjeta nueva.
 - `MembershipCheckout.jsx`: cotización y presentación de cambios de membresía.
 - `CheckoutSummary.jsx`: resumen previo conectado a los Context.
-- `PurchaseSuccess.jsx`: resultado exitoso de entradas, kiosco o membresía.
+- `PurchaseSuccess.jsx`: resultado exitoso de entradas, candy o membresía.
 - `ExpiryMonthPicker.jsx`: selector de mes y año de vencimiento.
-- `CheckoutMoviePreview.jsx`: portada e información breve durante el pago.
+- `common/PaymentCard.jsx`: tarjeta guardada y vista previa compartidas por perfil y pago; sus formatos viven en `utils/payment.js`.
 - `PurchaseStepper.jsx`: representación de etapas del flujo.
 
 ### Cuenta, tickets y estructura visual
@@ -511,7 +522,7 @@ React está orientado a la experiencia de compra del cliente. Swing está orient
 - `PurchaseAuthDrawer.jsx`: coordina la ventana lateral y decide qué etapa de autenticación mostrar.
 - `cuenta/auth/LoginForm.jsx`: formulario de inicio de sesión.
 - `cuenta/auth/RegisterForm.jsx`: formulario de creación de cuenta y confirmación de contraseña.
-- `cuenta/auth/PasswordRecoveryFlow.jsx`: solicitud, correo simulado y cambio de contraseña.
+- `cuenta/auth/PasswordRecoveryFlow.jsx`: solicitud, correo simulado y cambio de contraseña, compartidos por el panel lateral, la cuenta y el perfil.
 - `cuenta/auth/EmailVerification.jsx`: confirmación simulada del correo registrado.
 - `PerfilForm.jsx`: edición de datos y cambio simulado de contraseña por correo.
 - `MetodosPagoList.jsx`: alta y baja de tarjetas guardadas.
@@ -605,13 +616,15 @@ Los paneles comunes también aparecen en la interfaz del dueño. Reciben accione
 
 ### `desktop/duenio/AdministracionPanel.java`
 
-Agrupa los CRUD exclusivos del dueño.
+Compone los módulos de los CRUD exclusivos del dueño y coordina su carga conjunta. No contiene sus formularios ni las peticiones de edición.
 
 - Categorías.
 - Películas y carga local de imágenes.
 - Funciones.
 - Salas y editor dinámico de distribución.
 - Productos de confitería.
+
+La coordinación de cada uno está en `desktop/duenio/modulos/`: `CategoriasModulo`, `PeliculasModulo`, `FuncionesModulo`, `SalasAdministracionModulo` y `ProductosModulo`. `CrudModulo` comparte tabla, detalle y confirmación de eliminación; `DatosAdministracion` lleva el resultado de la carga conjunta y las opciones de los combos.
 
 Los formularios de las entidades están en `desktop/duenio/dialogos`. `SalaDialog` utiliza `EditorDistribucionSala.java`, ubicado en esa misma carpeta, para crear la pantalla y la matriz editable. Cada posición puede convertirse en butaca o espacio vacío.
 
@@ -673,7 +686,7 @@ El empleado no puede ocupar ni liberar manualmente una butaca vendida. Tampoco a
 
 ### `JFrame` y `JPanel`
 
-`JFrame` es una ventana y `JPanel` organiza componentes dentro de ella. `LoginFrame` y `PrincipalFrame` son ventanas; `DuenioPanel`, `EmpleadoPanel` y `AdministracionPanel` son paneles que se muestran dentro de la ventana principal.
+`JFrame` es una ventana y `JPanel` organiza componentes dentro de ella. `LoginFrame` y `PrincipalFrame` son ventanas; `DuenioPanel` y `EmpleadoPanel` componen las vistas de cada rol. `AdministracionPanel` conserva el tipo `JPanel` como padre de diálogos, pero entrega los cinco paneles CRUD directamente al menú del dueño.
 
 ### Layout managers
 
@@ -751,7 +764,7 @@ Empleado selecciona sala o butaca
 ```text
 Dueño abre un módulo
   -> selecciona Crear, Editar o Eliminar
-  -> AdministracionPanel abre el diálogo específico de la entidad
+  -> el módulo administrativo del dominio abre su diálogo
   -> el diálogo devuelve un record Datos con lo ingresado
   -> cliente del dominio elige el endpoint
   -> ApiClient envía POST, PUT o DELETE
@@ -857,7 +870,7 @@ Todos deberían conocer el recorrido completo, aunque cada uno profundice una se
 1. Film Zone tiene una interfaz React para espectadores y una interfaz Swing para el personal.
 2. Ambas consumen una API REST desarrollada con Spring Boot.
 3. El backend separa controllers, services, repositories y entidades.
-4. React administra sesión, catálogo y compra mediante Context.
+4. React separa sesión, catálogo público, historial privado y compra mediante cuatro Context.
 5. Una compra no se guarda hasta confirmar el pago; antes hay un borrador y reservas temporales.
 6. Swing identifica automáticamente el rol al iniciar sesión.
 7. El dueño administra el cine y el empleado realiza tareas operativas.
@@ -912,14 +925,14 @@ Los formularios del dueño están separados en `src/main/java/desktop/duenio/dia
 | `CategoriaDialog.java` | Captura el nombre de una categoría. |
 | `PeliculaDialog.java` | Captura película, categoría, descripción y portada. |
 | `FuncionDialog.java` | Captura fecha, horario, película, sala, formato, idioma y precio. |
-| `ProductoDialog.java` | Captura los datos e imagen de un producto del kiosco. |
+| `ProductoDialog.java` | Captura los datos e imagen de un producto del candy. |
 | `SalaDialog.java` | Abre y valida el editor de distribución de una sala. |
 | `EditorDistribucionSala.java` | Dibuja la pantalla y la matriz dinámica de butacas. |
 | `SelectorImagenLocal.java` | Lee imágenes locales y construye su vista previa. |
 | `FormularioDialogo.java` | Reúne la estructura visual común de los formularios. |
 | `Opcion.java` | Representa una opción con `id` y nombre en los combos. |
 
-Cada diálogo devuelve un `record Datos`. `AdministracionPanel` conserva la coordinación: obtiene la fila seleccionada, abre el diálogo, arma el cuerpo de la petición y llama al cliente del dominio correspondiente. Ese cliente utiliza `ApiClient`. De esta manera, la interfaz del formulario queda separada de la comunicación HTTP.
+Cada diálogo devuelve un `record Datos`. El módulo de su dominio conserva la coordinación: captura el registro seleccionado, abre el diálogo, arma la petición y llama al cliente correspondiente. Ese cliente utiliza `ApiClient`. `AdministracionPanel` coordina únicamente la carga conjunta y el ciclo de vida de los cinco CRUD.
 
 ## 32. Diálogos del personal
 
@@ -940,7 +953,7 @@ Los diálogos exclusivos del dueño están en `src/main/java/desktop/duenio/dial
 
 `FormularioDialogo.contraseniasValidas` reúne la comprobación visual de coincidencia y mínimo de cuatro caracteres. El backend sigue siendo quien valida y autoriza definitivamente cada operación.
 
-Los diálogos devuelven `Optional<Datos>`: al confirmar correctamente hay datos; al cancelar, cerrar la ventana o fallar una comprobación no hay resultado y no se envía ninguna petición. `SalasModulo`, `PersonalModulo` y `AdministracionPanel` coordinan las llamadas a los clientes de dominio, las recargas y los mensajes de éxito.
+Los diálogos devuelven `Optional<Datos>`: al confirmar correctamente hay datos; al cancelar, cerrar la ventana o fallar una comprobación no hay resultado y no se envía ninguna petición. Los módulos operativos y los cinco módulos CRUD administrativos coordinan las llamadas a los clientes de dominio, las recargas y los mensajes.
 
 Flujos para estudiar:
 
@@ -969,6 +982,7 @@ En `src/main/java/desktop/comun/componentes/`:
 - `PanelConTabla.java`: encabezado, ayuda, buscador y tabla con desplazamiento. Lo usan los módulos operativos y los CRUD del dueño.
 - `BuscadorTabla.java`: campo "Buscar:" y filtro por todas las columnas, sin distinguir mayúsculas ni tildes. Conserva el orden inicial por fecha y horario, por actividad reciente o por ID según la tabla.
 - `VisorDetalle.java`: visor HTML no editable para los cuadros de información. No decide qué acciones puede realizar cada rol.
+- `MapaButacasPanel.java`: dibuja la pantalla, filas, espacios vacíos, colores y leyenda del plano. Recibe la selección y notifica clic/doble clic. `SalasModulo` decide qué sala mostrar, conserva la selección y ejecuta las operaciones permitidas; el componente visual no conoce endpoints.
 
 En `src/main/java/desktop/comun/util/`:
 
@@ -990,7 +1004,7 @@ Para estudiar una tabla: empezar en el panel del módulo, seguir a `PanelConTabl
 | `SalasApi.java` | Salas, distribución, estado de butacas y avisos de sala. |
 | `TicketsApi.java` | Buscar tickets por ID o QR, validar entradas, entregar consumos y reembolsar. También consulta y entrega consumos individuales. |
 | `PersonalApi.java` | Listar empleados, crear cuentas, activar, desactivar y restablecer contraseñas. |
-| `ProductosApi.java` | Consultar y administrar productos del kiosco. |
+| `ProductosApi.java` | Consultar y administrar productos del candy. |
 | `AuditoriaApi.java` | Consultar la actividad del sistema. |
 | `SesionApi.java` | Iniciar, consultar y cerrar la sesión del personal. |
 
@@ -1017,20 +1031,20 @@ Los módulos administran los datos temporales de su interfaz: tablas, selección
 
 | Archivo dentro de `src/main/java/desktop/` | Estado y responsabilidad |
 | --- | --- |
-| `comun/modulos/SalasModulo.java` | Tabla de salas y funciones consultables, selector de sala, lista y selección de butacas, plano y cambios de estado. Conserva los horarios para el detalle de cada sala. |
+| `comun/modulos/SalasModulo.java` | Tablas de salas y funciones, filtro y selección de butacas, permisos y cambios de estado. Conserva los horarios para los detalles y delega el plano en `MapaButacasPanel`. |
 | `comun/modulos/VentasModulo.java` | Tablas de tickets y consumos, caché de tickets, ticket seleccionado y campos QR. Coordina la validación, entrega y reembolso con sus recargas. |
 | `empleado/modulos/AvisosModulo.java` | Botón de avisos, consulta periódica, historial y marcas de lectura. Su temporizador se detiene al cerrar sesión. |
 | `duenio/modulos/PersonalModulo.java` | Tabla y selección de empleados, alta, activación, desactivación y restablecimiento de contraseña. |
 | `duenio/modulos/ActividadModulo.java` | Tabla de actividad, colores por perfil y descripción amigable de las acciones. |
 | `comun/modulos/ModuloSwing.java` | Apoyo común para ejecutar tareas con `SwingWorker`, mostrar detalles y avisos y traducir una fila seleccionada al modelo. No conserva datos de ningún dominio. |
 
-`DuenioPanel` y `EmpleadoPanel` crean sus módulos al abrirse. No comparten modelos, selecciones ni cachés entre ventanas: solo reciben el mismo cliente HTTP de la sesión. `PanelPersonalBase` registra la recarga y detención de cada módulo sin conocer sus tablas ni sus endpoints. El CRUD administrativo sigue encapsulado en `AdministracionPanel`.
+`DuenioPanel` y `EmpleadoPanel` crean sus módulos al abrirse. No comparten modelos, selecciones ni cachés entre ventanas: solo reciben el mismo cliente HTTP de la sesión. `PanelPersonalBase` registra recarga y detención sin conocer tablas ni endpoints. `AdministracionPanel` compone los cinco CRUD, que reciben un mismo `DatosAdministracion` dentro de esa ventana.
 
 Tickets y consumos permanecen juntos en `VentasModulo` porque validar, entregar o reembolsar puede requerir actualizar ambas tablas. Validar una entrada no entrega productos: la advertencia por consumos pendientes y la entrega separada se conservan.
 
 Al cerrar sesión, `detener()` marca los módulos como inactivos y detiene el temporizador de avisos. Una petición ya enviada puede terminar en el servidor, pero su respuesta no debe actualizar la interfaz cerrada ni abrir un diálogo tardío. Una sesión nueva crea instancias nuevas con su propio estado.
 
-Los IDs que identifican el destino de una acción se capturan antes de esperar una consulta o abrir un formulario. No se vuelve a buscar el registro usando la posición de una fila que puede cambiar durante una recarga. Un ejemplo es `AdministracionPanel.formularioFuncion`, que conserva el ID y un `FuncionDialog.Datos` con los valores iniciales.
+Los IDs que identifican el destino de una acción se capturan antes de esperar una consulta o abrir un formulario. No se vuelve a buscar el registro usando la posición de una fila que puede cambiar durante una recarga. `FuncionesModulo.formulario` conserva el ID y un `FuncionDialog.Datos` antes de consultar entradas vendidas. `CrudModulo` conserva el registro incluso mientras está abierto el detalle con sus acciones.
 
 En `VentasModulo`, validar manualmente o reembolsar requiere seleccionar un ticket. Leer un QR de Consumos no elige un ticket para esas acciones; al desaparecer la selección de la tabla, también se limpia su ID. El reembolso conserva el ID mostrado en la confirmación aunque la tabla se actualice mientras el cuadro está abierto.
 
@@ -1054,10 +1068,10 @@ Ejercicio: explicar por qué `/pelicula/3` muestra una película distinta a `/pe
 
 ```text
 frontend/src/pages/PeliculaPage.jsx
-  -> context/PurchaseContext.jsx: startFromMovie y selectFunction
+  -> context/PurchaseContext.jsx: startMoviePurchase
   -> pages/compra/CompraButacasPage.jsx: petición de reserva y toggleSeat
   -> hooks/useSeatReservationHeartbeat.js: consulta y vencimiento
-  -> pages/compra/CompraKioscoPage.jsx: productos y kioscoVisitado
+  -> pages/compra/CompraCandyPage.jsx: productos y candyVisitado
   -> pages/compra/CompraPagoPage.jsx: protección y composición
   -> hooks/useCheckout.js: handlePay y petición final
   -> api/client.js: POST /compras
@@ -1083,7 +1097,7 @@ Para seguir el otro lado, abrir `src/main/java/controller/ventas/CompraControlle
 | Estructura del sitio | `SiteLayout` compone; `HeaderActions` agrupa controles; `UserMenu` maneja cuenta; `ActiveCart` maneja carrito; `ReservationExpiredNotice` presenta avisos. Están en `frontend/src/components/layout/`. |
 | Pago | `CompraPagoPage` compone; `useCheckout` coordina el pago; `CheckoutSummary` conecta el resumen; `MembershipCheckout` consulta y presenta la cotización; `PurchaseSuccess` muestra el resultado. |
 | Autenticación lateral | `PurchaseAuthDrawer` coordina y conserva el formulario compartido; `LoginForm` y `RegisterForm` reciben props; `PasswordRecoveryFlow` conserva las etapas de recuperación y llama a la API; `EmailVerification` presenta la confirmación. |
-| Estilos | `global.css` importa; `theme.css` define variables; `base.css` reglas generales; `layout/`, `pages/` y `components/` agrupan reglas; `responsive.css` ajusta la presentación. |
+| Estilos | `global.css` importa; `theme.css` define variables; `base.css` reglas generales; `layout/`, `pages/` y `components/` agrupan reglas; `responsive.css` importa en orden las adaptaciones de `responsive/`. |
 
 La división no significa que todo sea puramente visual: un hook coordina efectos y estado, y un flujo como recuperación puede tener estado local. La regla es poder explicar una responsabilidad concreta por archivo.
 
@@ -1094,13 +1108,13 @@ Ejemplo de edición de película, con rutas desde `src/main/java/desktop/`:
 ```text
 duenio/DuenioPanel.java: registra la sección Películas
   -> duenio/paneles/PeliculasPanel.java: controles y callback
-  -> duenio/AdministracionPanel.java: selección y coordinación del CRUD
+  -> duenio/modulos/PeliculasModulo.java: registro seleccionado y coordinación
   -> duenio/dialogos/PeliculaDialog.java: Optional<Datos>
-  -> duenio/AdministracionPanel.java: cuerpo de la petición y tarea asíncrona
+  -> duenio/modulos/PeliculasModulo.java: cuerpo de la petición y tarea asíncrona
   -> comun/api/CarteleraApi.java: ruta y método HTTP
   -> comun/ApiClient.java: JSON y cookie de sesión
   -> backend: autorización y guardado
-  -> AdministracionPanel: recarga del modelo y resultado en pantalla
+  -> AdministracionPanel: carga conjunta -> cada módulo actualiza su modelo
 ```
 
 Para una operación de tickets, el coordinador es `comun/modulos/VentasModulo.java`; para salas o butacas es `comun/modulos/SalasModulo.java`. `PanelPersonalBase` solo cambia la vista y delega recarga/detención.

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { api, errorMessage } from '../api/client'
 
 const AuthContext = createContext(null)
@@ -8,15 +8,21 @@ export function AuthProvider({ children }) {
   const [spectator, setSpectator] = useState(null)
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState('')
+  const refreshVersion = useRef(0)
 
   const refreshSpectator = useCallback(async (id) => {
+    const version = ++refreshVersion.current
     const data = await api.getEspectador(id)
-    setSpectator(data)
-    localStorage.setItem(SPECTATOR_KEY, String(data.id))
+    if (version === refreshVersion.current) {
+      setSpectator(data)
+      localStorage.setItem(SPECTATOR_KEY, String(data.id))
+    }
     return data
   }, [])
 
   useEffect(() => {
+    // StrictMode puede iniciar otra restauracion antes de que termine la anterior.
+    let active = true
     async function bootstrap() {
       setLoading(true)
       try {
@@ -26,14 +32,20 @@ export function AuthProvider({ children }) {
           await refreshSpectator(Number(savedId))
         }
       } catch {
-        localStorage.removeItem(SPECTATOR_KEY)
-        setSpectator(null)
+        if (active) {
+          localStorage.removeItem(SPECTATOR_KEY)
+          setSpectator(null)
+        }
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
 
     bootstrap()
+    return () => {
+      active = false
+      refreshVersion.current += 1
+    }
   }, [refreshSpectator])
 
   const loginSpectator = useCallback(async (email, contrasenia) => {
@@ -71,13 +83,14 @@ export function AuthProvider({ children }) {
   }, [spectator, refreshSpectator])
 
   const logout = useCallback(async () => {
+    refreshVersion.current += 1
+    setSpectator(null)
+    localStorage.removeItem(SPECTATOR_KEY)
     try {
       await api.logout()
     } catch {
       // Sesión ya cerrada
     }
-    setSpectator(null)
-    localStorage.removeItem(SPECTATOR_KEY)
   }, [])
 
   const value = useMemo(
@@ -86,7 +99,6 @@ export function AuthProvider({ children }) {
       loading,
       authError,
       setAuthError,
-      setSpectator,
       refreshSpectator,
       loginSpectator,
       registerSpectator,

@@ -45,14 +45,6 @@ public class ApiClient {
         enviar("DELETE", ruta, null);
     }
 
-    public String formatear(JsonNode nodo) {
-        try {
-            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(nodo);
-        } catch (IOException e) {
-            return nodo.toString();
-        }
-    }
-
     private JsonNode enviar(String metodo, String ruta, Object cuerpo) throws IOException, InterruptedException {
         HttpRequest.BodyPublisher publicador = cuerpo == null
                 ? HttpRequest.BodyPublishers.noBody()

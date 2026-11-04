@@ -1,18 +1,14 @@
-import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import useDialog from '../../hooks/useDialog'
 
-export default function Modal({ title, children, onClose, actions, compact = false }) {
-  useEffect(() => {
-    function handleKey(event) {
-      if (event.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [onClose])
+export default function Modal({ title, children, onClose, actions, compact = false, closeDisabled = false }) {
+  const { dialogRef, requestClose } = useDialog({ onClose, closeDisabled })
 
   return createPortal(
-    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+    <div className="modal-backdrop" role="presentation" onMouseDown={requestClose}>
       <section
+        ref={dialogRef}
+        tabIndex={-1}
         className={`modal-panel${compact ? ' modal-panel--compact' : ''}`}
         role="dialog"
         aria-modal="true"
@@ -21,7 +17,7 @@ export default function Modal({ title, children, onClose, actions, compact = fal
       >
         <header className="modal-header">
           <h2>{title}</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar">
+          <button type="button" className="modal-close" onClick={requestClose} disabled={closeDisabled} aria-label="Cerrar">
             &times;
           </button>
         </header>

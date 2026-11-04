@@ -2,6 +2,7 @@ async function request(url, options = {}) {
   const config = {
     method: options.method || 'GET',
     credentials: 'include',
+    signal: options.signal,
     headers: {},
   }
 
@@ -52,9 +53,8 @@ async function download(url) {
 export const api = {
   getCategorias: () => request('/categorias'),
   getPeliculas: () => request('/peliculas'),
-  getPelicula: (id) => request(`/peliculas/${id}`),
   getFunciones: () => request('/funciones'),
-  getFuncion: (id) => request(`/funciones/${id}`),
+  getButacasOcupadas: (id) => request(`/funciones/${id}/butacas-ocupadas`),
   getSalas: () => request('/salas'),
   getButacas: () => request('/butacas'),
   getReservasButacas: (funcionId) => request(`/reservas-butacas/funciones/${funcionId}`),
@@ -70,9 +70,7 @@ export const api = {
   cotizarMembresia: (id) => request(`/membresias/${id}/cotizacion`),
   darDeBajaMembresia: () => request('/membresias/actual', { method: 'DELETE' }),
   comprarMembresia: (body) => request('/compras/membresia', { method: 'POST', body }),
-  getEntradas: () => request('/entradas'),
-  getTickets: () => request('/tickets'),
-  getTicket: (id) => request(`/tickets/${id}`),
+  getTickets: (options) => request('/tickets', options),
   getTicketPdf: (id) => download(`/tickets/${id}/pdf`),
   cancelarCompra: (id) => request(`/tickets/${id}/cancelar-compra`, { method: 'PUT' }),
   comprar: (body) => request('/compras', { method: 'POST', body }),
