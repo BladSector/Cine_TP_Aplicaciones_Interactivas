@@ -917,6 +917,12 @@ Context controlan la vigencia de las cargas y limpian datos privados al salir.
 
 ### QR y operación de Swing
 
+El listado compartido muestra las compras sin entradas como "Compra de Candy" y agrega los
+productos con sus cantidades para consultar y buscar. Fecha, horario y sala quedan sin aplicar
+si no hay función. El estado "Consumos pendientes" no implica que se hayan validado entradas.
+Si se intenta validar acceso con un ticket solo de Candy, se indica utilizar la sección Consumos
+sin enviar una validación de entradas al servidor.
+
 `LoginFrame.iniciarSesion` -> `SesionApi` -> `ApiClient` -> respuesta del backend ->
 `PrincipalFrame` -> `DuenioPanel` o `EmpleadoPanel`. Al seleccionar una sección,
 `PanelPersonalBase` muestra su panel sin crear otro módulo cada vez.

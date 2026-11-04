@@ -38,7 +38,7 @@ public final class VentasModulo extends ModuloSwing {
     private final boolean empleado;
     private final DefaultTableModel consumosModel = modelo("ID", "Producto", "Cantidad", "Ticket", "Estado", "Subtotal");
     private final DefaultTableModel ticketsModel = modelo("ID", "Espectador", "Película", "Fecha", "Horario", "Sala",
-            "Estado", "Entradas", "Consumos", "Total", "Código QR");
+            "Estado", "Entradas", "Consumos", "Productos", "Total", "Código QR");
     private final JTable consumosTabla = tabla(consumosModel);
     private final JTable ticketsTabla = tabla(ticketsModel);
     private final JTextField codigoQr = new JTextField(32);
@@ -114,6 +114,7 @@ public final class VentasModulo extends ModuloSwing {
 
         StringBuilder descripcion = new StringBuilder(inicioHtml());
         descripcion.append(tituloHtml("TICKET #" + id))
+                .append(campoHtml("Tipo de compra", esSoloCandy(ticket) ? "Compra de Candy" : "Entradas"))
                 .append(campoHtml("Estado", nombreEstadoTicket(ticket.path("estado").asText())))
                 .append(campoHtml("Espectador", ticket.path("espectadorNombre").asText()))
                 .append(campoHtml("Código QR", ticket.path("codigoQR").asText()))
@@ -141,6 +142,7 @@ public final class VentasModulo extends ModuloSwing {
             ticket.path("itemsConsumo").forEach(item -> descripcion
                     .append(itemHtml(item.path("producto").asText()))
                     .append(campoHtml("Cantidad", item.path("cantidad").asInt()))
+                    .append(campoHtml("Subtotal", "$" + item.path("subtotal").asDouble()))
                     .append(campoHtml("Estado", item.path("estado").asText()))
                     .append("<hr>"));
         }
@@ -182,18 +184,30 @@ public final class VentasModulo extends ModuloSwing {
                 ticketsModel.addRow(new Object[]{
                         id,
                         ticket.path("espectadorNombre").asText(),
-                        valoresEntradas(ticket, "pelicula"),
+                        esSoloCandy(ticket) ? "Compra de Candy" : valoresEntradas(ticket, "pelicula"),
                         valoresEntradas(ticket, "fecha"),
                         valoresEntradas(ticket, "horario"),
                         valoresEntradas(ticket, "sala"),
                         nombreEstadoTicket(ticket.path("estado").asText()),
                         ticket.path("entradas").size(),
                         ticket.path("itemsConsumo").size(),
+                        descripcionProductos(ticket),
                         ticket.path("total").asDouble(),
                         ticket.path("codigoQR").asText()
                 });
             });
         });
+    }
+
+    private static boolean esSoloCandy(JsonNode ticket) {
+        return ticket.path("entradas").isEmpty() && !ticket.path("itemsConsumo").isEmpty();
+    }
+
+    private static String descripcionProductos(JsonNode ticket) {
+        List<String> productos = new ArrayList<>();
+        ticket.path("itemsConsumo").forEach(item -> productos.add(
+                item.path("cantidad").asInt() + " × " + item.path("producto").asText()));
+        return productos.isEmpty() ? "-" : String.join(", ", productos);
     }
 
     private static String valoresEntradas(JsonNode ticket, String campo) {
@@ -242,6 +256,13 @@ public final class VentasModulo extends ModuloSwing {
     }
 
     private void confirmarValidacionEntradas(JsonNode ticket, boolean lecturaQr) {
+        if (ticket.path("entradas").isEmpty()) {
+            mostrarAviso(esSoloCandy(ticket)
+                    ? "Este ticket corresponde a una compra de Candy, sin entradas.\n"
+                            + "Validá la entrega de los productos desde la sección Consumos."
+                    : "Este ticket no contiene entradas para validar.");
+            return;
+        }
         int consumosPendientes = cantidadConsumosPendientes(ticket);
 
         if (consumosPendientes > 0) {

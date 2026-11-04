@@ -37,7 +37,7 @@ public final class FormatoSwing {
     public static String nombreEstadoTicket(String estado) {
         return switch (estado) {
             case "PENDIENTE_DE_INGRESO" -> "Pendiente de ingreso";
-            case "CONSUMOS_PENDIENTES" -> "Entradas validadas, consumos pendientes";
+            case "CONSUMOS_PENDIENTES" -> "Consumos pendientes";
             case "PROCESADO" -> "Procesado";
             case "REEMBOLSADO" -> "Reembolsado";
             default -> estado;

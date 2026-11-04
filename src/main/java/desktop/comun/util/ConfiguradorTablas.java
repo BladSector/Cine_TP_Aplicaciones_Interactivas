@@ -37,10 +37,11 @@ public final class ConfiguradorTablas {
         if (model.findColumn("Fecha y hora") >= 0 && model.findColumn("Acción") >= 0) {
             moverColumnas(tabla, "ID", "Fecha y hora", "Usuario", "Perfil", "Acción",
                     "Entidad", "Entidad ID", "Resultado", "Detalle");
+        } else if (model.findColumn("Código QR") >= 0) {
+            moverColumnas(tabla, "ID", "Fecha", "Horario", "Película", "Sala", "Espectador",
+                    "Estado", "Entradas", "Consumos", "Productos", "Total", "Código QR");
         } else if (model.findColumn("Película") >= 0 && model.findColumn("Fecha") >= 0) {
             moverColumnas(tabla, "ID", "Fecha", "Horario", "Película", "Sala", "Formato", "Idioma", "Precio");
-        } else if (model.findColumn("Código QR") >= 0) {
-            moverColumnas(tabla, "ID", "Espectador", "Estado", "Entradas", "Consumos", "Total", "Código QR");
         } else if (model.findColumn("Producto") >= 0) {
             moverColumnas(tabla, "ID", "Producto", "Cantidad", "Estado", "Subtotal", "Ticket");
         } else if (model.findColumn("Butaca") >= 0) {
@@ -83,7 +84,7 @@ public final class ConfiguradorTablas {
                 case "Estado" -> configurarColumna(columnaTabla, 100, 130, 175);
                 case "Perfil", "Resultado" -> configurarColumna(columnaTabla, 80, 100, 125);
                 case "Entidad ID" -> configurarColumna(columnaTabla, 75, 88, 105);
-                case "Película", "Nombre", "Producto", "Espectador" ->
+                case "Película", "Nombre", "Producto", "Productos", "Espectador" ->
                         configurarColumnaFlexible(columnaTabla, 120, 190);
                 case "Código QR" -> configurarColumnaFlexible(columnaTabla, 180, 280);
                 case "Sala", "Apellido", "Usuario", "Entidad" ->
