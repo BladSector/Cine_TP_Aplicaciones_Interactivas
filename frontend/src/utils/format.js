@@ -63,7 +63,7 @@ export function formatFunction(formato) {
 
 export function formatLanguage(idioma) {
   if (idioma === 'ESPANIOL') return 'Doblada'
-  if (idioma === 'SUBTITULADA') return 'Versión original subtitulada'
+  if (idioma === 'SUBTITULADA') return 'Subtitulada'
   return idioma || ''
 }
 
