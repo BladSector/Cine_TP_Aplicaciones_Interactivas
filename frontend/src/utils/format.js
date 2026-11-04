@@ -27,6 +27,12 @@ export function formatDayNumber(value) {
   return new Date(`${value}T00:00:00`).getDate()
 }
 
+export function formatScheduleDay(value) {
+  const date = new Date(`${value}T00:00:00`)
+  const weekday = date.toLocaleDateString('es-AR', { weekday: 'long' })
+  return `${weekday}, ${date.getDate()}/${date.getMonth() + 1}`
+}
+
 export function formatMonthYear(value) {
   if (!value) return ''
   const date = new Date(`${value}T00:00:00`)

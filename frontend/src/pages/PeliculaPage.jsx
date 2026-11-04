@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import DateStrip from '../components/cartelera/DateStrip'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import PurchaseAuthDrawer from '../components/cuenta/PurchaseAuthDrawer'
 import { useAuth } from '../context/AuthContext'
@@ -10,10 +9,10 @@ import { usePurchase } from '../context/PurchaseContext'
 import {
   formatFunction,
   formatLanguage,
+  formatScheduleDay,
   functionHasStarted,
   money,
   shortTime,
-  todayValue,
 } from '../utils/format'
 
 export default function PeliculaPage() {
@@ -30,30 +29,36 @@ export default function PeliculaPage() {
     continuePath,
     cancelActivePurchase,
   } = usePurchase()
-  const [selectedDate, setSelectedDate] = useState(location.state?.selectedDate || todayValue())
   const [selectedFunctionId, setSelectedFunctionId] = useState(null)
   const [authOpen, setAuthOpen] = useState(Boolean(location.state?.openPurchaseAuth))
   const [showReplaceConfirm, setShowReplaceConfirm] = useState(false)
   const [replacingPurchase, setReplacingPurchase] = useState(false)
 
   const movie = peliculas.find((item) => item.id === movieId)
-  const dayFunctions = useMemo(
+  const availableFunctions = useMemo(
     () =>
       funciones
         .filter(
           (fn) =>
             fn.peliculaId === movieId &&
-            fn.fecha === selectedDate &&
             !functionHasStarted(fn),
         )
-        .sort((a, b) => String(a.horario).localeCompare(String(b.horario))),
-    [funciones, movieId, selectedDate],
+        .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha))
+          || String(a.horario).localeCompare(String(b.horario))),
+    [funciones, movieId],
   )
 
-  const selected = dayFunctions.find((fn) => fn.id === selectedFunctionId) || dayFunctions[0]
+  const functionsByDay = availableFunctions.reduce((days, fn) => {
+    if (!days[fn.fecha]) days[fn.fecha] = []
+    days[fn.fecha].push(fn)
+    return days
+  }, {})
+
+  const selected = availableFunctions.find((fn) => fn.id === selectedFunctionId)
+    || availableFunctions.find((fn) => fn.fecha === location.state?.selectedDate)
+    || availableFunctions[0]
 
   useEffect(() => {
-    setSelectedDate(location.state?.selectedDate || todayValue())
     setSelectedFunctionId(null)
   }, [movieId, location.state?.selectedDate])
 
@@ -129,11 +134,12 @@ export default function PeliculaPage() {
 
           <section className="movie-detail__booking" aria-labelledby="function-title">
             <h2 id="function-title">Elegí tu función</h2>
-            <DateStrip selectedDate={selectedDate} onChange={setSelectedDate} days={14} />
-
-            {dayFunctions.length === 0 ? (
-              <div className="info-box">No hay funciones para este día.</div>
+            {availableFunctions.length === 0 ? (
+              <div className="info-box">No hay próximas funciones programadas para esta película.</div>
             ) : (
+              Object.entries(functionsByDay).map(([fecha, dayFunctions]) => (
+              <section key={fecha} className="movie-detail__day" aria-label={formatScheduleDay(fecha)}>
+                <h3>{formatScheduleDay(fecha)}</h3>
               <div className="function-picker">
                 {dayFunctions.map((fn) => (
                   <button
@@ -153,6 +159,8 @@ export default function PeliculaPage() {
                   </button>
                 ))}
               </div>
+              </section>
+              ))
             )}
 
             {selected && (

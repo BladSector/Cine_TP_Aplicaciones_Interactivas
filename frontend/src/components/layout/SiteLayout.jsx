@@ -23,9 +23,14 @@ export default function SiteLayout() {
 
   return (
     <div className="site">
-      <header className="site-header">
+      <header
+        className="site-header"
+        onClickCapture={(event) => {
+          if (event.target.closest('.header-utility')) setNavOpen(false)
+        }}
+      >
         <div className="site-header__inner">
-          <NavLink to="/" className="brand">
+          <NavLink to="/" className="brand" aria-label="Film Zone: ver cartelera">
             <span className="brand__word">Film</span>
             <span className="brand__word brand__word--accent">Zone</span>
           </NavLink>
@@ -51,6 +56,7 @@ export default function SiteLayout() {
             <NavLink to="/" className="btn-cartelera" onClick={() => setNavOpen(false)} end>
               Cartelera
             </NavLink>
+            <NavLink to="/catalogo" onClick={() => setNavOpen(false)}>Películas</NavLink>
             <NavLink to="/candy" onClick={() => setNavOpen(false)}>Candy</NavLink>
             <NavLink to="/club" onClick={() => setNavOpen(false)}>Club Film Zone</NavLink>
           </nav>

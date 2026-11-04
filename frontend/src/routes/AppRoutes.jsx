@@ -12,6 +12,7 @@ const ClubPage = lazy(() => import('../pages/ClubPage'))
 const CuentaPage = lazy(() => import('../pages/CuentaPage'))
 const LegalPage = lazy(() => import('../pages/LegalPage'))
 const PeliculaPage = lazy(() => import('../pages/PeliculaPage'))
+const PeliculasPage = lazy(() => import('../pages/PeliculasPage'))
 const CompraButacasPage = lazy(() => import('../pages/compra/CompraButacasPage'))
 const CompraCandyPage = lazy(() => import('../pages/compra/CompraCandyPage'))
 const CompraPagoPage = lazy(() => import('../pages/compra/CompraPagoPage'))
@@ -27,6 +28,7 @@ export default function AppRoutes() {
       <Route element={<SiteLayout />}>
         <Route index element={<CarteleraPage />} />
         <Route path="pelicula/:id" element={<PeliculaPage />} />
+        <Route path="catalogo" element={<PeliculasPage />} />
         <Route path="candy" element={<CandyPage />} />
         <Route path="candy/pago" element={<CompraPagoPage candyOnly />} />
         <Route path="club" element={<ClubPage />} />

@@ -44,15 +44,15 @@
 }
 
 .site-nav {
-  position: absolute;
-  left: 50%;
+  position: static;
   display: flex;
-  flex-wrap: wrap;
-  gap: 1.3rem;
+  flex-wrap: nowrap;
+  gap: 1rem;
   align-items: center;
   justify-content: center;
-  width: max-content;
-  transform: translateX(-50%);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .site-nav a {
@@ -88,6 +88,7 @@
   align-items: center;
   gap: 0.55rem;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 

@@ -68,6 +68,21 @@
   padding-bottom: 2rem;
 }
 
+.movies-page .catalog-heading h1 {
+  margin: 0;
+  font-size: 2.4rem;
+}
+
+.movie-card__day {
+  margin: 1rem 0 0.5rem;
+  padding-top: 0.65rem;
+  border-top: 2px solid var(--line);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+
 .catalog-panel .date-strip__heading .eyebrow {
   font-size: 0.95rem;
 }
@@ -516,6 +531,10 @@ textarea {
   align-items: center;
   padding: 0.55rem 0;
   border-bottom: 1px solid var(--line);
+}
+
+.movie-card__sessions--day-end {
+  border-bottom: 0;
 }
 
 .movie-card__format {

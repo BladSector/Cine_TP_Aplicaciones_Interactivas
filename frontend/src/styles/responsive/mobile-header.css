@@ -162,11 +162,4 @@
     width: 68px;
   }
 
-  .dropdown-menu {
-    position: fixed;
-    top: 58px;
-    right: 0.625rem;
-    left: 0.625rem;
-    width: auto;
-  }
 }

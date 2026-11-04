@@ -102,6 +102,20 @@
   margin: 0.85rem 0;
 }
 
+.movie-detail__day {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid var(--line);
+}
+
+.movie-detail__day h3 {
+  margin: 0 0 0.65rem;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  text-transform: capitalize;
+}
+
 .function-option {
   position: relative;
   display: grid;

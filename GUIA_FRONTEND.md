@@ -77,7 +77,7 @@ Compone el comportamiento común de navegación/desplazamiento y las rutas.
 
 **[frontend/src/routes/AppRoutes.jsx](frontend/src/routes/AppRoutes.jsx)**
 
-Relaciona URL y página; usa `lazy` para nueve pantallas secundarias. `LegacyCandyRedirect` conserva
+Relaciona URL y página; usa `lazy` para diez pantallas secundarias. `LegacyCandyRedirect` conserva
 enlaces antiguos de kiosco.
 
 `/pelicula/3` es una ruta de React; `/peliculas` es un endpoint de Spring. `SiteLayout` contiene el
@@ -153,14 +153,27 @@ componente.
 
 ### `frontend/src/pages/`
 
+**[PeliculasPage.jsx](frontend/src/pages/PeliculasPage.jsx)**
+
+`/catalogo`: todas las películas, sin limitarse al día seleccionado en Cartelera. Incluye películas
+sin programación; si se filtra por formato o idioma, exige una próxima función que cumpla ambos
+filtros. Utiliza `CarteleraPage` con `catalogMode` para compartir filtros y flujo de compra.
+`MovieCard` con `showDates` despliega las próximas funciones agrupadas por día, formato e idioma,
+sin cambiar de página al abrir el listado. Elegir un horario inicia el mismo flujo de compra que
+Cartelera. La URL no usa `/peliculas` porque ese endpoint pertenece a la API.
+
 **[CarteleraPage.jsx](frontend/src/pages/CarteleraPage.jsx)**
 
 `/`: filtros, fecha y películas. `handleSelectFunction`/`beginPurchase` abren compra o acceso;
-`replaceActivePurchase` confirma reemplazar otra compra.
+`replaceActivePurchase` confirma reemplazar otra compra. En modo `catalogMode` muestra todas las
+películas y fechas sin galería ni selector de día; conserva las comprobaciones de sesión/carrito.
 
 **[PeliculaPage.jsx](frontend/src/pages/PeliculaPage.jsx)**
 
-`/pelicula/:id`: ficha y selección de fecha/función. `continueToSeats`/`beginSelectedPurchase`
+`/pelicula/:id`: ficha y próximas funciones agrupadas por día, sin selector de fechas.
+`availableFunctions` ordena por fecha/hora y `functionsByDay` agrupa el listado; se utiliza
+`formatScheduleDay` de `utils/format.js`, compartido con las tarjetas del catálogo.
+`continueToSeats`/`beginSelectedPurchase`
 continúan o abren autenticación; `replaceActivePurchase` resuelve una compra previa.
 
 **[CandyPage.jsx](frontend/src/pages/CandyPage.jsx)**
@@ -263,6 +276,11 @@ Avisos de compra conservada y reserva vencida; no decide la duración de la rese
 Marca, enlaces legales/Sobre nosotros y modal Contacto con datos ficticios.
 
 ### `frontend/src/components/cartelera/`
+
+**[CatalogFilters.jsx](frontend/src/components/cartelera/CatalogFilters.jsx)**
+
+Selectores compartidos de género, formato e idioma entre Cartelera y Películas. Recibe valores y
+callbacks; cada página aplica sus filtros y conserva su selección sin duplicar el formulario.
 
 **[AccordionGallery.jsx](frontend/src/components/cartelera/AccordionGallery.jsx)**
 
@@ -422,6 +440,13 @@ Componente de clase: `getDerivedStateFromError` activa el estado de error y `ren
 manual. No reemplaza los errores de peticiones de `client.js`.
 
 ## React: estilos y recursos
+
+El encabezado muestra menú desplegable hasta 1100 px para evitar superposiciones; en tablet deja
+marca, acciones y menú en la misma fila. El resto de los cortes responsive conserva sus medidas.
+Hasta 1100 px, los menús de navegación y cuenta son cuadros compactos debajo de sus controles,
+con fondo sólido, ancho máximo de 260 px y estilo de opciones compartido. Cartelera no lleva fondo
+naranja en ese desplegable; conserva la indicación de enlace
+activo. Al utilizar una acción del encabezado se cierra el menú principal.
 
 Buscar primero la clase en el JSX y después su regla CSS. Revisar finalmente las media queries;
 agregar otra regla al final de cualquier hoja puede esconder el origen del problema.
