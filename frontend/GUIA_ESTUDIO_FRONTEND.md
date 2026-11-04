@@ -469,7 +469,7 @@ React está orientado a la experiencia de compra del cliente. Swing está orient
 ### Base de datos
 
 - `database/seed_demo.sql`: elimina la base existente, crea tablas y carga categorías, películas, salas, butacas, productos y membresías. No carga cuentas ni compras de prueba.
-- `database/completar_funciones_2_semanas.sql`: agrega funciones para dos semanas sin borrar compras ni usuarios.
+- `database/completar_funciones_1_semana.sql`: programa siete días con seis películas diarias y varias funciones; reemplaza solo horarios libres y conserva funciones con entradas o reservas. No borra compras ni usuarios.
 - `database/descripcionPeliculas.txt`: textos usados para las películas.
 - `database/portadasPeliculas/`: archivos originales de las portadas.
 
@@ -814,7 +814,7 @@ Dueño abre un módulo
 ### Preparar MySQL
 
 1. Solo en una instalación nueva o reinicio deliberado: ejecutar `database/seed_demo.sql`. **Borra la base existente.**
-2. Ejecutar `database/completar_funciones_2_semanas.sql`.
+2. Ejecutar `database/completar_funciones_1_semana.sql`.
 
 ### Iniciar el backend en PowerShell
 

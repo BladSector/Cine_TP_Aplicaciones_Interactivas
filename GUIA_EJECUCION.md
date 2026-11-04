@@ -17,11 +17,13 @@ Solo para una instalación nueva o un reinicio deliberado de los datos:
 
 1. Conectarse al servidor desde Workbench.
 2. Abrir y ejecutar completo `database/seed_demo.sql`.
-3. Abrir y ejecutar completo `database/completar_funciones_2_semanas.sql`.
+3. Abrir y ejecutar completo `database/completar_funciones_1_semana.sql`.
 
 **Atención: `seed_demo.sql` elimina la base `tp_cine_api` existente y todos sus datos.** Crea las tablas y carga catálogo, salas, butacas, productos y membresías. No crea espectadores, empleados, compras ni tickets de prueba.
 
-El segundo script agrega funciones para 14 días desde la fecha de MySQL y evita superposiciones. Para renovar únicamente la cartelera, ejecutar solo ese segundo script. No es necesario borrar la base al descargar cambios del código.
+El segundo script programa siete días con seis películas diarias y al menos dos funciones por película. Con el catálogo actual genera 16 funciones por día. Antes de las 12:30 empieza hoy; después empieza mañana. Usa la fecha de MySQL, respeta duraciones y deja tiempo para limpieza.
+
+Para renovar únicamente la cartelera, ejecutar solo ese segundo script, preferentemente antes de operar ventas o editar horarios. Reemplaza funciones libres de esa semana, pero conserva las que tengan entradas o reservas. Si no puede cumplir el plan, revierte la actualización y muestra un error. No es necesario borrar la base al descargar cambios del código.
 
 ## 2. Iniciar el backend
 
@@ -101,7 +103,7 @@ La seed actual no carga códigos `TCK-DEMO-*`: los códigos para esta prueba se 
 | No encuentra la clase principal de Java | Comprobar la ruta y el JDK; ejecutar `mvn.cmd clean compile`. Si compila, volver a iniciar. |
 | Error de conexión con MySQL | Revisar servidor iniciado, puerto, esquema, usuario y contraseña. |
 | React o Swing informa un error de servidor | Revisar primero la terminal del backend; iniciar Vite por sí solo no inicia Spring Boot. |
-| No hay funciones futuras | Ejecutar únicamente `database/completar_funciones_2_semanas.sql` y recargar la interfaz. |
+| No hay funciones futuras | Ejecutar únicamente `database/completar_funciones_1_semana.sql` y recargar la interfaz. Si ya pasó el comienzo de la jornada, revisar las funciones de mañana. |
 | Aparece "No pudimos abrir esta página" | Volver a cargar y revisar la conexión. Si se publica la web, debe servirse el build completo de `frontend/dist/`, incluidos sus archivos `assets/`; no hace falta borrar MySQL. |
 
 Para estudiar la organización: [React](frontend/README.md), [Swing](src/main/java/desktop/README.md), [estilos](frontend/src/styles/README.md) y [guía completa](frontend/GUIA_ESTUDIO_FRONTEND.md).

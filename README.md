@@ -26,7 +26,7 @@ src/main/java/repository/       Acceso a datos mediante Spring Data JPA
 src/main/java/modelo/           Entidades persistentes y enums del dominio
 src/main/java/com/tp/cine/      Arranque, configuración y seguridad de la API
 src/main/resources/            Configuración del backend e imágenes públicas
-database/                      Seed, funciones de dos semanas y material de películas
+database/                      Seed, funciones de una semana y material de películas
 pom.xml                        Dependencias y ejecución Java
 ```
 
@@ -55,6 +55,8 @@ Requisitos: JDK 17, Maven, MySQL Server, Node.js y npm. Seguir [GUIA_EJECUCION.m
 React descarga las pantallas secundarias cuando se visitan, en lugar de incluirlas todas en el JavaScript inicial. La cartelera y la estructura compartida se cargan al inicio. El detalle está en [Carga por ruta](frontend/README.md#carga-por-ruta); no cambia la ejecución ni las reglas del backend.
 
 **La seed elimina los datos existentes.** No ejecutarla para resolver un problema de interfaz ni para actualizar únicamente las fechas de funciones.
+
+Para renovar solo la cartelera, ejecutar [completar_funciones_1_semana.sql](database/completar_funciones_1_semana.sql): programa siete días con seis películas diarias y varias funciones, conservando las que tengan entradas o reservas. La preparación desde cero y las precauciones están en [database/README.md](database/README.md).
 
 ## Alcance de la demostración
 

@@ -2,7 +2,8 @@
 -- Crea el esquema y carga los datos estables: categorías, películas, salas,
 -- butacas, productos de confitería y membresías del Club Film Zone.
 -- No crea espectadores ni empleados de prueba.
--- Las funciones se cargan por separado con completar_funciones_2_semanas.sql.
+-- Despues, ejecutar completar_funciones_1_semana.sql: seis peliculas por dia,
+-- con dos o tres funciones por pelicula y tiempo para limpieza entre funciones.
 -- ATENCIÓN: elimina por completo la base tp_cine_api antes de recrearla.
 DROP DATABASE IF EXISTS tp_cine_api;
 CREATE DATABASE tp_cine_api CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

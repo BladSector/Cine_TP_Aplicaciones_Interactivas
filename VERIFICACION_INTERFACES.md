@@ -170,6 +170,18 @@ Verificaciones: build de producción correcto; inspección de peticiones que con
 
 Los tests de producción utilizaron `dist/` servido en un puerto local temporal y APIs simuladas; el servidor se cerró al finalizar. El análisis de imports contempla también `import()` para no confundir pantallas diferidas con archivos sin uso. No se modificaron MySQL, endpoints ni Swing.
 
+## Programación semanal de funciones
+
+Se reemplazó `database/completar_funciones_2_semanas.sql` por `database/completar_funciones_1_semana.sql`. La seed base sigue separada y sin usuarios/compras de prueba; sus instrucciones y las guías ahora indican ejecutar el script semanal después de instalarla. Para actualizar una base existente se utiliza únicamente el script de funciones, no la seed que elimina la base.
+
+El plan rota seis películas por día e intercala géneros. Distribuye dos o tres funciones por película entre cuatro salas operativas, con inicios entre las 13:00 y las 23:30 y bloques que contemplan duración y 20 minutos de limpieza. Antes de las 12:30 comienza hoy; después comienza mañana. En el catálogo actual resulta en 16 funciones diarias, 112 en siete días.
+
+El script conserva IDs de funciones que ya coinciden con el plan. Solo reemplaza funciones libres de esa semana; cualquier entrada o reserva protege la función original. Verifica un mínimo de dos funciones para cada película del plan y ausencia de superposiciones, incluso considerando el cruce de medianoche. Si no puede cumplirlo, revierte la transacción. El procedimiento auxiliar se elimina al finalizar y se restaura Safe Updates.
+
+Pruebas realizadas en un esquema MySQL aislado: instalación desde la seed, siete días/seis películas/16 funciones por día, dos o tres funciones por película, rotación de las 18 películas, horarios futuros y separación mínima de 20 minutos; repetición conservando IDs y precios; protección de entradas/tickets/reservas; reemplazo de una función libre antigua; rechazo por sala no disponible y rollback ante un horario protegido incompatible. Se comprobaron también el inicio desde hoy al ejecutar por la mañana, la reducción de turnos para una película de cuatro horas y el rechazo de una jornada de hoy ya iniciada. El esquema temporal se eliminó al terminar.
+
+Aplicación local del 3 de noviembre de 2026: se creó antes un respaldo completo fuera del repositorio y se programó del 4 al 10 de noviembre. Se conservaron las 284 funciones históricas, las 23 entradas, los 20 tickets y las reservas existentes. La API `GET /funciones` devolvió las 112 funciones nuevas distribuidas correctamente. No se borraron cuentas ni se ejecutó la seed destructiva sobre la base real.
+
 ## Límites
 
 No se probó un lector físico de QR, correo SMTP real ni cobro bancario real. El código se introdujo como texto, el correo se mantuvo simulado y las tarjetas fueron datos de prueba. El viewport móvil no sustituye una prueba en un teléfono físico. Tampoco se realizó una prueba de carga o de concurrencia masiva.
