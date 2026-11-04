@@ -12,14 +12,4 @@
     top: 108px;
     max-height: calc(100vh - 120px);
   }
-
-  .function-option {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .function-option__price {
-    grid-column: 2;
-    grid-row: 3;
-    justify-self: start;
-  }
 }

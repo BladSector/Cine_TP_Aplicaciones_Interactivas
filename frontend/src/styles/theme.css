@@ -10,10 +10,9 @@
   --surface-translucent-strong: rgba(255, 253, 248, 0.92);
   --control-muted-bg: rgba(22, 24, 31, 0.05);
   --header-bg: rgba(243, 239, 230, 0.88);
-  --body-background:
-    radial-gradient(circle at top left, rgba(214, 69, 43, 0.12), transparent 30%),
-    radial-gradient(circle at top right, rgba(201, 162, 39, 0.16), transparent 28%),
-    linear-gradient(180deg, #f7f2e8 0%, var(--bg) 40%, #ebe6da 100%);
+  --body-background: var(--bg);
+  --body-image-filter: grayscale(1) invert(1);
+  --body-image-opacity: 0.28;
   --ink: #16181f;
   --muted: #5c6170;
   --line: #d5cbb8;
@@ -40,7 +39,9 @@
   --surface-translucent-strong: rgba(25, 27, 34, 0.94);
   --control-muted-bg: rgba(255, 255, 255, 0.07);
   --header-bg: rgba(16, 17, 22, 0.9);
-  --body-background: linear-gradient(180deg, #101116 0%, #15171d 48%, #0d0f13 100%);
+  --body-background: var(--bg);
+  --body-image-filter: saturate(0.35) brightness(0.75);
+  --body-image-opacity: 0.65;
   --ink: #f4efe4;
   --muted: #aeb4c2;
   --line: #3a3e49;

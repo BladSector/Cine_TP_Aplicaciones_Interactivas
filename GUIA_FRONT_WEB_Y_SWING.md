@@ -217,6 +217,8 @@ El QR visible se representa en React. El PDF se solicita al backend; su diseño 
 
 ## 6. Web: estilos y recursos
 
+La imagen de fondo está en `frontend/src/assets/cinema-background.png` y pertenece al frontend. `styles/base.css` la ubica detrás del contenido y `styles/theme.css` adapta sus filtros e intensidad a claro/oscuro. No se consulta a MySQL para mostrarla. El inventario actualizado de recursos se encuentra en [el README de React](frontend/README.md#estilos-y-recursos).
+
 ### Carpeta `frontend/src/styles/`
 
 | Archivo o ruta | Dónde se aplica | Qué modificar ahí |

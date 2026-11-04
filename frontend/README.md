@@ -219,6 +219,16 @@ El QR visible se representa en React. El PDF se solicita al backend; su diseño 
 
 **Cómo encontrar un estilo:** buscar la clase del JSX, localizarla en estas hojas y revisar después las media queries. No agregar una regla duplicada al final de cualquier CSS sin identificar antes quién la aplica.
 
+### Carpeta `frontend/src/assets/`
+
+| Archivo | Dónde se aplica | Qué modificar ahí |
+| --- | --- | --- |
+| `cinema-background.png` | Fondo cinematográfico de la web. | Imagen proporcionada para el fondo, conservada sin cambios. `styles/base.css` controla su encuadre y `styles/theme.css` sus filtros e intensidad según el tema. |
+
+Vite incluye este recurso al compilar; no depende de Spring Boot ni de MySQL. El fondo es decorativo y no intercepta clics.
+
+Las opciones de función del detalle de película se presentan en `pages/compra.css`: recuadros compactos de igual tamaño, texto adaptable y marco naranja completo al seleccionar. El espacio previo al footer se aplica solo a `.movie-detail`; no cambia el resto de las páginas. Sus ajustes móviles están en `responsive/mobile-pelicula.css`.
+
 ### Recursos compartidos con el backend
 
 `src/main/resources/static/images/peliculas/` contiene portadas y `src/main/resources/static/images/consumibles/` contiene imágenes de productos. Spring Boot las sirve bajo `/images/...`; Vite redirige esas peticiones durante el desarrollo.

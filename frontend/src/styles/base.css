@@ -13,12 +13,31 @@ body,
 }
 
 body {
+  isolation: isolate;
   margin: 0;
   color: var(--ink);
   background: var(--body-background);
   font-family: var(--font-body);
   line-height: 1.5;
   transition: background 180ms ease, color 180ms ease;
+}
+
+/* Los filtros adaptan la misma imagen a ambos temas sin modificar el original. */
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: '';
+  background: url('../assets/cinema-background.png') center / cover no-repeat;
+  filter: var(--body-image-filter);
+  opacity: var(--body-image-opacity);
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  body::before {
+    background-position: right center;
+  }
 }
 
 a {

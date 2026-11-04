@@ -142,6 +142,22 @@ Verificaciones realizadas en esta etapa:
 
 Estas pruebas utilizaron APIs simuladas o servidores locales aislados; no modificaron `tp_cine_api`. La integración real HTTP/MySQL indicada en las secciones anteriores no se repitió para esta etapa de organización del frontend. Los arneses automatizados continuaron fuera del repositorio.
 
+## Ajustes visuales de películas y fondo cinematográfico
+
+Las funciones del detalle de película ahora usan recuadros compactos de igual tamaño, con texto adaptable y borde naranja. Al seleccionar una se destaca todo el marco sin modificar sus dimensiones; `aria-pressed` informa la selección. Las reglas se concentran en `pages/compra.css` y sus ajustes móviles en `responsive/mobile-pelicula.css`. El detalle agrega 24 px de espacio inferior antes del footer.
+
+Se incorporó `frontend/src/assets/cinema-background.png`, conservando la imagen proporcionada sin modificaciones. `base.css` la encuadra sin repetirla detrás del contenido y `theme.css` define filtros e intensidad por tema. En celular el encuadre favorece la cinta derecha. No se conserva el patrón SVG anterior ni sus variables sin uso.
+
+Verificación de esta revisión:
+
+- Build de React correcto; la imagen se incluye en `dist/assets/`. Persiste la advertencia conocida del paquete JavaScript mayor a 500 kB.
+- Dieciséis combinaciones de ancho/tema para dimensiones, bordes, texto y selección de funciones, más tres casos de nombres de sala largos. En 320 px se validaron los recuadros; el encabezado sin sesión tiene un desborde previo a estos cambios y no se considera corregido por esta revisión.
+- Seis combinaciones de ancho/tema para carga de la imagen, encuadre, filtros, diferencia visible en píxeles, clics y superposición correcta de modales. Se revisaron capturas de escritorio y celular.
+- Separación antes del footer comprobada en 1440 y 390 px, sin cambiar las otras páginas.
+- Análisis de imports sin archivos JS/JSX desconectados ni nuevos bindings sin uso; solo quedan los parámetros `_` intencionalmente ignorados. Enlaces locales de nueve documentos revisados sin rutas rotas.
+
+Los recorridos utilizan datos simulados y no modifican MySQL. No se cambiaron reglas de compra, endpoints ni clases Swing en estos ajustes visuales.
+
 ## Límites
 
 No se probó un lector físico de QR, correo SMTP real ni cobro bancario real. El código se introdujo como texto, el correo se mantuvo simulado y las tarjetas fueron datos de prueba. El viewport móvil no sustituye una prueba en un teléfono físico. Tampoco se realizó una prueba de carga o de concurrencia masiva.

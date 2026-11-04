@@ -55,10 +55,6 @@
     grid-template-columns: 1fr;
   }
 
-  .function-picker {
-    grid-template-columns: 1fr;
-  }
-
   .movie-card__price {
     margin-left: 0;
   }

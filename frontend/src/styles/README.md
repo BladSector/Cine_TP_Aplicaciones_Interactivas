@@ -45,9 +45,13 @@ Es el punto de entrada. Solo contiene los `@import`; no se agregan reglas visual
 
 Define las variables CSS de los temas claro y oscuro: colores, superficies, bordes, sombras, tipografías y fondos. Un cambio aquí afecta la identidad visual completa.
 
+El fondo usa `--body-background`, `--body-image-filter` y `--body-image-opacity`. Estas dos últimas ajustan el color y la intensidad de la imagen cinematográfica en cada tema, sin modificar el archivo original.
+
 ### `base.css`
 
 Contiene el reset básico y las reglas generales de HTML: `body`, títulos, enlaces, imágenes, formularios y clases reutilizables como `.eyebrow`, `.muted` y `.tiny`.
+
+`body::before` muestra detrás del contenido `src/assets/cinema-background.png`, sin repetirla y cubriendo la pantalla. En celular se encuadra hacia la derecha para conservar visible la cinta. Es decorativa: no ocupa espacio, no intercepta clics y no cambia el tamaño de las páginas.
 
 ### `responsive.css`
 
@@ -66,9 +70,9 @@ Es un índice de importaciones, no una hoja grande de reglas. Carga `responsive/
 | `mobile-candy.css` | Hasta 640 px | Productos compactos, variantes y controles de cantidad. |
 | `mobile-summary.css` | Hasta 640 px | Barra inferior y detalles desplegables de la compra; ajustes finales de productos. |
 | `mobile-overlays-footer.css` | Hasta 640 px | Tickets, QR, modales, avisos, footer y Sobre nosotros. |
-| `small-phone.css` | Hasta 390 px | Ajustes finales del buscador y opciones de función en pantallas pequeñas. |
+| `small-phone.css` | Hasta 390 px | Ajustes finales del buscador en pantallas pequeñas. Las funciones se ajustan en `mobile-pelicula.css`. |
 
-Los grupos conservan bandas consecutivas de la hoja anterior. Por eso algunas reglas compartidas aparecen junto a una sección concreta: moverlas de orden podría cambiar la cascada. Se comprobó que las 260 reglas resultantes conservan contenido y orden originales.
+Los grupos conservan bandas consecutivas de la hoja anterior. Por eso algunas reglas compartidas aparecen junto a una sección concreta: moverlas de orden podría cambiar la cascada. En la separación inicial se comprobó que las 260 reglas conservaban contenido y orden originales; los ajustes visuales posteriores se realizan en la hoja de su sección.
 
 ## `layout/`
 
@@ -93,6 +97,8 @@ Presentación principal, selector de fechas, filtros, grilla de películas, port
 ### `compra.css`
 
 Detalle de película y flujo de compra: selección de función, resumen, mapa de butacas, reserva temporal, formularios de pago y confirmación.
+
+Las reglas `.function-picker` y `.function-option` pertenecen a esta hoja, no a la cartelera. La grilla iguala alturas y permite que el texto ocupe más de una línea cuando hace falta. La selección usa una sombra interior naranja sobre todo el marco para no cambiar las dimensiones. `.movie-detail` añade separación antes del footer solo en el detalle de película.
 
 ### `cuenta.css`
 

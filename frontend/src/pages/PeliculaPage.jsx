@@ -140,6 +140,7 @@ export default function PeliculaPage() {
                     key={fn.id}
                     type="button"
                     className={`function-option ${selected?.id === fn.id ? 'is-selected' : ''}`}
+                    aria-pressed={selected?.id === fn.id}
                     onClick={() => setSelectedFunctionId(fn.id)}
                   >
                     <strong className="function-option__time">{shortTime(fn.horario)}</strong>

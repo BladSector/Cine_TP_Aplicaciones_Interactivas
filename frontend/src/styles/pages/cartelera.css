@@ -546,8 +546,7 @@ textarea {
   gap: 0.55rem;
 }
 
-.session-chip,
-.function-option {
+.session-chip {
   min-height: 42px;
   padding: 0.55rem 0.9rem;
   border: 1px solid var(--line);
@@ -565,25 +564,12 @@ textarea {
   font-size: 0.86rem;
 }
 
-.function-option.is-selected {
-  background: var(--bg-deep);
-  color: #fff;
-  border-color: var(--bg-deep);
-}
-
 @media (hover: hover) and (pointer: fine) {
-  .session-chip:hover,
-  .function-option:hover {
+  .session-chip:hover {
     background: var(--bg-deep);
     color: #fff;
     border-color: var(--bg-deep);
   }
-}
-
-.function-option.is-selected .function-option__time,
-.function-option.is-selected .function-option__format,
-.function-option.is-selected .function-option__price {
-  color: #fff;
 }
 
 .movie-card__footer,
