@@ -174,6 +174,20 @@ Ejemplo:
 
 Abre `PeliculaPage` y `useParams()` obtiene el ID `3`.
 
+### Carga diferida y errores de página
+
+`AppRoutes.jsx` declara las pantallas secundarias con `lazy(() => import(...))`. `import()` devuelve una promesa del módulo y `lazy` permite usar su exportación por defecto como componente. Vite genera paquetes separados que el navegador descarga cuando se visita esa pantalla; no se cambia su URL ni su lógica de negocio.
+
+```jsx
+const PeliculaPage = lazy(() => import('../pages/PeliculaPage'))
+```
+
+`SiteLayout` mantiene encabezado y footer fuera del límite de carga. Dentro del contenido, `Suspense` muestra `Loader` mientras llega el módulo y luego representa `Outlet`. Esto no espera automáticamente las consultas HTTP: los Context y formularios conservan sus propios estados de carga.
+
+`RouteErrorBoundary` captura un fallo de descarga o render y ofrece recarga manual en lugar de dejar la web en blanco. Es un componente de clase React con `getDerivedStateFromError`, no una clase del backend. Se reinicia al cambiar de ruta mediante su `key`. Recargar no envía una compra automáticamente.
+
+El paquete inicial bajó aproximadamente de 505,6 a 402,9 kB sin aumentar el límite de advertencia de Vite. La mejora corresponde al JavaScript inicial; no implica que todas las imágenes o la suma de paquetes de todas las pantallas pesen menos.
+
 ## 6. Estado global
 
 ### Autenticación

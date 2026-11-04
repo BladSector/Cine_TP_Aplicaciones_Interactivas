@@ -29,6 +29,8 @@ Para cada archivo responder cuatro preguntas: **qué recibe, qué conserva, qué
 
 Abrir `frontend/src/main.jsx`: monta React, configura el Router y anida los proveedores. `App.jsx` compone las rutas y el comportamiento común. `routes/AppRoutes.jsx` relaciona URL y página. `components/layout/SiteLayout.jsx` presenta el encabezado, la navegación, el contenido y el footer.
 
+Las pantallas secundarias se declaran con `lazy(() => import(...))` en `AppRoutes`. Vite las separa del JavaScript inicial y las descarga al visitarlas. `SiteLayout` contiene un `Suspense` con `Loader` solo alrededor de `Outlet`: no desmonta el encabezado al cargar una página. `components/common/RouteErrorBoundary.jsx` muestra un error recuperable si falla su descarga o render. Es un componente de clase React, no una entidad ni un service Java. No cambia la validación de compras ni espera por sí solo las peticiones a la API.
+
 | Archivo en `frontend/src/context/` | Responsabilidad | Qué no debe hacer |
 | --- | --- | --- |
 | `AuthContext.jsx` | Cuenta activa, login, registro, verificación y logout. | Confiar en un ID local como autorización del servidor. |
@@ -122,3 +124,4 @@ Presentar honestamente las simulaciones: no hay pasarela bancaria, el correo de 
 8. ¿Qué operación valida entradas y cuál entrega productos?
 9. ¿Qué archivo cambiarías para modificar un color, una URL o una regla de cancelación?
 10. ¿Qué funciones son simuladas y qué faltaría antes de publicar el sistema?
+11. ¿Qué diferencia hay entre cargar un módulo con `lazy`/`Suspense` y cargar datos de la API?

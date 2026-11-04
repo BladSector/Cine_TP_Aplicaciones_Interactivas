@@ -102,6 +102,7 @@ La seed actual no carga códigos `TCK-DEMO-*`: los códigos para esta prueba se 
 | Error de conexión con MySQL | Revisar servidor iniciado, puerto, esquema, usuario y contraseña. |
 | React o Swing informa un error de servidor | Revisar primero la terminal del backend; iniciar Vite por sí solo no inicia Spring Boot. |
 | No hay funciones futuras | Ejecutar únicamente `database/completar_funciones_2_semanas.sql` y recargar la interfaz. |
+| Aparece "No pudimos abrir esta página" | Volver a cargar y revisar la conexión. Si se publica la web, debe servirse el build completo de `frontend/dist/`, incluidos sus archivos `assets/`; no hace falta borrar MySQL. |
 
 Para estudiar la organización: [React](frontend/README.md), [Swing](src/main/java/desktop/README.md), [estilos](frontend/src/styles/README.md) y [guía completa](frontend/GUIA_ESTUDIO_FRONTEND.md).
 

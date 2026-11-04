@@ -1,9 +1,10 @@
 import { Menu, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useCatalog } from '../../context/CatalogContext'
 import Loader from '../common/Loader'
+import RouteErrorBoundary from '../common/RouteErrorBoundary'
 import HeaderActions from './HeaderActions'
 import ReservationExpiredNotice from './ReservationExpiredNotice'
 import SiteFooter from './SiteFooter'
@@ -59,7 +60,11 @@ export default function SiteLayout() {
       </header>
 
       <main className="site-main">
-        <Outlet />
+        <RouteErrorBoundary key={location.pathname}>
+          <Suspense fallback={<Loader />}>
+            <Outlet />
+          </Suspense>
+        </RouteErrorBoundary>
       </main>
 
       <ReservationExpiredNotice />

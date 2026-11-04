@@ -1,17 +1,20 @@
+import { lazy } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import SiteLayout from '../components/layout/SiteLayout'
-import AboutPage from '../pages/AboutPage'
-import CandyPage from '../pages/CandyPage'
 import CarteleraPage from '../pages/CarteleraPage'
-import ClubPage from '../pages/ClubPage'
-import CuentaPage from '../pages/CuentaPage'
-import LegalPage from '../pages/LegalPage'
-import PeliculaPage from '../pages/PeliculaPage'
 import PlaceholderPage from '../pages/PlaceholderPage'
 import CompraAccesoPage from '../pages/compra/CompraAccesoPage'
-import CompraButacasPage from '../pages/compra/CompraButacasPage'
-import CompraCandyPage from '../pages/compra/CompraCandyPage'
-import CompraPagoPage from '../pages/compra/CompraPagoPage'
+
+// Estas pantallas se descargan cuando se visitan, no al abrir la cartelera.
+const AboutPage = lazy(() => import('../pages/AboutPage'))
+const CandyPage = lazy(() => import('../pages/CandyPage'))
+const ClubPage = lazy(() => import('../pages/ClubPage'))
+const CuentaPage = lazy(() => import('../pages/CuentaPage'))
+const LegalPage = lazy(() => import('../pages/LegalPage'))
+const PeliculaPage = lazy(() => import('../pages/PeliculaPage'))
+const CompraButacasPage = lazy(() => import('../pages/compra/CompraButacasPage'))
+const CompraCandyPage = lazy(() => import('../pages/compra/CompraCandyPage'))
+const CompraPagoPage = lazy(() => import('../pages/compra/CompraPagoPage'))
 
 function LegacyCandyRedirect() {
   const { movieId } = useParams()

@@ -42,7 +42,7 @@ Este README explica cada carpeta y sus archivos: dónde se usan y qué responsab
 
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
-| `AppRoutes.jsx` | Relación entre URL y pantalla. | Agregar una página, cambiar una ruta o una redirección. Conserva redirecciones de `/kiosco` a `/candy`. |
+| `AppRoutes.jsx` | Relación entre URL y pantalla. | Rutas, redirecciones y carga diferida con `lazy(() => import(...))`. La cartelera y redirecciones simples se cargan al inicio; las pantallas secundarias al visitarlas. |
 
 Una ruta como `/pelicula/3` es una URL de React. `/peliculas` es un endpoint de la API. No cumplen la misma función.
 
@@ -120,7 +120,7 @@ Elementos compartidos entre páginas.
 
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
-| `SiteLayout.jsx` | Estructura común del sitio. | Marca, navegación, menú móvil, `Outlet`, avisos y footer. No concentra toda la lógica de sesión o carrito. |
+| `SiteLayout.jsx` | Estructura común del sitio. | Marca, navegación, menú móvil, `Outlet`, avisos y footer. `Suspense` muestra la carga de la página y `RouteErrorBoundary` limita sus errores sin desmontar la estructura común. |
 | `HeaderActions.jsx` | Acciones del encabezado. | Composición de lupa, carrito, tema y usuario; apertura del acceso lateral. |
 | `HeaderMovieSearch.jsx` | Lupa y resultados de películas. | Apertura, escritura, resultados con imágenes y navegación desde una búsqueda. |
 | `ActiveCart.jsx` | Compra conservada fuera del flujo. | Visualización del carrito, subtotal estimado, continuación y confirmación de cancelación. El borrador vive en `PurchaseContext`. |
@@ -188,6 +188,7 @@ El QR visible se representa en React. El PDF se solicita al backend; su diseño 
 | --- | --- | --- |
 | `Modal.jsx` | Ventanas emergentes compartidas. | Portal, estructura y acciones; delega teclado/foco/desplazamiento en `useDialog`. Puede bloquear el cierre mientras procesa. |
 | `ConfirmDialog.jsx` | Confirmaciones de operaciones. | Mensaje, botones y estado de procesamiento. La acción concreta llega por callback. |
+| `RouteErrorBoundary.jsx` | Errores al abrir una página. | Componente de clase React que captura errores de render/carga del contenido y ofrece volver a cargar. El límite se reinicia al cambiar de ruta; no sustituye el manejo de errores HTTP. |
 | `PaymentCard.jsx` | Tarjetas del perfil y checkout. | Apariencia común de tarjetas guardadas y vistas previas, titular, vencimiento y selección. Recibe los controles de eliminación como `children`; no hace llamadas HTTP. |
 | `Loader.jsx` | Pantalla/indicador de carga reutilizado. | Marcado y presentación de la carga. |
 | `Loader.css` | Solo el loader. | Apariencia y animación. |
@@ -252,6 +253,23 @@ index.html -> main.jsx -> App.jsx -> AppRoutes.jsx -> SiteLayout.jsx
 - La interfaz ayuda a validar datos, pero los permisos, precios y disponibilidad definitivos pertenecen al backend.
 - React no accede directamente a MySQL ni debe contener credenciales secretas de base de datos o correo.
 
+### Carga por ruta
+
+`AppRoutes.jsx` usa `React.lazy` con `import()` para descargar nueve pantallas secundarias al visitarlas: película, Candy, club, cuenta, legales, Sobre nosotros y las tres etapas principales de compra. Cartelera, estructura compartida, redirección de acceso y páginas informativas livianas permanecen en la carga inicial.
+
+```text
+SiteLayout: encabezado y footer permanecen montados
+  -> RouteErrorBoundary: error recuperable de la página
+  -> Suspense: Loader mientras llega su módulo
+  -> Outlet: pantalla correspondiente a la URL
+```
+
+Vite divide automáticamente el build en paquetes por pantalla y componentes compartidos. El JavaScript inicial pasó de aproximadamente **505,6 a 402,9 kB**, una reducción cercana al **20 %** antes de gzip. Ningún paquete JavaScript supera el límite predeterminado de 500 kB y el build ya no muestra esa advertencia. No se modificó `chunkSizeWarningLimit`, no se ocultaron avisos y no se agregaron dependencias.
+
+Esto reduce la descarga inicial, no necesariamente la suma de todos los archivos si se recorren todas las páginas. La imagen de fondo conserva su tamaño original. `Suspense` espera el módulo JavaScript, no las peticiones a la API: estas mantienen sus estados de carga/errores en Context y componentes.
+
+Si falla la descarga o el render de una página, `RouteErrorBoundary` muestra un mensaje y un botón para recargar. No reintenta compras ni envía operaciones de escritura automáticamente. Su `key` por ruta permite abrir otra sección sin conservar el error de la anterior.
+
 ### Rutas de compra
 
 | URL | Pantalla |
@@ -286,6 +304,8 @@ npm.cmd run build
 ```
 
 En macOS/Linux se usa `npm` en lugar de `npm.cmd`. Vite redirige la API y las imágenes durante desarrollo; un despliegue requiere configurar también ese acceso al backend.
+
+Al publicar el build se debe servir **toda la carpeta `dist/`**, incluidos sus paquetes en `assets/`, y mantener el fallback a `index.html` para las rutas de React. Copiar solo el HTML o el JavaScript principal impide abrir pantallas diferidas. Si quedó una pestaña con una versión anterior, una recarga recupera las referencias al build nuevo.
 
 Orden de lectura: inicio -> rutas -> Context/API -> una página -> componentes -> hook de compra -> CSS. Para cada archivo, identificar qué recibe, qué conserva y a quién delega.
 

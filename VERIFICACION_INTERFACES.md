@@ -131,7 +131,7 @@ Se realizaron cinco etapas sin crear commits ni hacer push:
 
 Verificaciones realizadas en esta etapa:
 
-- `npm.cmd run build` y compilación Maven correctos. Vite conserva una advertencia de tamaño del paquete JavaScript, no un error de compilación; no se ocultó cambiando su límite.
+- `npm.cmd run build` y compilación Maven correctos. En esa etapa Vite todavía mostraba una advertencia de tamaño del paquete JavaScript; se resolvió posteriormente con la carga diferida descrita más abajo, sin aumentar su límite.
 - Seis regresiones React de reserva/pago y seis recorridos de recuperación, registro, verificación y tarjetas compartidas.
 - Pruebas aisladas de catálogo sin peticiones privadas anónimas, cambio de cuenta con respuestas tardías, fallo/reintento de historial y cierre de sesión durante una consulta de perfil.
 - La repetición del recorrido perfil-pago detectó una carrera en la restauración de sesión: una petición obsoleta podía finalizar la carga antes de recibir el usuario vigente y desviar el pago a acceso/butacas. Se corrigió la limpieza del efecto de arranque en `AuthContext`. Dos casos deterministas (primera respuesta exitosa o fallida y segunda demorada) y diez recorridos repetidos entre escritorio/celular comprobaron la corrección, sin instrumentar el código de la aplicación.
@@ -150,13 +150,25 @@ Se incorporó `frontend/src/assets/cinema-background.png`, conservando la imagen
 
 Verificación de esta revisión:
 
-- Build de React correcto; la imagen se incluye en `dist/assets/`. Persiste la advertencia conocida del paquete JavaScript mayor a 500 kB.
+- Build de React correcto; la imagen se incluye en `dist/assets/`. En esta revisión visual todavía persistía la advertencia del paquete JavaScript mayor a 500 kB, resuelta en la etapa siguiente.
 - Dieciséis combinaciones de ancho/tema para dimensiones, bordes, texto y selección de funciones, más tres casos de nombres de sala largos. En 320 px se validaron los recuadros; el encabezado sin sesión tiene un desborde previo a estos cambios y no se considera corregido por esta revisión.
 - Seis combinaciones de ancho/tema para carga de la imagen, encuadre, filtros, diferencia visible en píxeles, clics y superposición correcta de modales. Se revisaron capturas de escritorio y celular.
 - Separación antes del footer comprobada en 1440 y 390 px, sin cambiar las otras páginas.
 - Análisis de imports sin archivos JS/JSX desconectados ni nuevos bindings sin uso; solo quedan los parámetros `_` intencionalmente ignorados. Enlaces locales de nueve documentos revisados sin rutas rotas.
 
 Los recorridos utilizan datos simulados y no modifican MySQL. No se cambiaron reglas de compra, endpoints ni clases Swing en estos ajustes visuales.
+
+## Carga diferida y build sin advertencia de tamaño
+
+`AppRoutes` mantiene la cartelera, redirecciones simples y páginas informativas pequeñas en la carga inicial. Nueve pantallas secundarias se declaran mediante `React.lazy` e `import()`. Vite genera automáticamente paquetes por pantalla y componentes compartidos; no se agregaron librerías ni se modificó `chunkSizeWarningLimit` para ocultar el aviso.
+
+`SiteLayout` conserva encabezado/footer y rodea `Outlet` con `Suspense` y `RouteErrorBoundary`. El primero muestra el indicador de carga del módulo. El segundo captura fallos del contenido y permite recargar manualmente, sin reintentar operaciones de compra. Su instancia cambia por ruta para no mantener el error al abrir otra sección.
+
+El JavaScript inicial pasó de aproximadamente 505,6 a 402,9 kB, cerca de un 20 % menos antes de gzip. El build no muestra la advertencia y todos los paquetes JavaScript están por debajo de 500 kB. Es una mejora de descarga inicial, no una reducción garantizada de la suma de todos los módulos o imágenes; el fondo PNG mantiene su tamaño original.
+
+Verificaciones: build de producción correcto; inspección de peticiones que confirma que pago/cuenta/club/película no se descargan al abrir la cartelera; carga demorada con indicador y encabezado conservado; acceso directo y recarga de rutas, alias de Candy y etapas de compra. Se simularon fallo de un paquete y recuperación mediante recarga manual. También se repitieron las regresiones de reserva/pago y los recorridos de autenticación/tarjetas. Se comprobaron compras de Candy y membresía en el build con un único POST y confirmación.
+
+Los tests de producción utilizaron `dist/` servido en un puerto local temporal y APIs simuladas; el servidor se cerró al finalizar. El análisis de imports contempla también `import()` para no confundir pantallas diferidas con archivos sin uso. No se modificaron MySQL, endpoints ni Swing.
 
 ## Límites
 

@@ -66,7 +66,7 @@ Las rutas de archivo de esta guía parten de la raíz del repositorio. En cada t
 
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
-| `AppRoutes.jsx` | Relación entre URL y pantalla. | Agregar una página, cambiar una ruta o una redirección. Conserva redirecciones de `/kiosco` a `/candy`. |
+| `AppRoutes.jsx` | Relación entre URL y pantalla. | Rutas, redirecciones y carga de pantallas secundarias mediante `lazy` e `import()`. Mantiene la cartelera en la carga inicial y los enlaces antiguos de Candy. |
 
 Una ruta como `/pelicula/3` es una URL de React. `/peliculas` es un endpoint de la API. No cumplen la misma función.
 
@@ -142,7 +142,7 @@ Elementos compartidos entre páginas.
 
 | Archivo | Dónde se aplica | Qué modificar ahí |
 | --- | --- | --- |
-| `SiteLayout.jsx` | Estructura común del sitio. | Marca, navegación, menú móvil, `Outlet`, avisos y footer. No concentra toda la lógica de sesión o carrito. |
+| `SiteLayout.jsx` | Estructura común del sitio. | Marca, navegación, menú móvil, `Outlet`, avisos y footer. Rodea el contenido con `Suspense` y `RouteErrorBoundary`; conserva el encabezado mientras se descarga la página. |
 | `HeaderActions.jsx` | Acciones del encabezado. | Composición de lupa, carrito, tema y usuario; apertura del acceso lateral. |
 | `HeaderMovieSearch.jsx` | Lupa y resultados de películas. | Apertura, escritura, resultados con imágenes y navegación desde una búsqueda. |
 | `ActiveCart.jsx` | Compra conservada fuera del flujo. | Visualización del carrito, subtotal estimado, continuación y confirmación de cancelación. El borrador vive en `PurchaseContext`. |
@@ -210,6 +210,7 @@ El QR visible se representa en React. El PDF se solicita al backend; su diseño 
 | --- | --- | --- |
 | `Modal.jsx` | Ventanas emergentes compartidas. | Portal, estructura, cierre por fondo/tecla Escape y espacio de acciones. |
 | `ConfirmDialog.jsx` | Confirmaciones de operaciones. | Mensaje, botones y estado de procesamiento. La acción concreta llega por callback. |
+| `RouteErrorBoundary.jsx` | Fallo al abrir una página. | Captura errores de carga/render del contenido, ofrece recarga manual y se reinicia al cambiar de ruta. No ejecuta ni reintenta compras. |
 | `Loader.jsx` | Pantalla/indicador de carga reutilizado. | Marcado y presentación de la carga. |
 | `Loader.css` | Solo el loader. | Apariencia y animación. |
 | `ScrollToTop.jsx` | Desplazamiento al navegar. | Cuándo corresponde subir la página según el cambio de ruta. No es el único lugar del proyecto que puede desplazarla. |

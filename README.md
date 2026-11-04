@@ -52,6 +52,8 @@ Requisitos: JDK 17, Maven, MySQL Server, Node.js y npm. Seguir [GUIA_EJECUCION.m
 - Swing: `mvn.cmd compile exec:java` desde la raíz, con la API iniciada.
 - React: `npm.cmd install` y `npm.cmd run dev` desde `frontend/`.
 
+React descarga las pantallas secundarias cuando se visitan, en lugar de incluirlas todas en el JavaScript inicial. La cartelera y la estructura compartida se cargan al inicio. El detalle está en [Carga por ruta](frontend/README.md#carga-por-ruta); no cambia la ejecución ni las reglas del backend.
+
 **La seed elimina los datos existentes.** No ejecutarla para resolver un problema de interfaz ni para actualizar únicamente las fechas de funciones.
 
 ## Alcance de la demostración
