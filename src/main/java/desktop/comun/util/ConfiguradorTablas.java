@@ -43,7 +43,7 @@ public final class ConfiguradorTablas {
         } else if (model.findColumn("Película") >= 0 && model.findColumn("Fecha") >= 0) {
             moverColumnas(tabla, "ID", "Fecha", "Horario", "Película", "Sala", "Formato", "Idioma", "Precio");
         } else if (model.findColumn("Producto") >= 0) {
-            moverColumnas(tabla, "ID", "Producto", "Cantidad", "Estado", "Subtotal", "Ticket");
+            moverColumnas(tabla, "ID", "Espectador", "Producto", "Cantidad", "Estado", "Subtotal", "Ticket");
         } else if (model.findColumn("Butaca") >= 0) {
             moverColumnas(tabla, "ID", "Sala", "Butaca", "Estado");
         }

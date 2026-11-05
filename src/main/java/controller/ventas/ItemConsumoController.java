@@ -78,9 +78,11 @@ public class ItemConsumoController {
     }
 
     public record ItemConsumoResponse(int id, int productoId, String productoNombre,
-                                      int cantidad, Integer ticketId, EstadoConsumo estado, double subtotal) {
+                                      int cantidad, Integer ticketId, EstadoConsumo estado, double subtotal,
+                                      Integer espectadorId, String espectadorNombre) {
         public static ItemConsumoResponse desde(ItemConsumo item, double subtotal) {
             Integer ticketId = item.getTicket() == null ? null : item.getTicket().getId();
+            var espectador = item.getTicket() == null ? null : item.getTicket().getEspectador();
             return new ItemConsumoResponse(
                     item.getId(),
                     item.getProducto().getId(),
@@ -88,7 +90,9 @@ public class ItemConsumoController {
                     item.getCantidad(),
                     ticketId,
                     item.getEstado(),
-                    subtotal
+                    subtotal,
+                    espectador == null ? null : espectador.getId(),
+                    espectador == null ? "-" : espectador.getNombre() + " " + espectador.getApellido()
             );
         }
     }

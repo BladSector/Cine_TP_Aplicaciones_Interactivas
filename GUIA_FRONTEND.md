@@ -652,6 +652,10 @@ repositories ni services del backend.
 
 ### `comun/modulos/` y `comun/paneles/`
 
+La tabla de Consumos muestra el espectador del ticket, recibido desde `/items-consumo` como
+`espectadorNombre`; se puede buscar por ese nombre y verlo en el detalle. No requiere otra tabla
+ni consulta individual por consumo. Los ítems sin ticket muestran un guion.
+
 **[modulos/ModuloSwing.java](src/main/java/desktop/comun/modulos/ModuloSwing.java)**
 
 Base de coordinadores. `consultar` realiza lecturas versionadas; `ejecutar` operaciones;

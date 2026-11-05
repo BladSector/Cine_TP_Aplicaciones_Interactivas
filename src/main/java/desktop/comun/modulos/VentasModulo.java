@@ -36,7 +36,7 @@ import static desktop.comun.util.FormatoSwing.nombreEstadoTicket;
 public final class VentasModulo extends ModuloSwing {
     private final TicketsApi ticketsApi;
     private final boolean empleado;
-    private final DefaultTableModel consumosModel = modelo("ID", "Producto", "Cantidad", "Ticket", "Estado", "Subtotal");
+    private final DefaultTableModel consumosModel = modelo("ID", "Producto", "Cantidad", "Ticket", "Estado", "Subtotal", "Espectador");
     private final DefaultTableModel ticketsModel = modelo("ID", "Espectador", "Película", "Fecha", "Horario", "Sala",
             "Estado", "Entradas", "Consumos", "Productos", "Total", "Código QR");
     private final JTable consumosTabla = tabla(consumosModel);
@@ -169,7 +169,8 @@ public final class VentasModulo extends ModuloSwing {
             respuesta.forEach(item -> consumosModel.addRow(new Object[]{
                     item.path("id").asInt(), item.path("productoNombre").asText(),
                     item.path("cantidad").asInt(), textoNullable(item.get("ticketId")),
-                    item.path("estado").asText(), item.path("subtotal").asDouble()
+                    item.path("estado").asText(), item.path("subtotal").asDouble(),
+                    item.path("espectadorNombre").asText("-")
             }));
         });
     }
