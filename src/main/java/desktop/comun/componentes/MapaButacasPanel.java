@@ -70,7 +70,8 @@ public final class MapaButacasPanel extends JPanel {
         int id = butaca.path("id").asInt();
         String estado = butaca.path("estado").asText("DISPONIBLE");
         String nombre = butaca.path("fila").asText() + butaca.path("numero").asInt();
-        JButton boton = new JButton(nombre);
+        boolean accesible = butaca.path("espacioSillaDeRuedas").asBoolean();
+        JButton boton = new JButton(accesible ? "♿ " + nombre : nombre);
         boton.setUI(new BasicButtonUI());
         boton.setPreferredSize(new Dimension(58, 38));
         boton.setMinimumSize(new Dimension(58, 38));
@@ -81,7 +82,7 @@ public final class MapaButacasPanel extends JPanel {
         boton.setFont(boton.getFont().deriveFont(Font.BOLD, 12f));
         boton.setBackground(colorEstado(estado));
         boton.setForeground(Color.WHITE);
-        boton.setToolTipText("Butaca " + nombre + " - " + nombreEstadoButaca(estado));
+        boton.setToolTipText((accesible ? "Espacio para silla de ruedas " : "Butaca ") + nombre + " - " + nombreEstadoButaca(estado));
         if (seleccionadaId != null && seleccionadaId == id) {
             boton.setBorder(BorderFactory.createLineBorder(new Color(30, 90, 180), 3));
         }
@@ -101,6 +102,7 @@ public final class MapaButacasPanel extends JPanel {
         leyenda.add(elementoLeyenda("Disponible", colorEstado("DISPONIBLE")));
         leyenda.add(elementoLeyenda("Ocupada", colorEstado("OCUPADA")));
         leyenda.add(elementoLeyenda("Fuera de servicio", colorEstado("FUERA_DE_SERVICIO")));
+        leyenda.add(new JLabel("♿ Espacio para silla de ruedas"));
         return leyenda;
     }
 

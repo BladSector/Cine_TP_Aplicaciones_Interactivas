@@ -104,7 +104,8 @@ public class ButacaController {
     }
 
     public record ButacaResponse(int id, String fila, int numero, String butacaNombre,
-                                 EstadoButaca estado, LocalDateTime bloqueoHasta, int salaId, String salaNombre) {
+                                 EstadoButaca estado, LocalDateTime bloqueoHasta, int salaId, String salaNombre,
+                                 boolean espacioSillaDeRuedas) {
         public static ButacaResponse desde(Butaca butaca) {
             return new ButacaResponse(
                     butaca.getId(),
@@ -114,7 +115,8 @@ public class ButacaController {
                     butaca.getEstado(),
                     butaca.getBloqueoHasta(),
                     butaca.getSala().getId(),
-                    butaca.getSala().getNombre()
+                    butaca.getSala().getNombre(),
+                    butaca.isEspacioSillaDeRuedas()
             );
         }
     }

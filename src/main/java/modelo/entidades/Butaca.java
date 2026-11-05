@@ -14,6 +14,8 @@ public class Butaca {
     private int id;
     private String fila;
     private int numero;
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean espacioSillaDeRuedas;
     @Enumerated(EnumType.STRING)//El atributo estado que se define con un enum el MySQL lo guarda como String
     private EstadoButaca estado;
     private LocalDateTime bloqueoHasta;
@@ -41,6 +43,14 @@ public class Butaca {
 
     public boolean estaDisponible() {
         return estado == EstadoButaca.DISPONIBLE;
+    }
+
+    public boolean isEspacioSillaDeRuedas() {
+        return espacioSillaDeRuedas;
+    }
+
+    public void actualizarAccesibilidad(boolean espacioSillaDeRuedas) {
+        this.espacioSillaDeRuedas = espacioSillaDeRuedas;
     }
 
     public void bloquear(int minutos) {

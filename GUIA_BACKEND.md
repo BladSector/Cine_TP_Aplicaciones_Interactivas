@@ -476,6 +476,13 @@ Suscripción activa, `bloquearActivas` y consulta de suscripciones vencidas con 
 
 ## Modelo: entidades y relaciones
 
+`Butaca.espacioSillaDeRuedas` identifica un espacio sin asiento físico para una persona en silla de
+ruedas. Es independiente del estado de disponibilidad. Su columna booleana tiene valor inicial
+`false` para conservar las butacas existentes; Hibernate la agrega al actualizar el esquema.
+Las ubicaciones de `/salas/con-matriz` y `/salas/{id}/distribucion` admiten ese campo. Si se omite
+en una edición antigua, se conserva el valor existente. `SalaService` impide cambiar el tipo con
+entradas futuras o reservas vigentes, bajo el bloqueo de butacas compartido con las compras.
+
 Todos los archivos siguientes están en `src/main/java/modelo/entidades/`. Un atributo asociado con
 `@JoinColumn` contiene la clave foránea. Una colección con `mappedBy` es el lado inverso de esa
 relación, no otra columna con todos los IDs.

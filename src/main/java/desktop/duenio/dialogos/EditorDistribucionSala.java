@@ -7,6 +7,7 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
+import javax.swing.JComboBox;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import java.awt.BorderLayout;
@@ -32,6 +33,10 @@ final class EditorDistribucionSala extends JPanel {
     private final JSpinner columnas;
     private final JPanel mapa = new JPanel(new BorderLayout(0, 16));
     private final Set<String> activas = new HashSet<>();
+    private final Set<String> accesibles = new HashSet<>();
+    private final JComboBox<String> herramienta = new JComboBox<>(new String[]{
+            "Butaca / espacio vacío", "Espacio para silla de ruedas"
+    });
     private int filasAnteriores;
     private int columnasAnteriores;
 
@@ -52,18 +57,22 @@ final class EditorDistribucionSala extends JPanel {
         controles.add(filas);
         controles.add(new JLabel("Butacas por fila"));
         controles.add(columnas);
+        JPanel herramientas = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 4));
+        herramientas.add(new JLabel("Al hacer clic:"));
+        herramientas.add(herramienta);
 
         filas.addChangeListener(evento -> cambiarDimensiones());
         columnas.addChangeListener(evento -> cambiarDimensiones());
 
         JLabel ayuda = new JLabel(
-                "Ajustá las filas y butacas. Hacé clic en cada lugar para personalizar la sala: verde es butaca y gris es espacio vacío.");
+                "Verde: butaca. Azul: silla de ruedas. Gris: espacio vacío. Elegí una herramienta y hacé clic en el plano.");
         ayuda.setBorder(BorderFactory.createEmptyBorder(10, 8, 4, 8));
         ayuda.setForeground(new Color(92, 98, 108));
         ayuda.setFont(ayuda.getFont().deriveFont(Font.ITALIC, 12f));
 
         JPanel encabezado = new JPanel(new BorderLayout(0, 4));
         encabezado.add(controles, BorderLayout.NORTH);
+        encabezado.add(herramientas, BorderLayout.CENTER);
         encabezado.add(ayuda, BorderLayout.SOUTH);
 
         add(encabezado, BorderLayout.NORTH);
@@ -96,7 +105,15 @@ final class EditorDistribucionSala extends JPanel {
             cantidadColumnas = Math.max(cantidadColumnas, numero);
             posiciones.add(posicion(indiceFila, numero));
         }
-        return new EditorDistribucionSala(nombre, cantidadFilas, cantidadColumnas, posiciones);
+        EditorDistribucionSala editor = new EditorDistribucionSala(nombre, cantidadFilas, cantidadColumnas, posiciones);
+        for (JsonNode butaca : butacas) {
+            if (butaca.path("espacioSillaDeRuedas").asBoolean()) {
+                editor.accesibles.add(posicion(butaca.path("fila").asText().trim().toUpperCase().charAt(0) - 'A',
+                        butaca.path("numero").asInt()));
+            }
+        }
+        editor.dibujarMapa();
+        return editor;
     }
 
     String getNombre() {
@@ -112,7 +129,8 @@ final class EditorDistribucionSala extends JPanel {
                 .sorted(Comparator.comparingInt(PosicionSala::fila).thenComparingInt(PosicionSala::numero))
                 .map(posicion -> Map.<String, Object>of(
                         "fila", String.valueOf((char) ('A' + posicion.fila())),
-                        "numero", posicion.numero()))
+                        "numero", posicion.numero(),
+                        "espacioSillaDeRuedas", accesibles.contains(posicion(posicion.fila(), posicion.numero()))))
                 .toList();
     }
 
@@ -123,6 +141,7 @@ final class EditorDistribucionSala extends JPanel {
             PosicionSala posicion = leerPosicion(clave);
             return posicion.fila() >= nuevasFilas || posicion.numero() > nuevasColumnas;
         });
+        accesibles.retainAll(activas);
 
         for (int fila = 0; fila < nuevasFilas; fila++) {
             for (int numero = 1; numero <= nuevasColumnas; numero++) {
@@ -166,15 +185,20 @@ final class EditorDistribucionSala extends JPanel {
             for (int numero = 1; numero <= cantidadColumnas; numero++) {
                 String clave = posicion(fila, numero);
                 JButton butaca = new JButton(String.valueOf(numero));
+                butaca.putClientProperty("numero", numero);
                 butaca.setPreferredSize(new Dimension(48, 34));
                 butaca.setMargin(new Insets(2, 4, 2, 4));
                 butaca.setFocusPainted(false);
-                pintarButaca(butaca, activas.contains(clave));
+                pintarButaca(butaca, activas.contains(clave), accesibles.contains(clave));
                 butaca.addActionListener(evento -> {
-                    if (!activas.remove(clave)) {
+                    if (herramienta.getSelectedIndex() == 1) {
                         activas.add(clave);
+                        if (!accesibles.remove(clave)) accesibles.add(clave);
+                    } else {
+                        accesibles.remove(clave);
+                        if (!activas.remove(clave)) activas.add(clave);
                     }
-                    pintarButaca(butaca, activas.contains(clave));
+                    pintarButaca(butaca, activas.contains(clave), accesibles.contains(clave));
                 });
 
                 restricciones.gridx = numero;
@@ -192,11 +216,13 @@ final class EditorDistribucionSala extends JPanel {
         mapa.repaint();
     }
 
-    private static void pintarButaca(JButton butaca, boolean activa) {
+    private static void pintarButaca(JButton butaca, boolean activa, boolean accesible) {
         butaca.setOpaque(true);
-        butaca.setBackground(activa ? BUTACA_ACTIVA : BUTACA_INACTIVA);
+        butaca.setBackground(accesible ? new Color(28, 102, 169) : activa ? BUTACA_ACTIVA : BUTACA_INACTIVA);
         butaca.setForeground(Color.WHITE);
-        butaca.setToolTipText(activa ? "Butaca incluida" : "Espacio sin butaca");
+        butaca.setText((accesible ? "♿ " : "") + butaca.getClientProperty("numero"));
+        butaca.setToolTipText(accesible ? "Espacio para silla de ruedas" : activa ? "Butaca incluida" : "Espacio sin butaca");
+        butaca.getAccessibleContext().setAccessibleDescription(butaca.getToolTipText());
     }
 
     private static String posicion(int fila, int numero) {

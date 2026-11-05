@@ -155,7 +155,7 @@ export default function ActiveCart() {
             <div className="header-cart__actions">
               <button
                 type="button"
-                className="text-button text-button--danger"
+                className="secondary-button"
                 onClick={() => setShowCancelConfirm(true)}
               >
                 Cancelar compra

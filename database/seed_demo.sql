@@ -36,6 +36,7 @@ CREATE TABLE butaca (
     id INT AUTO_INCREMENT PRIMARY KEY,
     fila VARCHAR(10) NOT NULL,
     numero INT NOT NULL,
+    espacio_silla_de_ruedas BOOLEAN NOT NULL DEFAULT FALSE,
     estado VARCHAR(30) NOT NULL,
     bloqueo_hasta DATETIME NULL,
     sala_id INT NOT NULL,

@@ -834,6 +834,12 @@ Tabla de auditoría y referencia visual de perfiles.
 
 ### `duenio/dialogos/`
 
+En `EditorDistribucionSala`, el selector de herramienta permite marcar un espacio para silla de
+ruedas, representado en azul y con el símbolo de accesibilidad. Sus coordenadas se envían con
+`espacioSillaDeRuedas`; al editar se recupera esta configuración. `SeatMap` utiliza el mismo dato
+para mostrar el símbolo, una descripción accesible y la leyenda durante la compra web, sin
+cambiar las reglas de reservas ni ocupación. `MapaButacasPanel` también distingue estos lugares.
+
 Los formularios devuelven `Optional<Datos>`: si se cancela, el módulo no envía la modificación. Los
 `record Datos` agrupan campos de interfaz; no son nuevas entidades JPA.
 

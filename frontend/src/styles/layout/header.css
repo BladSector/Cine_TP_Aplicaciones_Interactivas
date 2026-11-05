@@ -541,9 +541,11 @@
   margin-top: 1rem;
 }
 
-.header-cart__actions .primary-button {
+.header-cart__actions .primary-button,
+.header-cart__actions .secondary-button {
   min-height: 42px;
-  padding: 0.65rem 1.1rem;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.9rem;
 }
 
 .reservation-expired-toast,

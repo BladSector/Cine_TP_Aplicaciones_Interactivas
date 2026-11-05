@@ -31,6 +31,8 @@ export default function SeatMap({
               const unavailable = isUnavailable(butaca)
               const pending = isPending(butaca)
               const label = seatLabel(butaca)
+              const accessible = butaca.espacioSillaDeRuedas === true
+              const description = `${accessible ? 'Espacio para silla de ruedas' : 'Butaca'} ${label}`
 
               return (
                 <button
@@ -39,10 +41,12 @@ export default function SeatMap({
                   className={`seat-button ${selected ? 'is-selected' : ''} ${unavailable ? 'is-blocked' : ''} ${pending ? 'is-pending' : ''}`}
                   disabled={unavailable || pending}
                   onClick={() => onToggle(butaca)}
-                  aria-label={`Butaca ${label}`}
-                  title={`Butaca ${label}`}
+                  aria-label={description}
+                  aria-pressed={selected}
+                  title={description}
                 >
-                  <Armchair className="seat-button__icon" aria-hidden="true" strokeWidth={2.4} />
+                  {accessible ? <span className="seat-button__wheelchair" aria-hidden="true">♿︎</span>
+                    : <Armchair className="seat-button__icon" aria-hidden="true" strokeWidth={2.4} />}
                   <span>{label}</span>
                 </button>
               )
@@ -51,6 +55,7 @@ export default function SeatMap({
         ))}
       </div>
       <div className="seat-legend">
+        <span><span aria-hidden="true">♿</span> Espacio para silla de ruedas</span>
         <span>
           <i className="legend-seat available" /> Disponibles
         </span>

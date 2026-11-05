@@ -484,6 +484,12 @@
   color: #111111;
 }
 
+.seat-button__wheelchair {
+  font-family: 'Segoe UI Symbol', sans-serif;
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
 .seat-button:hover:not(:disabled) {
   transform: translateY(-2px);
 }

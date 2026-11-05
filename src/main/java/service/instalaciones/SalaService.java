@@ -78,6 +78,7 @@ public class SalaService {
 
         for (UbicacionButaca ubicacion : ubicaciones) {
             Butaca butaca = new Butaca(ubicacion.fila().trim().toUpperCase(), ubicacion.numero(), sala);
+            butaca.actualizarAccesibilidad(Boolean.TRUE.equals(ubicacion.espacioSillaDeRuedas()));
             sala.agregarButaca(butaca);
             butacaRepository.save(butaca);
         }
@@ -167,7 +168,7 @@ public class SalaService {
 
         try {
             Sala sala = buscarPorId(id);
-            List<Butaca> actuales = butacaRepository.findBySalaId(id);
+            List<Butaca> actuales = butacaRepository.buscarPorSalaConBloqueo(id);
             Map<String, Butaca> actualesPorPosicion = actuales.stream().collect(Collectors.toMap(
                     butaca -> posicion(butaca.getFila(), butaca.getNumero()),
                     Function.identity()
@@ -186,8 +187,14 @@ public class SalaService {
                 String posicion = posicion(ubicacion.fila(), ubicacion.numero());
                 if (!actualesPorPosicion.containsKey(posicion)) {
                     Butaca nueva = new Butaca(ubicacion.fila().trim().toUpperCase(), ubicacion.numero(), sala);
+                    nueva.actualizarAccesibilidad(Boolean.TRUE.equals(ubicacion.espacioSillaDeRuedas()));
                     sala.agregarButaca(nueva);
                     butacaRepository.save(nueva);
+                } else if (ubicacion.espacioSillaDeRuedas() != null) {
+                    Butaca existente = actualesPorPosicion.get(posicion);
+                    validarCambioAccesibilidad(existente, ubicacion.espacioSillaDeRuedas());
+                    existente.actualizarAccesibilidad(ubicacion.espacioSillaDeRuedas());
+                    butacaRepository.save(existente);
                 }
             }
 
@@ -208,6 +215,17 @@ public class SalaService {
             salaRepository.flush();
         } catch (DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede eliminar una sala con funciones o entradas asociadas.");
+        }
+    }
+
+    private void validarCambioAccesibilidad(Butaca butaca, boolean accesible) {
+        if (butaca.isEspacioSillaDeRuedas() == accesible) return;
+        java.time.LocalDateTime ahora = java.time.LocalDateTime.now();
+        if (butacaRepository.tieneEntradasVigentes(butaca.getId(), ahora.toLocalDate(), ahora.toLocalTime())
+                || butacaRepository.tieneReservasVigentes(butaca.getId(), ahora)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "No se puede cambiar el tipo de un lugar con entradas o reservas vigentes: "
+                            + butaca.getFila() + butaca.getNumero());
         }
     }
 
@@ -243,6 +261,9 @@ public class SalaService {
         return fila.trim().toUpperCase() + "-" + numero;
     }
 
-    public record UbicacionButaca(String fila, int numero) {
+    public record UbicacionButaca(String fila, int numero, Boolean espacioSillaDeRuedas) {
+        public UbicacionButaca(String fila, int numero) {
+            this(fila, numero, null);
+        }
     }
 }
